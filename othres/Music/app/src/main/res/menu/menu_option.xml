@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="退出" android:id="@+id/action_exit"></item>
+
+    <item android:title="格式化文件名" android:id="@+id/action_format_song"></item>
+</menu>
