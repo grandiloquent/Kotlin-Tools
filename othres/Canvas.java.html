@@ -1,0 +1,2011 @@
+<html>
+<head>
+<title>Canvas.java</title>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+<style type="text/css">*{
+font-family:Consolas!important}
+.ln { color: #999999; font-weight: normal; font-style: normal; }
+.s0 { color: rgb(128,128,128); font-style: italic; }
+.s1 { color: rgb(0,0,0); }
+.s2 { color: rgb(0,0,128); font-weight: bold; }
+.s3 { color: rgb(128,128,128); font-style: italic; }
+.s4 { color: rgb(128,128,128); font-weight: bold; font-style: italic; }
+.s5 { color: rgb(0,0,255); }
+.s6 { color: rgb(0,128,0); font-weight: bold; }
+</style>
+</head>
+<BODY BGCOLOR="#ffffff">
+<TABLE CELLSPACING=0 CELLPADDING=5 COLS=1 WIDTH="100%" BGCOLOR="#c0c0c0" >
+<TR><TD><CENTER>
+<FONT FACE="Arial, Helvetica" COLOR="#000000">
+Canvas.java</FONT>
+</center></TD></TR></TABLE>
+<pre>
+<span class="s0">/* 
+ * Copyright (C) 2006 The Android Open Source Project 
+ * 
+ * Licensed under the Apache License, Version 2.0 (the &quot;License&quot;); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at 
+ * 
+ *      http://www.apache.org/licenses/LICENSE-2.0 
+ * 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an &quot;AS IS&quot; BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and 
+ * limitations under the License. 
+ */</span><span class="s1"> 
+ 
+</span><span class="s2">package </span><span class="s1">android.graphics; 
+ 
+</span><span class="s2">import </span><span class="s1">android.annotation.ColorInt; 
+</span><span class="s2">import </span><span class="s1">android.annotation.IntDef; 
+</span><span class="s2">import </span><span class="s1">android.annotation.NonNull; 
+</span><span class="s2">import </span><span class="s1">android.annotation.Nullable; 
+</span><span class="s2">import </span><span class="s1">android.annotation.Size; 
+</span><span class="s2">import </span><span class="s1">android.os.Build; 
+ 
+</span><span class="s2">import </span><span class="s1">dalvik.annotation.optimization.CriticalNative; 
+</span><span class="s2">import </span><span class="s1">dalvik.annotation.optimization.FastNative; 
+ 
+</span><span class="s2">import </span><span class="s1">libcore.util.NativeAllocationRegistry; 
+ 
+</span><span class="s2">import </span><span class="s1">java.lang.annotation.Retention; 
+</span><span class="s2">import </span><span class="s1">java.lang.annotation.RetentionPolicy; 
+ 
+</span><span class="s2">import </span><span class="s1">javax.microedition.khronos.opengles.GL; 
+ 
+</span><span class="s0">/** 
+ * The Canvas class holds the &quot;draw&quot; calls. To draw something, you need 
+ * 4 basic components: A Bitmap to hold the pixels, a Canvas to host 
+ * the draw calls (writing into the bitmap), a drawing primitive (e.g. Rect, 
+ * Path, text, Bitmap), and a paint (to describe the colors and styles for the 
+ * drawing). 
+ * 
+ * </span><span class="s3">&lt;div class=&quot;special reference&quot;&gt;</span><span class="s0"> 
+ * </span><span class="s3">&lt;h3&gt;</span><span class="s0">Developer Guides</span><span class="s3">&lt;/h3&gt;</span><span class="s0"> 
+ * </span><span class="s3">&lt;p&gt;</span><span class="s0">For more information about how to use Canvas, read the 
+ * </span><span class="s3">&lt;a href=&quot;</span><span class="s0">{</span><span class="s4">@docRoot</span><span class="s0">}guide/topics/graphics/2d-graphics.html&quot;&gt; 
+ * Canvas and Drawables</span><span class="s3">&lt;/a&gt; </span><span class="s0">developer guide.</span><span class="s3">&lt;/p&gt;&lt;/div&gt;</span><span class="s0"> 
+ */</span><span class="s1"> 
+</span><span class="s2">public class </span><span class="s1">Canvas </span><span class="s2">extends </span><span class="s1">BaseCanvas { 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public static boolean </span><span class="s1">sCompatibilityRestore = </span><span class="s2">false</span><span class="s1">; 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public static boolean </span><span class="s1">sCompatibilitySetBitmap = </span><span class="s2">false</span><span class="s1">; 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public long </span><span class="s1">getNativeCanvasWrapper() { 
+        </span><span class="s2">return </span><span class="s1">mNativeCanvasWrapper; 
+    } 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">isRecordingFor(Object o) { </span><span class="s2">return false</span><span class="s1">; } 
+ 
+    </span><span class="s0">// may be null</span><span class="s1"> 
+    </span><span class="s2">private </span><span class="s1">Bitmap mBitmap; 
+ 
+    </span><span class="s0">// optional field set by the caller</span><span class="s1"> 
+    </span><span class="s2">private </span><span class="s1">DrawFilter mDrawFilter; 
+ 
+    </span><span class="s0">// Maximum bitmap size as defined in Skia's native code</span><span class="s1"> 
+    </span><span class="s0">// (see SkCanvas.cpp, SkDraw.cpp)</span><span class="s1"> 
+    </span><span class="s2">private static final int </span><span class="s1">MAXMIMUM_BITMAP_SIZE = </span><span class="s5">32766</span><span class="s1">; 
+ 
+    </span><span class="s0">// The approximate size of the native allocation associated with</span><span class="s1"> 
+    </span><span class="s0">// a Canvas object.</span><span class="s1"> 
+    </span><span class="s2">private static final long </span><span class="s1">NATIVE_ALLOCATION_SIZE = </span><span class="s5">525</span><span class="s1">; 
+ 
+    </span><span class="s0">// Use a Holder to allow static initialization of Canvas in the boot image.</span><span class="s1"> 
+    </span><span class="s2">private static class </span><span class="s1">NoImagePreloadHolder { 
+        </span><span class="s2">public static final </span><span class="s1">NativeAllocationRegistry sRegistry = </span><span class="s2">new </span><span class="s1">NativeAllocationRegistry( 
+                Canvas.</span><span class="s2">class</span><span class="s1">.getClassLoader(), nGetNativeFinalizer(), NATIVE_ALLOCATION_SIZE); 
+    } 
+ 
+    </span><span class="s0">// This field is used to finalize the native Canvas properly</span><span class="s1"> 
+    </span><span class="s2">private </span><span class="s1">Runnable mFinalizer; 
+ 
+    </span><span class="s0">/** 
+     * Construct an empty raster canvas. Use setBitmap() to specify a bitmap to 
+     * draw into.  The initial target density is {</span><span class="s4">@link </span><span class="s0">Bitmap#DENSITY_NONE}; 
+     * this will typically be replaced when a target bitmap is set for the 
+     * canvas. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public </span><span class="s1">Canvas() { 
+        </span><span class="s2">if </span><span class="s1">(!isHardwareAccelerated()) { 
+            </span><span class="s0">// 0 means no native bitmap</span><span class="s1"> 
+            mNativeCanvasWrapper = nInitRaster(</span><span class="s2">null</span><span class="s1">); 
+            mFinalizer = NoImagePreloadHolder.sRegistry.registerNativeAllocation( 
+                    </span><span class="s2">this</span><span class="s1">, mNativeCanvasWrapper); 
+        } </span><span class="s2">else </span><span class="s1">{ 
+            mFinalizer = </span><span class="s2">null</span><span class="s1">; 
+        } 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Construct a canvas with the specified bitmap to draw into. The bitmap 
+     * must be mutable. 
+     * 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0">The initial target density of the canvas is the same as the given 
+     * bitmap's density. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap Specifies a mutable bitmap for the canvas to draw into. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public </span><span class="s1">Canvas(@NonNull Bitmap bitmap) { 
+        </span><span class="s2">if </span><span class="s1">(!bitmap.isMutable()) { 
+            </span><span class="s2">throw new </span><span class="s1">IllegalStateException(</span><span class="s6">&quot;Immutable bitmap passed to Canvas constructor&quot;</span><span class="s1">); 
+        } 
+        throwIfCannotDraw(bitmap); 
+        mNativeCanvasWrapper = nInitRaster(bitmap); 
+        mFinalizer = NoImagePreloadHolder.sRegistry.registerNativeAllocation( 
+                </span><span class="s2">this</span><span class="s1">, mNativeCanvasWrapper); 
+        mBitmap = bitmap; 
+        mDensity = bitmap.mDensity; 
+    } 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public </span><span class="s1">Canvas(</span><span class="s2">long </span><span class="s1">nativeCanvas) { 
+        </span><span class="s2">if </span><span class="s1">(nativeCanvas == </span><span class="s5">0</span><span class="s1">) { 
+            </span><span class="s2">throw new </span><span class="s1">IllegalStateException(); 
+        } 
+        mNativeCanvasWrapper = nativeCanvas; 
+        mFinalizer = NoImagePreloadHolder.sRegistry.registerNativeAllocation( 
+                </span><span class="s2">this</span><span class="s1">, mNativeCanvasWrapper); 
+        mDensity = Bitmap.getDefaultDensity(); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns null. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">This method is not supported and should not be invoked. 
+     * 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">protected </span><span class="s1">GL getGL() { 
+        </span><span class="s2">return null</span><span class="s1">; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Indicates whether this Canvas uses hardware acceleration. 
+     * 
+     * Note that this method does not define what type of hardware acceleration 
+     * may or may not be used. 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">True if drawing operations are hardware accelerated, 
+     *         false otherwise. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">isHardwareAccelerated() { 
+        </span><span class="s2">return false</span><span class="s1">; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Specify a bitmap for the canvas to draw into. All canvas state such as 
+     * layers, filters, and the save/restore stack are reset. Additionally, 
+     * the canvas' target density is updated to match that of the bitmap. 
+     * 
+     * Prior to API level {</span><span class="s4">@value </span><span class="s0">Build.VERSION_CODES#O} the current matrix and 
+     * clip stack were preserved. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap Specifies a mutable bitmap for the canvas to draw into. 
+     * </span><span class="s4">@see </span><span class="s0">#setDensity(int) 
+     * </span><span class="s4">@see </span><span class="s0">#getDensity() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">setBitmap(@Nullable Bitmap bitmap) { 
+        </span><span class="s2">if </span><span class="s1">(isHardwareAccelerated()) { 
+            </span><span class="s2">throw new </span><span class="s1">RuntimeException(</span><span class="s6">&quot;Can't set a bitmap device on a HW accelerated canvas&quot;</span><span class="s1">); 
+        } 
+ 
+        Matrix preservedMatrix = </span><span class="s2">null</span><span class="s1">; 
+        </span><span class="s2">if </span><span class="s1">(bitmap != </span><span class="s2">null </span><span class="s1">&amp;&amp; sCompatibilitySetBitmap) { 
+            preservedMatrix = getMatrix(); 
+        } 
+ 
+        </span><span class="s2">if </span><span class="s1">(bitmap == </span><span class="s2">null</span><span class="s1">) { 
+            nSetBitmap(mNativeCanvasWrapper, </span><span class="s2">null</span><span class="s1">); 
+            mDensity = Bitmap.DENSITY_NONE; 
+        } </span><span class="s2">else </span><span class="s1">{ 
+            </span><span class="s2">if </span><span class="s1">(!bitmap.isMutable()) { 
+                </span><span class="s2">throw new </span><span class="s1">IllegalStateException(); 
+            } 
+            throwIfCannotDraw(bitmap); 
+ 
+            nSetBitmap(mNativeCanvasWrapper, bitmap); 
+            mDensity = bitmap.mDensity; 
+        } 
+ 
+        </span><span class="s2">if </span><span class="s1">(preservedMatrix != </span><span class="s2">null</span><span class="s1">) { 
+            setMatrix(preservedMatrix); 
+        } 
+ 
+        mBitmap = bitmap; 
+    } 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">setHighContrastText(</span><span class="s2">boolean </span><span class="s1">highContrastText) { 
+        nSetHighContrastText(mNativeCanvasWrapper, highContrastText); 
+    } 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">insertReorderBarrier() {} 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">insertInorderBarrier() {} 
+ 
+    </span><span class="s0">/** 
+     * Return true if the device that the current layer draws into is opaque 
+     * (i.e. does not support per-pixel alpha). 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">true if the device that the current layer draws into is opaque 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">isOpaque() { 
+        </span><span class="s2">return </span><span class="s1">nIsOpaque(mNativeCanvasWrapper); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns the width of the current drawing layer 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">the width of the current drawing layer 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getWidth() { 
+        </span><span class="s2">return </span><span class="s1">nGetWidth(mNativeCanvasWrapper); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns the height of the current drawing layer 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">the height of the current drawing layer 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getHeight() { 
+        </span><span class="s2">return </span><span class="s1">nGetHeight(mNativeCanvasWrapper); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0">Returns the target density of the canvas.  The default density is 
+     * derived from the density of its backing bitmap, or 
+     * {</span><span class="s4">@link </span><span class="s0">Bitmap#DENSITY_NONE} if there is not one.</span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">Returns the current target density of the canvas, which is used 
+     * to determine the scaling factor when drawing a bitmap into it. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#setDensity(int) 
+     * </span><span class="s4">@see </span><span class="s0">Bitmap#getDensity() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getDensity() { 
+        </span><span class="s2">return </span><span class="s1">mDensity; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0">Specifies the density for this Canvas' backing bitmap.  This modifies 
+     * the target density of the canvas itself, as well as the density of its 
+     * backing bitmap via {</span><span class="s4">@link </span><span class="s0">Bitmap#setDensity(int) Bitmap.setDensity(int)}. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">density The new target density of the canvas, which is used 
+     * to determine the scaling factor when drawing a bitmap into it.  Use 
+     * {</span><span class="s4">@link </span><span class="s0">Bitmap#DENSITY_NONE} to disable bitmap scaling. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#getDensity() 
+     * </span><span class="s4">@see </span><span class="s0">Bitmap#setDensity(int) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">setDensity(</span><span class="s2">int </span><span class="s1">density) { 
+        </span><span class="s2">if </span><span class="s1">(mBitmap != </span><span class="s2">null</span><span class="s1">) { 
+            mBitmap.setDensity(density); 
+        } 
+        mDensity = density; 
+    } 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">setScreenDensity(</span><span class="s2">int </span><span class="s1">density) { 
+        mScreenDensity = density; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns the maximum allowed width for bitmaps drawn with this canvas. 
+     * Attempting to draw with a bitmap wider than this value will result 
+     * in an error. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#getMaximumBitmapHeight() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getMaximumBitmapWidth() { 
+        </span><span class="s2">return </span><span class="s1">MAXMIMUM_BITMAP_SIZE; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns the maximum allowed height for bitmaps drawn with this canvas. 
+     * Attempting to draw with a bitmap taller than this value will result 
+     * in an error. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#getMaximumBitmapWidth() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getMaximumBitmapHeight() { 
+        </span><span class="s2">return </span><span class="s1">MAXMIMUM_BITMAP_SIZE; 
+    } 
+ 
+    </span><span class="s0">// the SAVE_FLAG constants must match their native equivalents</span><span class="s1"> 
+ 
+    </span><span class="s0">/** </span><span class="s4">@hide </span><span class="s0">*/</span><span class="s1"> 
+    @IntDef(flag = </span><span class="s2">true</span><span class="s1">, 
+            value = { 
+                ALL_SAVE_FLAG 
+            }) 
+    @Retention(RetentionPolicy.SOURCE) 
+    </span><span class="s2">public </span><span class="s1">@</span><span class="s2">interface </span><span class="s1">Saveflags {} 
+ 
+    </span><span class="s0">/** 
+     * Restore the current matrix when restore() is called. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use the flagless version of {</span><span class="s4">@link </span><span class="s0">#save()}, {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} or 
+     *             {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)}. For saveLayer() calls the matrix 
+     *             was always restored for {</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() Hardware accelerated} 
+     *             canvases and as of API level {</span><span class="s4">@value </span><span class="s0">Build.VERSION_CODES#O} that is the default 
+     *             behavior for all canvas types. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">MATRIX_SAVE_FLAG = </span><span class="s5">0x01</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * Restore the current clip when restore() is called. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use the flagless version of {</span><span class="s4">@link </span><span class="s0">#save()}, {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} or 
+     *             {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)}. For saveLayer() calls the clip 
+     *             was always restored for {</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() Hardware accelerated} 
+     *             canvases and as of API level {</span><span class="s4">@value </span><span class="s0">Build.VERSION_CODES#O} that is the default 
+     *             behavior for all canvas types. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">CLIP_SAVE_FLAG = </span><span class="s5">0x02</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * The layer requires a per-pixel alpha channel. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">This flag is ignored. Use the flagless version of {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} 
+     *             {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)}. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">HAS_ALPHA_LAYER_SAVE_FLAG = </span><span class="s5">0x04</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * The layer requires full 8-bit precision for each color channel. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">This flag is ignored. Use the flagless version of {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} 
+     *             {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)}. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">FULL_COLOR_LAYER_SAVE_FLAG = </span><span class="s5">0x08</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * Clip drawing to the bounds of the offscreen layer, omit at your own peril. 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">it is strongly recommended to not 
+     * omit this flag for any call to </span><span class="s3">&lt;code&gt;</span><span class="s0">saveLayer()</span><span class="s3">&lt;/code&gt; </span><span class="s0">and 
+     * </span><span class="s3">&lt;code&gt;</span><span class="s0">saveLayerAlpha()</span><span class="s3">&lt;/code&gt; </span><span class="s0">variants. Not passing this flag generally 
+     * triggers extremely poor performance with hardware accelerated rendering. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">This flag results in poor performance and the same effect can be achieved with 
+     *             a single layer or multiple draw commands with different clips. 
+     * 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">CLIP_TO_LAYER_SAVE_FLAG = </span><span class="s5">0x10</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * Restore everything when restore() is called (standard save flags). 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">for performance reasons, it is 
+     * strongly recommended to pass this - the complete set of flags - to any 
+     * call to </span><span class="s3">&lt;code&gt;</span><span class="s0">saveLayer()</span><span class="s3">&lt;/code&gt; </span><span class="s0">and </span><span class="s3">&lt;code&gt;</span><span class="s0">saveLayerAlpha()</span><span class="s3">&lt;/code&gt;</span><span class="s0"> 
+     * variants. 
+     * 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">all methods that accept this flag 
+     * have flagless versions that are equivalent to passing this flag. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static final int </span><span class="s1">ALL_SAVE_FLAG = </span><span class="s5">0x1F</span><span class="s1">; 
+ 
+    </span><span class="s0">/** 
+     * Saves the current matrix and clip onto a private stack. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Subsequent calls to translate,scale,rotate,skew,concat or clipRect, 
+     * clipPath will all operate as usual, but when the balancing call to 
+     * restore() is made, those calls will be forgotten, and the settings that 
+     * existed before the save() will be reinstated. 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">The value to pass to restoreToCount() to balance this save() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">save() { 
+        </span><span class="s2">return </span><span class="s1">nSave(mNativeCanvasWrapper, MATRIX_SAVE_FLAG | CLIP_SAVE_FLAG); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Based on saveFlags, can save the current matrix and clip onto a private 
+     * stack. 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">if possible, use the 
+     * parameter-less save(). It is simpler and faster than individually 
+     * disabling the saving of matrix or clip with this method. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Subsequent calls to translate,scale,rotate,skew,concat or clipRect, 
+     * clipPath will all operate as usual, but when the balancing call to 
+     * restore() is made, those calls will be forgotten, and the settings that 
+     * existed before the save() will be reinstated. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use {</span><span class="s4">@link </span><span class="s0">#save()} instead. 
+     * </span><span class="s4">@param </span><span class="s0">saveFlags flag bits that specify which parts of the Canvas state 
+     *                  to save/restore 
+     * </span><span class="s4">@return </span><span class="s0">The value to pass to restoreToCount() to balance this save() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">save(@Saveflags </span><span class="s2">int </span><span class="s1">saveFlags) { 
+        </span><span class="s2">return </span><span class="s1">nSave(mNativeCanvasWrapper, saveFlags); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * This behaves the same as save(), but in addition it allocates and 
+     * redirects drawing to an offscreen bitmap. 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">this method is very expensive, 
+     * incurring more than double rendering cost for contained content. Avoid 
+     * using this method, especially if the bounds provided are large, or if 
+     * the {</span><span class="s4">@link </span><span class="s0">#CLIP_TO_LAYER_SAVE_FLAG} is omitted from the 
+     * {</span><span class="s4">@code </span><span class="s0">saveFlags} parameter. It is recommended to use a 
+     * {</span><span class="s4">@link </span><span class="s0">android.view.View#LAYER_TYPE_HARDWARE hardware layer} on a View 
+     * to apply an xfermode, color filter, or alpha, as it will perform much 
+     * better than this method. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * All drawing calls are directed to a newly allocated offscreen bitmap. 
+     * Only when the balancing call to restore() is made, is that offscreen 
+     * buffer drawn back to the current target of the Canvas (either the 
+     * screen, it's target Bitmap, or the previous layer). 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Attributes of the Paint - {</span><span class="s4">@link </span><span class="s0">Paint#getAlpha() alpha}, 
+     * {</span><span class="s4">@link </span><span class="s0">Paint#getXfermode() Xfermode}, and 
+     * {</span><span class="s4">@link </span><span class="s0">Paint#getColorFilter() ColorFilter} are applied when the 
+     * offscreen bitmap is drawn back when restore() is called. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} instead. 
+     * </span><span class="s4">@param </span><span class="s0">bounds May be null. The maximum size the offscreen bitmap 
+     *               needs to be (in local coordinates) 
+     * </span><span class="s4">@param </span><span class="s0">paint  This is copied, and is applied to the offscreen when 
+     *               restore() is called. 
+     * </span><span class="s4">@param </span><span class="s0">saveFlags see _SAVE_FLAG constants, generally {</span><span class="s4">@link </span><span class="s0">#ALL_SAVE_FLAG} is recommended 
+     *               for performance reasons. 
+     * </span><span class="s4">@return       </span><span class="s0">value to pass to restoreToCount() to balance this save() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayer(@Nullable RectF bounds, @Nullable Paint paint, @Saveflags </span><span class="s2">int </span><span class="s1">saveFlags) { 
+        </span><span class="s2">if </span><span class="s1">(bounds == </span><span class="s2">null</span><span class="s1">) { 
+            bounds = </span><span class="s2">new </span><span class="s1">RectF(getClipBounds()); 
+        } 
+        </span><span class="s2">return </span><span class="s1">saveLayer(bounds.left, bounds.top, bounds.right, bounds.bottom, paint, saveFlags); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * This behaves the same as save(), but in addition it allocates and 
+     * redirects drawing to an offscreen rendering target. 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">this method is very expensive, 
+     * incurring more than double rendering cost for contained content. Avoid 
+     * using this method when possible and instead use a 
+     * {</span><span class="s4">@link </span><span class="s0">android.view.View#LAYER_TYPE_HARDWARE hardware layer} on a View 
+     * to apply an xfermode, color filter, or alpha, as it will perform much 
+     * better than this method. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * All drawing calls are directed to a newly allocated offscreen rendering target. 
+     * Only when the balancing call to restore() is made, is that offscreen 
+     * buffer drawn back to the current target of the Canvas (which can potentially be a previous 
+     * layer if these calls are nested). 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Attributes of the Paint - {</span><span class="s4">@link </span><span class="s0">Paint#getAlpha() alpha}, 
+     * {</span><span class="s4">@link </span><span class="s0">Paint#getXfermode() Xfermode}, and 
+     * {</span><span class="s4">@link </span><span class="s0">Paint#getColorFilter() ColorFilter} are applied when the 
+     * offscreen rendering target is drawn back when restore() is called. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bounds May be null. The maximum size the offscreen render target 
+     *               needs to be (in local coordinates) 
+     * </span><span class="s4">@param </span><span class="s0">paint  This is copied, and is applied to the offscreen when 
+     *               restore() is called. 
+     * </span><span class="s4">@return       </span><span class="s0">value to pass to restoreToCount() to balance this save() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayer(@Nullable RectF bounds, @Nullable Paint paint) { 
+        </span><span class="s2">return </span><span class="s1">saveLayer(bounds, paint, ALL_SAVE_FLAG); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Helper version of saveLayer() that takes 4 values rather than a RectF. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use {</span><span class="s4">@link </span><span class="s0">#saveLayer(float, float, float, float, Paint)} instead. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayer(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, @Nullable Paint paint, 
+            @Saveflags </span><span class="s2">int </span><span class="s1">saveFlags) { 
+        </span><span class="s2">return </span><span class="s1">nSaveLayer(mNativeCanvasWrapper, left, top, right, bottom, 
+                paint != </span><span class="s2">null </span><span class="s1">? paint.getNativeInstance() : </span><span class="s5">0</span><span class="s1">, 
+                saveFlags); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Convenience for {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} that takes the four float coordinates of the 
+     * bounds rectangle. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayer(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, @Nullable Paint paint) { 
+        </span><span class="s2">return </span><span class="s1">saveLayer(left, top, right, bottom, paint, ALL_SAVE_FLAG); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * This behaves the same as save(), but in addition it allocates and 
+     * redirects drawing to an offscreen bitmap. 
+     * </span><span class="s3">&lt;p class=&quot;note&quot;&gt;&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">this method is very expensive, 
+     * incurring more than double rendering cost for contained content. Avoid 
+     * using this method, especially if the bounds provided are large, or if 
+     * the {</span><span class="s4">@link </span><span class="s0">#CLIP_TO_LAYER_SAVE_FLAG} is omitted from the 
+     * {</span><span class="s4">@code </span><span class="s0">saveFlags} parameter. It is recommended to use a 
+     * {</span><span class="s4">@link </span><span class="s0">android.view.View#LAYER_TYPE_HARDWARE hardware layer} on a View 
+     * to apply an xfermode, color filter, or alpha, as it will perform much 
+     * better than this method. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * All drawing calls are directed to a newly allocated offscreen bitmap. 
+     * Only when the balancing call to restore() is made, is that offscreen 
+     * buffer drawn back to the current target of the Canvas (either the 
+     * screen, it's target Bitmap, or the previous layer). 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * The {</span><span class="s4">@code </span><span class="s0">alpha} parameter is applied when the offscreen bitmap is 
+     * drawn back when restore() is called. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)} instead. 
+     * </span><span class="s4">@param </span><span class="s0">bounds    The maximum size the offscreen bitmap needs to be 
+     *                  (in local coordinates) 
+     * </span><span class="s4">@param </span><span class="s0">alpha     The alpha to apply to the offscreen when it is 
+                        drawn during restore() 
+     * </span><span class="s4">@param </span><span class="s0">saveFlags see _SAVE_FLAG constants, generally {</span><span class="s4">@link </span><span class="s0">#ALL_SAVE_FLAG} is recommended 
+     *                  for performance reasons. 
+     * </span><span class="s4">@return          </span><span class="s0">value to pass to restoreToCount() to balance this call 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayerAlpha(@Nullable RectF bounds, </span><span class="s2">int </span><span class="s1">alpha, @Saveflags </span><span class="s2">int </span><span class="s1">saveFlags) { 
+        </span><span class="s2">if </span><span class="s1">(bounds == </span><span class="s2">null</span><span class="s1">) { 
+            bounds = </span><span class="s2">new </span><span class="s1">RectF(getClipBounds()); 
+        } 
+        </span><span class="s2">return </span><span class="s1">saveLayerAlpha(bounds.left, bounds.top, bounds.right, bounds.bottom, alpha, saveFlags); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Convenience for {</span><span class="s4">@link </span><span class="s0">#saveLayer(RectF, Paint)} but instead of taking a entire Paint object 
+     * it takes only the {</span><span class="s4">@code </span><span class="s0">alpha} parameter. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bounds    The maximum size the offscreen bitmap needs to be 
+     *                  (in local coordinates) 
+     * </span><span class="s4">@param </span><span class="s0">alpha     The alpha to apply to the offscreen when it is 
+                        drawn during restore() 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayerAlpha(@Nullable RectF bounds, </span><span class="s2">int </span><span class="s1">alpha) { 
+        </span><span class="s2">return </span><span class="s1">saveLayerAlpha(bounds, alpha, ALL_SAVE_FLAG); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Helper for saveLayerAlpha() that takes 4 values instead of a RectF. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Use {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(float, float, float, float, int)} instead. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayerAlpha(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, </span><span class="s2">int </span><span class="s1">alpha, 
+            @Saveflags </span><span class="s2">int </span><span class="s1">saveFlags) { 
+        alpha = Math.min(</span><span class="s5">255</span><span class="s1">, Math.max(</span><span class="s5">0</span><span class="s1">, alpha)); 
+        </span><span class="s2">return </span><span class="s1">nSaveLayerAlpha(mNativeCanvasWrapper, left, top, right, bottom, 
+                                     alpha, saveFlags); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Convenience for {</span><span class="s4">@link </span><span class="s0">#saveLayerAlpha(RectF, int)} that takes the four float coordinates of 
+     * the bounds rectangle. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">saveLayerAlpha(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, </span><span class="s2">int </span><span class="s1">alpha) { 
+        </span><span class="s2">return </span><span class="s1">saveLayerAlpha(left, top, right, bottom, alpha, ALL_SAVE_FLAG); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * This call balances a previous call to save(), and is used to remove all 
+     * modifications to the matrix/clip state since the last save call. It is 
+     * an error to call restore() more times than save() was called. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">restore() { 
+        </span><span class="s2">if </span><span class="s1">(!nRestore(mNativeCanvasWrapper) 
+                &amp;&amp; (!sCompatibilityRestore || !isHardwareAccelerated())) { 
+            </span><span class="s2">throw new </span><span class="s1">IllegalStateException(</span><span class="s6">&quot;Underflow in restore - more restores than saves&quot;</span><span class="s1">); 
+        } 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Returns the number of matrix/clip states on the Canvas' private stack. 
+     * This will equal # save() calls - # restore() calls. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public int </span><span class="s1">getSaveCount() { 
+        </span><span class="s2">return </span><span class="s1">nGetSaveCount(mNativeCanvasWrapper); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Efficient way to pop any calls to save() that happened after the save 
+     * count reached saveCount. It is an error for saveCount to be less than 1. 
+     * 
+     * Example: 
+     *    int count = canvas.save(); 
+     *    ... // more calls potentially to save() 
+     *    canvas.restoreToCount(count); 
+     *    // now the canvas is back in the same state it was before the initial 
+     *    // call to save(). 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">saveCount The save level to restore to. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">restoreToCount(</span><span class="s2">int </span><span class="s1">saveCount) { 
+        </span><span class="s2">if </span><span class="s1">(saveCount &lt; </span><span class="s5">1</span><span class="s1">) { 
+            </span><span class="s2">if </span><span class="s1">(!sCompatibilityRestore || !isHardwareAccelerated()) { 
+                </span><span class="s0">// do nothing and throw without restoring</span><span class="s1"> 
+                </span><span class="s2">throw new </span><span class="s1">IllegalArgumentException( 
+                        </span><span class="s6">&quot;Underflow in restoreToCount - more restores than saves&quot;</span><span class="s1">); 
+            } 
+            </span><span class="s0">// compat behavior - restore as far as possible</span><span class="s1"> 
+            saveCount = </span><span class="s5">1</span><span class="s1">; 
+        } 
+        nRestoreToCount(mNativeCanvasWrapper, saveCount); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified translation 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">dx The distance to translate in X 
+     * </span><span class="s4">@param </span><span class="s0">dy The distance to translate in Y 
+    */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">translate(</span><span class="s2">float </span><span class="s1">dx, </span><span class="s2">float </span><span class="s1">dy) { 
+        </span><span class="s2">if </span><span class="s1">(dx == </span><span class="s5">0.0f </span><span class="s1">&amp;&amp; dy == </span><span class="s5">0.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        nTranslate(mNativeCanvasWrapper, dx, dy); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified scale. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">sx The amount to scale in X 
+     * </span><span class="s4">@param </span><span class="s0">sy The amount to scale in Y 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">scale(</span><span class="s2">float </span><span class="s1">sx, </span><span class="s2">float </span><span class="s1">sy) { 
+        </span><span class="s2">if </span><span class="s1">(sx == </span><span class="s5">1.0f </span><span class="s1">&amp;&amp; sy == </span><span class="s5">1.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        nScale(mNativeCanvasWrapper, sx, sy); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified scale. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">sx The amount to scale in X 
+     * </span><span class="s4">@param </span><span class="s0">sy The amount to scale in Y 
+     * </span><span class="s4">@param </span><span class="s0">px The x-coord for the pivot point (unchanged by the scale) 
+     * </span><span class="s4">@param </span><span class="s0">py The y-coord for the pivot point (unchanged by the scale) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public final void </span><span class="s1">scale(</span><span class="s2">float </span><span class="s1">sx, </span><span class="s2">float </span><span class="s1">sy, </span><span class="s2">float </span><span class="s1">px, </span><span class="s2">float </span><span class="s1">py) { 
+        </span><span class="s2">if </span><span class="s1">(sx == </span><span class="s5">1.0f </span><span class="s1">&amp;&amp; sy == </span><span class="s5">1.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        translate(px, py); 
+        scale(sx, sy); 
+        translate(-px, -py); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified rotation. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">degrees The amount to rotate, in degrees 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">rotate(</span><span class="s2">float </span><span class="s1">degrees) { 
+        </span><span class="s2">if </span><span class="s1">(degrees == </span><span class="s5">0.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        nRotate(mNativeCanvasWrapper, degrees); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified rotation. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">degrees The amount to rotate, in degrees 
+     * </span><span class="s4">@param </span><span class="s0">px The x-coord for the pivot point (unchanged by the rotation) 
+     * </span><span class="s4">@param </span><span class="s0">py The y-coord for the pivot point (unchanged by the rotation) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public final void </span><span class="s1">rotate(</span><span class="s2">float </span><span class="s1">degrees, </span><span class="s2">float </span><span class="s1">px, </span><span class="s2">float </span><span class="s1">py) { 
+        </span><span class="s2">if </span><span class="s1">(degrees == </span><span class="s5">0.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        translate(px, py); 
+        rotate(degrees); 
+        translate(-px, -py); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified skew. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">sx The amount to skew in X 
+     * </span><span class="s4">@param </span><span class="s0">sy The amount to skew in Y 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">skew(</span><span class="s2">float </span><span class="s1">sx, </span><span class="s2">float </span><span class="s1">sy) { 
+        </span><span class="s2">if </span><span class="s1">(sx == </span><span class="s5">0.0f </span><span class="s1">&amp;&amp; sy == </span><span class="s5">0.0f</span><span class="s1">) </span><span class="s2">return</span><span class="s1">; 
+        nSkew(mNativeCanvasWrapper, sx, sy); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Preconcat the current matrix with the specified matrix. If the specified 
+     * matrix is null, this method does nothing. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">matrix The matrix to preconcatenate with the current matrix 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">concat(@Nullable Matrix matrix) { 
+        </span><span class="s2">if </span><span class="s1">(matrix != </span><span class="s2">null</span><span class="s1">) nConcat(mNativeCanvasWrapper, matrix.native_instance); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Completely replace the current matrix with the specified matrix. If the 
+     * matrix parameter is null, then the current matrix is reset to identity. 
+     * 
+     * </span><span class="s3">&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">it is recommended to use {</span><span class="s4">@link </span><span class="s0">#concat(Matrix)}, 
+     * {</span><span class="s4">@link </span><span class="s0">#scale(float, float)}, {</span><span class="s4">@link </span><span class="s0">#translate(float, float)} and 
+     * {</span><span class="s4">@link </span><span class="s0">#rotate(float)} instead of this method. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">matrix The matrix to replace the current matrix with. If it is 
+     *               null, set the current matrix to identity. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#concat(Matrix) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">setMatrix(@Nullable Matrix matrix) { 
+        nSetMatrix(mNativeCanvasWrapper, 
+                         matrix == </span><span class="s2">null </span><span class="s1">? </span><span class="s5">0 </span><span class="s1">: matrix.native_instance); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return, in ctm, the current transformation matrix. This does not alter 
+     * the matrix in the canvas, but just returns a copy of it. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">{</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() Hardware accelerated} canvases may have any 
+     * matrix when passed to a View or Drawable, as it is implementation defined where in the 
+     * hierarchy such canvases are created. It is recommended in such cases to either draw contents 
+     * irrespective of the current matrix, or to track relevant transform state outside of the 
+     * canvas. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public void </span><span class="s1">getMatrix(@NonNull Matrix ctm) { 
+        nGetMatrix(mNativeCanvasWrapper, ctm.native_instance); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return a new matrix with a copy of the canvas' current transformation 
+     * matrix. 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">{</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() Hardware accelerated} canvases may have any 
+     * matrix when passed to a View or Drawable, as it is implementation defined where in the 
+     * hierarchy such canvases are created. It is recommended in such cases to either draw contents 
+     * irrespective of the current matrix, or to track relevant transform state outside of the 
+     * canvas. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public final </span><span class="s1">@NonNull Matrix getMatrix() { 
+        Matrix m = </span><span class="s2">new </span><span class="s1">Matrix(); 
+        </span><span class="s0">//noinspection deprecation</span><span class="s1"> 
+        getMatrix(m); 
+        </span><span class="s2">return </span><span class="s1">m; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Modify the current clip with the specified rectangle. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rect to intersect with the current clip 
+     * </span><span class="s4">@param </span><span class="s0">op How the clip is modified 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Region.Op values other than {</span><span class="s4">@link </span><span class="s0">Region.Op#INTERSECT} and 
+     * {</span><span class="s4">@link </span><span class="s0">Region.Op#DIFFERENCE} have the ability to expand the clip. The canvas clipping APIs 
+     * are intended to only expand the clip as a result of a restore operation. This enables a view 
+     * parent to clip a canvas to clearly define the maximal drawing area of its children. The 
+     * recommended alternative calls are {</span><span class="s4">@link </span><span class="s0">#clipRect(RectF)} and {</span><span class="s4">@link </span><span class="s0">#clipOutRect(RectF)}; 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(@NonNull RectF rect, @NonNull Region.Op op) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                op.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Modify the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangle to intersect with the current clip. 
+     * </span><span class="s4">@param </span><span class="s0">op How the clip is modified 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Region.Op values other than {</span><span class="s4">@link </span><span class="s0">Region.Op#INTERSECT} and 
+     * {</span><span class="s4">@link </span><span class="s0">Region.Op#DIFFERENCE} have the ability to expand the clip. The canvas clipping APIs 
+     * are intended to only expand the clip as a result of a restore operation. This enables a view 
+     * parent to clip a canvas to clearly define the maximal drawing area of its children. The 
+     * recommended alternative calls are {</span><span class="s4">@link </span><span class="s0">#clipRect(Rect)} and {</span><span class="s4">@link </span><span class="s0">#clipOutRect(Rect)}; 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(@NonNull Rect rect, @NonNull Region.Op op) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                op.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangle to intersect with the current clip. 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(@NonNull RectF rect) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                Region.Op.INTERSECT.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Set the clip to the difference of the current clip and the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangle to perform a difference op with the current clip. 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipOutRect(@NonNull RectF rect) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                Region.Op.DIFFERENCE.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangle to intersect with the current clip. 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(@NonNull Rect rect) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                Region.Op.INTERSECT.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Set the clip to the difference of the current clip and the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangle to perform a difference op with the current clip. 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipOutRect(@NonNull Rect rect) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, rect.left, rect.top, rect.right, rect.bottom, 
+                Region.Op.DIFFERENCE.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Modify the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left   The left side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">top    The top of the rectangle to intersect with the current 
+     *               clip 
+     * </span><span class="s4">@param </span><span class="s0">right  The right side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom of the rectangle to intersect with the current 
+     *               clip 
+     * </span><span class="s4">@param </span><span class="s0">op     How the clip is modified 
+     * </span><span class="s4">@return       </span><span class="s0">true if the resulting clip is non-empty 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Region.Op values other than {</span><span class="s4">@link </span><span class="s0">Region.Op#INTERSECT} and 
+     * {</span><span class="s4">@link </span><span class="s0">Region.Op#DIFFERENCE} have the ability to expand the clip. The canvas clipping APIs 
+     * are intended to only expand the clip as a result of a restore operation. This enables a view 
+     * parent to clip a canvas to clearly define the maximal drawing area of its children. The 
+     * recommended alternative calls are {</span><span class="s4">@link </span><span class="s0">#clipRect(float,float,float,float)} and 
+     * {</span><span class="s4">@link </span><span class="s0">#clipOutRect(float,float,float,float)}; 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, 
+            @NonNull Region.Op op) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, left, top, right, bottom, op.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left   The left side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">top    The top of the rectangle to intersect with the current clip 
+     * </span><span class="s4">@param </span><span class="s0">right  The right side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom of the rectangle to intersect with the current 
+     *               clip 
+     * </span><span class="s4">@return       </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, left, top, right, bottom, 
+                Region.Op.INTERSECT.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Set the clip to the difference of the current clip and the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left   The left side of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">top    The top of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">right  The right side of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom of the rectangle used in the difference operation 
+     * </span><span class="s4">@return       </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipOutRect(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, left, top, right, bottom, 
+                Region.Op.DIFFERENCE.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left   The left side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">top    The top of the rectangle to intersect with the current clip 
+     * </span><span class="s4">@param </span><span class="s0">right  The right side of the rectangle to intersect with the 
+     *               current clip 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom of the rectangle to intersect with the current 
+     *               clip 
+     * </span><span class="s4">@return       </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipRect(</span><span class="s2">int </span><span class="s1">left, </span><span class="s2">int </span><span class="s1">top, </span><span class="s2">int </span><span class="s1">right, </span><span class="s2">int </span><span class="s1">bottom) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, left, top, right, bottom, 
+                Region.Op.INTERSECT.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Set the clip to the difference of the current clip and the specified rectangle, which is 
+     * expressed in local coordinates. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left   The left side of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">top    The top of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">right  The right side of the rectangle used in the difference operation 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom of the rectangle used in the difference operation 
+     * </span><span class="s4">@return       </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipOutRect(</span><span class="s2">int </span><span class="s1">left, </span><span class="s2">int </span><span class="s1">top, </span><span class="s2">int </span><span class="s1">right, </span><span class="s2">int </span><span class="s1">bottom) { 
+        </span><span class="s2">return </span><span class="s1">nClipRect(mNativeCanvasWrapper, left, top, right, bottom, 
+                Region.Op.DIFFERENCE.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+        * Modify the current clip with the specified path. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">path The path to operate on the current clip 
+     * </span><span class="s4">@param </span><span class="s0">op   How the clip is modified 
+     * </span><span class="s4">@return     </span><span class="s0">true if the resulting is non-empty 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Region.Op values other than {</span><span class="s4">@link </span><span class="s0">Region.Op#INTERSECT} and 
+     * {</span><span class="s4">@link </span><span class="s0">Region.Op#DIFFERENCE} have the ability to expand the clip. The canvas clipping APIs 
+     * are intended to only expand the clip as a result of a restore operation. This enables a view 
+     * parent to clip a canvas to clearly define the maximal drawing area of its children. The 
+     * recommended alternative calls are {</span><span class="s4">@link </span><span class="s0">#clipPath(Path)} and 
+     * {</span><span class="s4">@link </span><span class="s0">#clipOutPath(Path)}; 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipPath(@NonNull Path path, @NonNull Region.Op op) { 
+        </span><span class="s2">return </span><span class="s1">nClipPath(mNativeCanvasWrapper, path.readOnlyNI(), op.nativeInt); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified path. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">path The path to intersect with the current clip 
+     * </span><span class="s4">@return     </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipPath(@NonNull Path path) { 
+        </span><span class="s2">return </span><span class="s1">clipPath(path, Region.Op.INTERSECT); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Set the clip to the difference of the current clip and the specified path. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">path The path used in the difference operation 
+     * </span><span class="s4">@return     </span><span class="s0">true if the resulting clip is non-empty 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">clipOutPath(@NonNull Path path) { 
+        </span><span class="s2">return </span><span class="s1">clipPath(path, Region.Op.DIFFERENCE); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Modify the current clip with the specified region. Note that unlike 
+     * clipRect() and clipPath() which transform their arguments by the 
+     * current matrix, clipRegion() assumes its argument is already in the 
+     * coordinate system of the current layer's bitmap, and so not 
+     * transformation is performed. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">region The region to operate on the current clip, based on op 
+     * </span><span class="s4">@param </span><span class="s0">op How the clip is modified 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting is non-empty 
+     * 
+     * </span><span class="s4">@removed</span><span class="s0"> 
+     * </span><span class="s4">@deprecated </span><span class="s0">Unlike all other clip calls this API does not respect the 
+     *             current matrix. Use {</span><span class="s4">@link </span><span class="s0">#clipRect(Rect)} as an alternative. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipRegion(@NonNull Region region, @NonNull Region.Op op) { 
+        </span><span class="s2">return false</span><span class="s1">; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Intersect the current clip with the specified region. Note that unlike 
+     * clipRect() and clipPath() which transform their arguments by the 
+     * current matrix, clipRegion() assumes its argument is already in the 
+     * coordinate system of the current layer's bitmap, and so not 
+     * transformation is performed. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">region The region to operate on the current clip, based on op 
+     * </span><span class="s4">@return </span><span class="s0">true if the resulting is non-empty 
+     * 
+     * </span><span class="s4">@removed</span><span class="s0"> 
+     * </span><span class="s4">@deprecated </span><span class="s0">Unlike all other clip calls this API does not respect the 
+     *             current matrix. Use {</span><span class="s4">@link </span><span class="s0">#clipRect(Rect)} as an alternative. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public boolean </span><span class="s1">clipRegion(@NonNull Region region) { 
+        </span><span class="s2">return false</span><span class="s1">; 
+    } 
+ 
+    </span><span class="s2">public </span><span class="s1">@Nullable DrawFilter getDrawFilter() { 
+        </span><span class="s2">return </span><span class="s1">mDrawFilter; 
+    } 
+ 
+    </span><span class="s2">public void </span><span class="s1">setDrawFilter(@Nullable DrawFilter filter) { 
+        </span><span class="s2">long </span><span class="s1">nativeFilter = </span><span class="s5">0</span><span class="s1">; 
+        </span><span class="s2">if </span><span class="s1">(filter != </span><span class="s2">null</span><span class="s1">) { 
+            nativeFilter = filter.mNativeInt; 
+        } 
+        mDrawFilter = filter; 
+        nSetDrawFilter(mNativeCanvasWrapper, nativeFilter); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Constant values used as parameters to {</span><span class="s4">@code </span><span class="s0">quickReject()} calls. These values 
+     * specify how much space around the shape should be accounted for, depending on whether 
+     * the shaped area is antialiased or not. 
+     * 
+     * </span><span class="s4">@see </span><span class="s0">#quickReject(float, float, float, float, EdgeType) 
+     * </span><span class="s4">@see </span><span class="s0">#quickReject(Path, EdgeType) 
+     * </span><span class="s4">@see </span><span class="s0">#quickReject(RectF, EdgeType) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public enum </span><span class="s1">EdgeType { 
+ 
+        </span><span class="s0">/** 
+         * Black-and-White: Treat edges by just rounding to nearest pixel boundary 
+         */</span><span class="s1"> 
+        BW(</span><span class="s5">0</span><span class="s1">),  </span><span class="s0">//!&lt; treat edges by just rounding to nearest pixel boundary</span><span class="s1"> 
+ 
+        </span><span class="s0">/** 
+         * Antialiased: Treat edges by rounding-out, since they may be antialiased 
+         */</span><span class="s1"> 
+        AA(</span><span class="s5">1</span><span class="s1">); 
+ 
+        EdgeType(</span><span class="s2">int </span><span class="s1">nativeInt) { 
+            </span><span class="s2">this</span><span class="s1">.nativeInt = nativeInt; 
+        } 
+ 
+        </span><span class="s0">/** 
+         * </span><span class="s4">@hide</span><span class="s0"> 
+         */</span><span class="s1"> 
+        </span><span class="s2">public final int </span><span class="s1">nativeInt; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return true if the specified rectangle, after being transformed by the 
+     * current matrix, would lie completely outside of the current clip. Call 
+     * this to check if an area you intend to draw into is clipped out (and 
+     * therefore you can skip making the draw calls). 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect  the rect to compare with the current clip 
+     * </span><span class="s4">@param </span><span class="s0">type  {</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#AA} if the path should be considered antialiased, 
+     *              since that means it may affect a larger area (more pixels) than 
+     *              non-antialiased ({</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#BW}). 
+     * </span><span class="s4">@return      </span><span class="s0">true if the rect (transformed by the canvas' matrix) 
+     *              does not intersect with the canvas' clip 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">quickReject(@NonNull RectF rect, @NonNull EdgeType type) { 
+        </span><span class="s2">return </span><span class="s1">nQuickReject(mNativeCanvasWrapper, 
+                rect.left, rect.top, rect.right, rect.bottom); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return true if the specified path, after being transformed by the 
+     * current matrix, would lie completely outside of the current clip. Call 
+     * this to check if an area you intend to draw into is clipped out (and 
+     * therefore you can skip making the draw calls). Note: for speed it may 
+     * return false even if the path itself might not intersect the clip 
+     * (i.e. the bounds of the path intersects, but the path does not). 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">path        The path to compare with the current clip 
+     * </span><span class="s4">@param </span><span class="s0">type        {</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#AA} if the path should be considered antialiased, 
+     *                    since that means it may affect a larger area (more pixels) than 
+     *                    non-antialiased ({</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#BW}). 
+     * </span><span class="s4">@return            </span><span class="s0">true if the path (transformed by the canvas' matrix) 
+     *                    does not intersect with the canvas' clip 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">quickReject(@NonNull Path path, @NonNull EdgeType type) { 
+        </span><span class="s2">return </span><span class="s1">nQuickReject(mNativeCanvasWrapper, path.readOnlyNI()); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return true if the specified rectangle, after being transformed by the 
+     * current matrix, would lie completely outside of the current clip. Call 
+     * this to check if an area you intend to draw into is clipped out (and 
+     * therefore you can skip making the draw calls). 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left        The left side of the rectangle to compare with the 
+     *                    current clip 
+     * </span><span class="s4">@param </span><span class="s0">top         The top of the rectangle to compare with the current 
+     *                    clip 
+     * </span><span class="s4">@param </span><span class="s0">right       The right side of the rectangle to compare with the 
+     *                    current clip 
+     * </span><span class="s4">@param </span><span class="s0">bottom      The bottom of the rectangle to compare with the 
+     *                    current clip 
+     * </span><span class="s4">@param </span><span class="s0">type        {</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#AA} if the path should be considered antialiased, 
+     *                    since that means it may affect a larger area (more pixels) than 
+     *                    non-antialiased ({</span><span class="s4">@link </span><span class="s0">Canvas.EdgeType#BW}). 
+     * </span><span class="s4">@return            </span><span class="s0">true if the rect (transformed by the canvas' matrix) 
+     *                    does not intersect with the canvas' clip 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">quickReject(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, 
+            @NonNull EdgeType type) { 
+        </span><span class="s2">return </span><span class="s1">nQuickReject(mNativeCanvasWrapper, left, top, right, bottom); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Return the bounds of the current clip (in local coordinates) in the 
+     * bounds parameter, and return true if it is non-empty. This can be useful 
+     * in a way similar to quickReject, in that it tells you that drawing 
+     * outside of these bounds will be clipped out. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bounds Return the clip bounds here. If it is null, ignore it but 
+     *               still return true if the current clip is non-empty. 
+     * </span><span class="s4">@return </span><span class="s0">true if the current clip is non-empty. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public boolean </span><span class="s1">getClipBounds(@Nullable Rect bounds) { 
+        </span><span class="s2">return </span><span class="s1">nGetClipBounds(mNativeCanvasWrapper, bounds); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Retrieve the bounds of the current clip (in local coordinates). 
+     * 
+     * </span><span class="s4">@return </span><span class="s0">the clip bounds, or [0, 0, 0, 0] if the clip is empty. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public final </span><span class="s1">@NonNull Rect getClipBounds() { 
+        Rect r = </span><span class="s2">new </span><span class="s1">Rect(); 
+        getClipBounds(r); 
+        </span><span class="s2">return </span><span class="s1">r; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Save the canvas state, draw the picture, and restore the canvas state. 
+     * This differs from picture.draw(canvas), which does not perform any 
+     * save/restore. 
+     * 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;strong&gt;</span><span class="s0">Note:</span><span class="s3">&lt;/strong&gt; </span><span class="s0">This forces the picture to internally call 
+     * {</span><span class="s4">@link </span><span class="s0">Picture#endRecording} in order to prepare for playback. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">picture  The picture to be drawn 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPicture(@NonNull Picture picture) { 
+        picture.endRecording(); 
+        </span><span class="s2">int </span><span class="s1">restoreCount = save(); 
+        picture.draw(</span><span class="s2">this</span><span class="s1">); 
+        restoreToCount(restoreCount); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the picture, stretched to fit into the dst rectangle. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPicture(@NonNull Picture picture, @NonNull RectF dst) { 
+        save(); 
+        translate(dst.left, dst.top); 
+        </span><span class="s2">if </span><span class="s1">(picture.getWidth() &gt; </span><span class="s5">0 </span><span class="s1">&amp;&amp; picture.getHeight() &gt; </span><span class="s5">0</span><span class="s1">) { 
+            scale(dst.width() / picture.getWidth(), dst.height() / picture.getHeight()); 
+        } 
+        drawPicture(picture); 
+        restore(); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the picture, stretched to fit into the dst rectangle. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPicture(@NonNull Picture picture, @NonNull Rect dst) { 
+        save(); 
+        translate(dst.left, dst.top); 
+        </span><span class="s2">if </span><span class="s1">(picture.getWidth() &gt; </span><span class="s5">0 </span><span class="s1">&amp;&amp; picture.getHeight() &gt; </span><span class="s5">0</span><span class="s1">) { 
+            scale((</span><span class="s2">float</span><span class="s1">) dst.width() / picture.getWidth(), 
+                    (</span><span class="s2">float</span><span class="s1">) dst.height() / picture.getHeight()); 
+        } 
+        drawPicture(picture); 
+        restore(); 
+    } 
+ 
+    </span><span class="s2">public enum </span><span class="s1">VertexMode { 
+        TRIANGLES(</span><span class="s5">0</span><span class="s1">), 
+        TRIANGLE_STRIP(</span><span class="s5">1</span><span class="s1">), 
+        TRIANGLE_FAN(</span><span class="s5">2</span><span class="s1">); 
+ 
+        VertexMode(</span><span class="s2">int </span><span class="s1">nativeInt) { 
+            </span><span class="s2">this</span><span class="s1">.nativeInt = nativeInt; 
+        } 
+ 
+        </span><span class="s0">/** 
+         * </span><span class="s4">@hide</span><span class="s0"> 
+         */</span><span class="s1"> 
+        </span><span class="s2">public final int </span><span class="s1">nativeInt; 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Releases the resources associated with this canvas. 
+     * 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">release() { 
+        mNativeCanvasWrapper = </span><span class="s5">0</span><span class="s1">; 
+        </span><span class="s2">if </span><span class="s1">(mFinalizer != </span><span class="s2">null</span><span class="s1">) { 
+            mFinalizer.run(); 
+            mFinalizer = </span><span class="s2">null</span><span class="s1">; 
+        } 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Free up as much memory as possible from private caches (e.g. fonts, images) 
+     * 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static void </span><span class="s1">freeCaches() { 
+        nFreeCaches(); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Free up text layout caches 
+     * 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    </span><span class="s2">public static void </span><span class="s1">freeTextLayoutCaches() { 
+        nFreeTextLayoutCaches(); 
+    } 
+ 
+    </span><span class="s2">private static native void </span><span class="s1">nFreeCaches(); 
+    </span><span class="s2">private static native void </span><span class="s1">nFreeTextLayoutCaches(); 
+    </span><span class="s2">private static native long </span><span class="s1">nInitRaster(Bitmap bitmap); 
+    </span><span class="s2">private static native long </span><span class="s1">nGetNativeFinalizer(); 
+ 
+    </span><span class="s0">// ---------------- @FastNative -------------------</span><span class="s1"> 
+ 
+    @FastNative 
+    </span><span class="s2">private static native void </span><span class="s1">nSetBitmap(</span><span class="s2">long </span><span class="s1">canvasHandle, Bitmap bitmap); 
+ 
+    @FastNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nGetClipBounds(</span><span class="s2">long </span><span class="s1">nativeCanvas, Rect bounds); 
+ 
+    </span><span class="s0">// ---------------- @CriticalNative -------------------</span><span class="s1"> 
+ 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nIsOpaque(</span><span class="s2">long </span><span class="s1">canvasHandle); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nSetHighContrastText(</span><span class="s2">long </span><span class="s1">renderer, </span><span class="s2">boolean </span><span class="s1">highContrastText); 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nGetWidth(</span><span class="s2">long </span><span class="s1">canvasHandle); 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nGetHeight(</span><span class="s2">long </span><span class="s1">canvasHandle); 
+ 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nSave(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">int </span><span class="s1">saveFlags); 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nSaveLayer(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">float </span><span class="s1">l, </span><span class="s2">float </span><span class="s1">t, </span><span class="s2">float </span><span class="s1">r, </span><span class="s2">float </span><span class="s1">b, 
+            </span><span class="s2">long </span><span class="s1">nativePaint, </span><span class="s2">int </span><span class="s1">layerFlags); 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nSaveLayerAlpha(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">float </span><span class="s1">l, </span><span class="s2">float </span><span class="s1">t, </span><span class="s2">float </span><span class="s1">r, </span><span class="s2">float </span><span class="s1">b, 
+            </span><span class="s2">int </span><span class="s1">alpha, </span><span class="s2">int </span><span class="s1">layerFlags); 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nRestore(</span><span class="s2">long </span><span class="s1">canvasHandle); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nRestoreToCount(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">int </span><span class="s1">saveCount); 
+    @CriticalNative 
+    </span><span class="s2">private static native int </span><span class="s1">nGetSaveCount(</span><span class="s2">long </span><span class="s1">canvasHandle); 
+ 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nTranslate(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">float </span><span class="s1">dx, </span><span class="s2">float </span><span class="s1">dy); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nScale(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">float </span><span class="s1">sx, </span><span class="s2">float </span><span class="s1">sy); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nRotate(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">float </span><span class="s1">degrees); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nSkew(</span><span class="s2">long </span><span class="s1">canvasHandle, </span><span class="s2">float </span><span class="s1">sx, </span><span class="s2">float </span><span class="s1">sy); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nConcat(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativeMatrix); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nSetMatrix(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativeMatrix); 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nClipRect(</span><span class="s2">long </span><span class="s1">nativeCanvas, 
+            </span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, </span><span class="s2">int </span><span class="s1">regionOp); 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nClipPath(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativePath, </span><span class="s2">int </span><span class="s1">regionOp); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nSetDrawFilter(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativeFilter); 
+    @CriticalNative 
+    </span><span class="s2">private static native void </span><span class="s1">nGetMatrix(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativeMatrix); 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nQuickReject(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">long </span><span class="s1">nativePath); 
+    @CriticalNative 
+    </span><span class="s2">private static native boolean </span><span class="s1">nQuickReject(</span><span class="s2">long </span><span class="s1">nativeCanvas, </span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, 
+            </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom); 
+ 
+ 
+    </span><span class="s0">// ---------------- Draw Methods -------------------</span><span class="s1"> 
+ 
+    </span><span class="s0">/** 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Draw the specified arc, which will be scaled to fit inside the specified oval. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * If the start angle is negative or &gt;= 360, the start angle is treated as start angle modulo 
+     * 360. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * If the sweep angle is &gt;= 360, then the oval is drawn completely. Note that this differs 
+     * slightly from SkPath::arcTo, which treats the sweep angle modulo 360. If the sweep angle is 
+     * negative, the sweep angle is treated as sweep angle modulo 360 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * The arc is drawn clockwise. An angle of 0 degrees correspond to the geometric angle of 0 
+     * degrees (3 o'clock on a watch.) 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">oval The bounds of oval used to define the shape and size of the arc 
+     * </span><span class="s4">@param </span><span class="s0">startAngle Starting angle (in degrees) where the arc begins 
+     * </span><span class="s4">@param </span><span class="s0">sweepAngle Sweep angle (in degrees) measured clockwise 
+     * </span><span class="s4">@param </span><span class="s0">useCenter If true, include the center of the oval in the arc, and close it if it is 
+     *            being stroked. This will draw a wedge 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the arc 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawArc(@NonNull RectF oval, </span><span class="s2">float </span><span class="s1">startAngle, </span><span class="s2">float </span><span class="s1">sweepAngle, </span><span class="s2">boolean </span><span class="s1">useCenter, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawArc(oval, startAngle, sweepAngle, useCenter, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Draw the specified arc, which will be scaled to fit inside the specified oval. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * If the start angle is negative or &gt;= 360, the start angle is treated as start angle modulo 
+     * 360. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * If the sweep angle is &gt;= 360, then the oval is drawn completely. Note that this differs 
+     * slightly from SkPath::arcTo, which treats the sweep angle modulo 360. If the sweep angle is 
+     * negative, the sweep angle is treated as sweep angle modulo 360 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * The arc is drawn clockwise. An angle of 0 degrees correspond to the geometric angle of 0 
+     * degrees (3 o'clock on a watch.) 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">startAngle Starting angle (in degrees) where the arc begins 
+     * </span><span class="s4">@param </span><span class="s0">sweepAngle Sweep angle (in degrees) measured clockwise 
+     * </span><span class="s4">@param </span><span class="s0">useCenter If true, include the center of the oval in the arc, and close it if it is 
+     *            being stroked. This will draw a wedge 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the arc 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawArc(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, </span><span class="s2">float </span><span class="s1">startAngle, 
+            </span><span class="s2">float </span><span class="s1">sweepAngle, </span><span class="s2">boolean </span><span class="s1">useCenter, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawArc(left, top, right, bottom, startAngle, sweepAngle, useCenter, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Fill the entire canvas' bitmap (restricted to the current clip) with the specified ARGB 
+     * color, using srcover porterduff mode. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">a alpha component (0..255) of the color to draw onto the canvas 
+     * </span><span class="s4">@param </span><span class="s0">r red component (0..255) of the color to draw onto the canvas 
+     * </span><span class="s4">@param </span><span class="s0">g green component (0..255) of the color to draw onto the canvas 
+     * </span><span class="s4">@param </span><span class="s0">b blue component (0..255) of the color to draw onto the canvas 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawARGB(</span><span class="s2">int </span><span class="s1">a, </span><span class="s2">int </span><span class="s1">r, </span><span class="s2">int </span><span class="s1">g, </span><span class="s2">int </span><span class="s1">b) { 
+        </span><span class="s2">super</span><span class="s1">.drawARGB(a, r, g, b); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified bitmap, with its top/left corner at (x,y), using the specified paint, 
+     * transformed by the current matrix. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Note: if the paint contains a maskfilter that generates a mask which extends beyond the 
+     * bitmap's original width/height (e.g. BlurMaskFilter), then the bitmap will be drawn as if it 
+     * were in a Shader with CLAMP mode. Thus the color outside of the original width/height will be 
+     * the edge color replicated. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * If the bitmap and canvas have different densities, this function will take care of 
+     * automatically scaling the bitmap to draw at the same density as the canvas. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap The bitmap to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">left The position of the left side of the bitmap being drawn 
+     * </span><span class="s4">@param </span><span class="s0">top The position of the top side of the bitmap being drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the bitmap (may be null) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull Bitmap bitmap, </span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(bitmap, left, top, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified bitmap, scaling/translating automatically to fill the destination 
+     * rectangle. If the source rectangle is not null, it specifies the subset of the bitmap to 
+     * draw. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Note: if the paint contains a maskfilter that generates a mask which extends beyond the 
+     * bitmap's original width/height (e.g. BlurMaskFilter), then the bitmap will be drawn as if it 
+     * were in a Shader with CLAMP mode. Thus the color outside of the original width/height will be 
+     * the edge color replicated. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * This function </span><span class="s3">&lt;em&gt;</span><span class="s0">ignores the density associated with the bitmap</span><span class="s3">&lt;/em&gt;</span><span class="s0">. This is because the 
+     * source and destination rectangle coordinate spaces are in their respective densities, so must 
+     * already have the appropriate scaling factor applied. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap The bitmap to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">src May be null. The subset of the bitmap to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">dst The rectangle that the bitmap will be scaled/translated to fit into 
+     * </span><span class="s4">@param </span><span class="s0">paint May be null. The paint used to draw the bitmap 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull Bitmap bitmap, @Nullable Rect src, @NonNull RectF dst, 
+            @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(bitmap, src, dst, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified bitmap, scaling/translating automatically to fill the destination 
+     * rectangle. If the source rectangle is not null, it specifies the subset of the bitmap to 
+     * draw. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Note: if the paint contains a maskfilter that generates a mask which extends beyond the 
+     * bitmap's original width/height (e.g. BlurMaskFilter), then the bitmap will be drawn as if it 
+     * were in a Shader with CLAMP mode. Thus the color outside of the original width/height will be 
+     * the edge color replicated. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * This function </span><span class="s3">&lt;em&gt;</span><span class="s0">ignores the density associated with the bitmap</span><span class="s3">&lt;/em&gt;</span><span class="s0">. This is because the 
+     * source and destination rectangle coordinate spaces are in their respective densities, so must 
+     * already have the appropriate scaling factor applied. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap The bitmap to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">src May be null. The subset of the bitmap to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">dst The rectangle that the bitmap will be scaled/translated to fit into 
+     * </span><span class="s4">@param </span><span class="s0">paint May be null. The paint used to draw the bitmap 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull Bitmap bitmap, @Nullable Rect src, @NonNull Rect dst, 
+            @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(bitmap, src, dst, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Treat the specified array of colors as a bitmap, and draw it. This gives the same result as 
+     * first creating a bitmap from the array, and then drawing it, but this method avoids 
+     * explicitly creating a bitmap object which can be more efficient if the colors are changing 
+     * often. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">colors Array of colors representing the pixels of the bitmap 
+     * </span><span class="s4">@param </span><span class="s0">offset Offset into the array of colors for the first pixel 
+     * </span><span class="s4">@param </span><span class="s0">stride The number of colors in the array between rows (must be &gt;= width or &lt;= -width). 
+     * </span><span class="s4">@param </span><span class="s0">x The X coordinate for where to draw the bitmap 
+     * </span><span class="s4">@param </span><span class="s0">y The Y coordinate for where to draw the bitmap 
+     * </span><span class="s4">@param </span><span class="s0">width The width of the bitmap 
+     * </span><span class="s4">@param </span><span class="s0">height The height of the bitmap 
+     * </span><span class="s4">@param </span><span class="s0">hasAlpha True if the alpha channel of the colors contains valid values. If false, the 
+     *            alpha byte is ignored (assumed to be 0xFF for every pixel). 
+     * </span><span class="s4">@param </span><span class="s0">paint May be null. The paint used to draw the bitmap 
+     * </span><span class="s4">@deprecated </span><span class="s0">Usage with a {</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() hardware accelerated} canvas 
+     *             requires an internal copy of color buffer contents every time this method is 
+     *             called. Using a Bitmap avoids this copy, and allows the application to more 
+     *             explicitly control the lifetime and copies of pixel data. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull </span><span class="s2">int</span><span class="s1">[] colors, </span><span class="s2">int </span><span class="s1">offset, </span><span class="s2">int </span><span class="s1">stride, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, 
+            </span><span class="s2">int </span><span class="s1">width, </span><span class="s2">int </span><span class="s1">height, </span><span class="s2">boolean </span><span class="s1">hasAlpha, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(colors, offset, stride, x, y, width, height, hasAlpha, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Legacy version of drawBitmap(int[] colors, ...) that took ints for x,y 
+     * 
+     * </span><span class="s4">@deprecated </span><span class="s0">Usage with a {</span><span class="s4">@link </span><span class="s0">#isHardwareAccelerated() hardware accelerated} canvas 
+     *             requires an internal copy of color buffer contents every time this method is 
+     *             called. Using a Bitmap avoids this copy, and allows the application to more 
+     *             explicitly control the lifetime and copies of pixel data. 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull </span><span class="s2">int</span><span class="s1">[] colors, </span><span class="s2">int </span><span class="s1">offset, </span><span class="s2">int </span><span class="s1">stride, </span><span class="s2">int </span><span class="s1">x, </span><span class="s2">int </span><span class="s1">y, 
+            </span><span class="s2">int </span><span class="s1">width, </span><span class="s2">int </span><span class="s1">height, </span><span class="s2">boolean </span><span class="s1">hasAlpha, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(colors, offset, stride, x, y, width, height, hasAlpha, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the bitmap using the specified matrix. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap The bitmap to draw 
+     * </span><span class="s4">@param </span><span class="s0">matrix The matrix used to transform the bitmap when it is drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint May be null. The paint used to draw the bitmap 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawBitmap(@NonNull Bitmap bitmap, @NonNull Matrix matrix, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmap(bitmap, matrix, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the bitmap through the mesh, where mesh vertices are evenly distributed across the 
+     * bitmap. There are meshWidth+1 vertices across, and meshHeight+1 vertices down. The verts 
+     * array is accessed in row-major order, so that the first meshWidth+1 vertices are distributed 
+     * across the top of the bitmap from left to right. A more general version of this method is 
+     * drawVertices(). 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">bitmap The bitmap to draw using the mesh 
+     * </span><span class="s4">@param </span><span class="s0">meshWidth The number of columns in the mesh. Nothing is drawn if this is 0 
+     * </span><span class="s4">@param </span><span class="s0">meshHeight The number of rows in the mesh. Nothing is drawn if this is 0 
+     * </span><span class="s4">@param </span><span class="s0">verts Array of x,y pairs, specifying where the mesh should be drawn. There must be at 
+     *            least (meshWidth+1) * (meshHeight+1) * 2 + vertOffset values in the array 
+     * </span><span class="s4">@param </span><span class="s0">vertOffset Number of verts elements to skip before drawing 
+     * </span><span class="s4">@param </span><span class="s0">colors May be null. Specifies a color at each vertex, which is interpolated across the 
+     *            cell, and whose values are multiplied by the corresponding bitmap colors. If not 
+     *            null, there must be at least (meshWidth+1) * (meshHeight+1) + colorOffset values 
+     *            in the array. 
+     * </span><span class="s4">@param </span><span class="s0">colorOffset Number of color elements to skip before drawing 
+     * </span><span class="s4">@param </span><span class="s0">paint May be null. The paint used to draw the bitmap 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawBitmapMesh(@NonNull Bitmap bitmap, </span><span class="s2">int </span><span class="s1">meshWidth, </span><span class="s2">int </span><span class="s1">meshHeight, 
+            @NonNull </span><span class="s2">float</span><span class="s1">[] verts, </span><span class="s2">int </span><span class="s1">vertOffset, @Nullable </span><span class="s2">int</span><span class="s1">[] colors, </span><span class="s2">int </span><span class="s1">colorOffset, 
+            @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawBitmapMesh(bitmap, meshWidth, meshHeight, verts, vertOffset, colors, colorOffset, 
+                paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified circle using the specified paint. If radius is &lt;= 0, then nothing will be 
+     * drawn. The circle will be filled or framed based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">cx The x-coordinate of the center of the cirle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">cy The y-coordinate of the center of the cirle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">radius The radius of the cirle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the circle 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawCircle(</span><span class="s2">float </span><span class="s1">cx, </span><span class="s2">float </span><span class="s1">cy, </span><span class="s2">float </span><span class="s1">radius, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawCircle(cx, cy, radius, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Fill the entire canvas' bitmap (restricted to the current clip) with the specified color, 
+     * using srcover porterduff mode. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">color the color to draw onto the canvas 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawColor(@ColorInt </span><span class="s2">int </span><span class="s1">color) { 
+        </span><span class="s2">super</span><span class="s1">.drawColor(color); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Fill the entire canvas' bitmap (restricted to the current clip) with the specified color and 
+     * porter-duff xfermode. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">color the color to draw with 
+     * </span><span class="s4">@param </span><span class="s0">mode the porter-duff mode to apply to the color 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawColor(@ColorInt </span><span class="s2">int </span><span class="s1">color, @NonNull PorterDuff.Mode mode) { 
+        </span><span class="s2">super</span><span class="s1">.drawColor(color, mode); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw a line segment with the specified start and stop x,y coordinates, using the specified 
+     * paint. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Note that since a line is always &quot;framed&quot;, the Style is ignored in the paint. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Degenerate lines (length is 0) will not be drawn. 
+     * </span><span class="s3">&lt;/p&gt;</span><span class="s0"> 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">startX The x-coordinate of the start point of the line 
+     * </span><span class="s4">@param </span><span class="s0">startY The y-coordinate of the start point of the line 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the line 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawLine(</span><span class="s2">float </span><span class="s1">startX, </span><span class="s2">float </span><span class="s1">startY, </span><span class="s2">float </span><span class="s1">stopX, </span><span class="s2">float </span><span class="s1">stopY, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawLine(startX, startY, stopX, stopY, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw a series of lines. Each line is taken from 4 consecutive values in the pts array. Thus 
+     * to draw 1 line, the array must contain at least 4 values. This is logically the same as 
+     * drawing the array as follows: drawLine(pts[0], pts[1], pts[2], pts[3]) followed by 
+     * drawLine(pts[4], pts[5], pts[6], pts[7]) and so on. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">pts Array of points to draw [x0 y0 x1 y1 x2 y2 ...] 
+     * </span><span class="s4">@param </span><span class="s0">offset Number of values in the array to skip before drawing. 
+     * </span><span class="s4">@param </span><span class="s0">count The number of values in the array to process, after skipping &quot;offset&quot; of them. 
+     *            Since each line uses 4 values, the number of &quot;lines&quot; that are drawn is really 
+     *            (count &gt;&gt; 2). 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the points 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawLines(@Size(multiple = </span><span class="s5">4</span><span class="s1">) @NonNull </span><span class="s2">float</span><span class="s1">[] pts, </span><span class="s2">int </span><span class="s1">offset, </span><span class="s2">int </span><span class="s1">count, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawLines(pts, offset, count, paint); 
+    } 
+ 
+    </span><span class="s2">public void </span><span class="s1">drawLines(@Size(multiple = </span><span class="s5">4</span><span class="s1">) @NonNull </span><span class="s2">float</span><span class="s1">[] pts, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawLines(pts, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified oval using the specified paint. The oval will be filled or framed based on 
+     * the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">oval The rectangle bounds of the oval to be drawn 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawOval(@NonNull RectF oval, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawOval(oval, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified oval using the specified paint. The oval will be filled or framed based on 
+     * the Style in the paint. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawOval(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawOval(left, top, right, bottom, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Fill the entire canvas' bitmap (restricted to the current clip) with the specified paint. 
+     * This is equivalent (but faster) to drawing an infinitely large rectangle with the specified 
+     * paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw onto the canvas 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPaint(@NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPaint(paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draws the specified bitmap as an N-patch (most often, a 9-patches.) 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">patch The ninepatch object to render 
+     * </span><span class="s4">@param </span><span class="s0">dst The destination rectangle. 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint to draw the bitmap with. may be null 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPatch(@NonNull NinePatch patch, @NonNull Rect dst, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPatch(patch, dst, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draws the specified bitmap as an N-patch (most often, a 9-patches.) 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">patch The ninepatch object to render 
+     * </span><span class="s4">@param </span><span class="s0">dst The destination rectangle. 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint to draw the bitmap with. may be null 
+     * </span><span class="s4">@hide</span><span class="s0"> 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPatch(@NonNull NinePatch patch, @NonNull RectF dst, @Nullable Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPatch(patch, dst, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified path using the specified paint. The path will be filled or framed based on 
+     * the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">path The path to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the path 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPath(@NonNull Path path, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPath(path, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Helper for drawPoints() for drawing a single point. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPoint(</span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPoint(x, y, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw a series of points. Each point is centered at the coordinate specified by pts[], and its 
+     * diameter is specified by the paint's stroke width (as transformed by the canvas' CTM), with 
+     * special treatment for a stroke width of 0, which always draws exactly 1 pixel (or at most 4 
+     * if antialiasing is enabled). The shape of the point is controlled by the paint's Cap type. 
+     * The shape is a square, unless the cap type is Round, in which case the shape is a circle. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">pts Array of points to draw [x0 y0 x1 y1 x2 y2 ...] 
+     * </span><span class="s4">@param </span><span class="s0">offset Number of values to skip before starting to draw. 
+     * </span><span class="s4">@param </span><span class="s0">count The number of values to process, after skipping offset of them. Since one point 
+     *            uses two values, the number of &quot;points&quot; that are drawn is really (count &gt;&gt; 1). 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the points 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPoints(@Size(multiple = </span><span class="s5">2</span><span class="s1">) </span><span class="s2">float</span><span class="s1">[] pts, </span><span class="s2">int </span><span class="s1">offset, </span><span class="s2">int </span><span class="s1">count, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPoints(pts, offset, count, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Helper for drawPoints() that assumes you want to draw the entire array 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawPoints(@Size(multiple = </span><span class="s5">2</span><span class="s1">) @NonNull </span><span class="s2">float</span><span class="s1">[] pts, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPoints(pts, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text in the array, with each character's origin specified by the pos array. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">index The index of the first character to draw 
+     * </span><span class="s4">@param </span><span class="s0">count The number of characters to draw, starting from index. 
+     * </span><span class="s4">@param </span><span class="s0">pos Array of [x,y] positions, used to position each character 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     * </span><span class="s4">@deprecated </span><span class="s0">This method does not support glyph composition and decomposition and should 
+     *             therefore not be used to render complex scripts. It also doesn't handle 
+     *             supplementary characters (eg emoji). 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public void </span><span class="s1">drawPosText(@NonNull </span><span class="s2">char</span><span class="s1">[] text, </span><span class="s2">int </span><span class="s1">index, </span><span class="s2">int </span><span class="s1">count, 
+            @NonNull @Size(multiple = </span><span class="s5">2</span><span class="s1">) </span><span class="s2">float</span><span class="s1">[] pos, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPosText(text, index, count, pos, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text in the array, with each character's origin specified by the pos array. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">pos Array of [x,y] positions, used to position each character 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     * </span><span class="s4">@deprecated </span><span class="s0">This method does not support glyph composition and decomposition and should 
+     *             therefore not be used to render complex scripts. It also doesn't handle 
+     *             supplementary characters (eg emoji). 
+     */</span><span class="s1"> 
+    @Deprecated 
+    </span><span class="s2">public void </span><span class="s1">drawPosText(@NonNull String text, @NonNull @Size(multiple = </span><span class="s5">2</span><span class="s1">) </span><span class="s2">float</span><span class="s1">[] pos, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawPosText(text, pos, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified Rect using the specified paint. The rectangle will be filled or framed 
+     * based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rect to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the rect 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRect(@NonNull RectF rect, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawRect(rect, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified Rect using the specified Paint. The rectangle will be filled or framed 
+     * based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">r The rectangle to be drawn. 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the rectangle 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRect(@NonNull Rect r, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawRect(r, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified Rect using the specified paint. The rectangle will be filled or framed 
+     * based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">left The left side of the rectangle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">top The top side of the rectangle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">right The right side of the rectangle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">bottom The bottom side of the rectangle to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the rect 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRect(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawRect(left, top, right, bottom, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Fill the entire canvas' bitmap (restricted to the current clip) with the specified RGB color, 
+     * using srcover porterduff mode. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">r red component (0..255) of the color to draw onto the canvas 
+     * </span><span class="s4">@param </span><span class="s0">g green component (0..255) of the color to draw onto the canvas 
+     * </span><span class="s4">@param </span><span class="s0">b blue component (0..255) of the color to draw onto the canvas 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRGB(</span><span class="s2">int </span><span class="s1">r, </span><span class="s2">int </span><span class="s1">g, </span><span class="s2">int </span><span class="s1">b) { 
+        </span><span class="s2">super</span><span class="s1">.drawRGB(r, g, b); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified round-rect using the specified paint. The roundrect will be filled or 
+     * framed based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rect The rectangular bounds of the roundRect to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">rx The x-radius of the oval used to round the corners 
+     * </span><span class="s4">@param </span><span class="s0">ry The y-radius of the oval used to round the corners 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the roundRect 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRoundRect(@NonNull RectF rect, </span><span class="s2">float </span><span class="s1">rx, </span><span class="s2">float </span><span class="s1">ry, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawRoundRect(rect, rx, ry, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified round-rect using the specified paint. The roundrect will be filled or 
+     * framed based on the Style in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">rx The x-radius of the oval used to round the corners 
+     * </span><span class="s4">@param </span><span class="s0">ry The y-radius of the oval used to round the corners 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used to draw the roundRect 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawRoundRect(</span><span class="s2">float </span><span class="s1">left, </span><span class="s2">float </span><span class="s1">top, </span><span class="s2">float </span><span class="s1">right, </span><span class="s2">float </span><span class="s1">bottom, </span><span class="s2">float </span><span class="s1">rx, </span><span class="s2">float </span><span class="s1">ry, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawRoundRect(left, top, right, bottom, rx, ry, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text, with origin at (x,y), using the specified paint. The origin is interpreted 
+     * based on the Align setting in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">x The x-coordinate of the origin of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">y The y-coordinate of the baseline of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawText(@NonNull </span><span class="s2">char</span><span class="s1">[] text, </span><span class="s2">int </span><span class="s1">index, </span><span class="s2">int </span><span class="s1">count, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawText(text, index, count, x, y, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text, with origin at (x,y), using the specified paint. The origin is interpreted 
+     * based on the Align setting in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">x The x-coordinate of the origin of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">y The y-coordinate of the baseline of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawText(@NonNull String text, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawText(text, x, y, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text, with origin at (x,y), using the specified paint. The origin is interpreted 
+     * based on the Align setting in the paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">start The index of the first character in text to draw 
+     * </span><span class="s4">@param </span><span class="s0">end (end - 1) is the index of the last character in text to draw 
+     * </span><span class="s4">@param </span><span class="s0">x The x-coordinate of the origin of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">y The y-coordinate of the baseline of the text being drawn 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawText(@NonNull String text, </span><span class="s2">int </span><span class="s1">start, </span><span class="s2">int </span><span class="s1">end, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawText(text, start, end, x, y, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the specified range of text, specified by start/end, with its origin at (x,y), in the 
+     * specified Paint. The origin is interpreted based on the Align setting in the Paint. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">start The index of the first character in text to draw 
+     * </span><span class="s4">@param </span><span class="s0">end (end - 1) is the index of the last character in text to draw 
+     * </span><span class="s4">@param </span><span class="s0">x The x-coordinate of origin for where to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">y The y-coordinate of origin for where to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawText(@NonNull CharSequence text, </span><span class="s2">int </span><span class="s1">start, </span><span class="s2">int </span><span class="s1">end, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawText(text, start, end, x, y, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text, with origin at (x,y), using the specified paint, along the specified path. The 
+     * paint's Align setting determins where along the path to start the text. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">path The path the text should follow for its baseline 
+     * </span><span class="s4">@param </span><span class="s0">hOffset The distance along the path to add to the text's starting position 
+     * </span><span class="s4">@param </span><span class="s0">vOffset The distance above(-) or below(+) the path to position the text 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawTextOnPath(@NonNull </span><span class="s2">char</span><span class="s1">[] text, </span><span class="s2">int </span><span class="s1">index, </span><span class="s2">int </span><span class="s1">count, @NonNull Path path, 
+            </span><span class="s2">float </span><span class="s1">hOffset, </span><span class="s2">float </span><span class="s1">vOffset, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawTextOnPath(text, index, count, path, hOffset, vOffset, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the text, with origin at (x,y), using the specified paint, along the specified path. The 
+     * paint's Align setting determins where along the path to start the text. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text The text to be drawn 
+     * </span><span class="s4">@param </span><span class="s0">path The path the text should follow for its baseline 
+     * </span><span class="s4">@param </span><span class="s0">hOffset The distance along the path to add to the text's starting position 
+     * </span><span class="s4">@param </span><span class="s0">vOffset The distance above(-) or below(+) the path to position the text 
+     * </span><span class="s4">@param </span><span class="s0">paint The paint used for the text (e.g. color, size, style) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawTextOnPath(@NonNull String text, @NonNull Path path, </span><span class="s2">float </span><span class="s1">hOffset, 
+            </span><span class="s2">float </span><span class="s1">vOffset, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawTextOnPath(text, path, hOffset, vOffset, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw a run of text, all in a single direction, with optional context for complex text 
+     * shaping. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * See {</span><span class="s4">@link </span><span class="s0">#drawTextRun(CharSequence, int, int, int, int, float, float, boolean, Paint)} for 
+     * more details. This method uses a character array rather than CharSequence to represent the 
+     * string. Also, to be consistent with the pattern established in {</span><span class="s4">@link </span><span class="s0">#drawText}, in this 
+     * method {</span><span class="s4">@code </span><span class="s0">count} and {</span><span class="s4">@code </span><span class="s0">contextCount} are used rather than offsets of the end 
+     * position; {</span><span class="s4">@code </span><span class="s0">count = end - start, contextCount = contextEnd - 
+     * contextStart}. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text the text to render 
+     * </span><span class="s4">@param </span><span class="s0">index the start of the text to render 
+     * </span><span class="s4">@param </span><span class="s0">count the count of chars to render 
+     * </span><span class="s4">@param </span><span class="s0">contextIndex the start of the context for shaping. Must be no greater than index. 
+     * </span><span class="s4">@param </span><span class="s0">contextCount the number of characters in the context for shaping. contexIndex + 
+     *            contextCount must be no less than index + count. 
+     * </span><span class="s4">@param </span><span class="s0">x the x position at which to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">y the y position at which to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">isRtl whether the run is in RTL direction 
+     * </span><span class="s4">@param </span><span class="s0">paint the paint 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawTextRun(@NonNull </span><span class="s2">char</span><span class="s1">[] text, </span><span class="s2">int </span><span class="s1">index, </span><span class="s2">int </span><span class="s1">count, </span><span class="s2">int </span><span class="s1">contextIndex, 
+            </span><span class="s2">int </span><span class="s1">contextCount, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, </span><span class="s2">boolean </span><span class="s1">isRtl, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawTextRun(text, index, count, contextIndex, contextCount, x, y, isRtl, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw a run of text, all in a single direction, with optional context for complex text 
+     * shaping. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * The run of text includes the characters from {</span><span class="s4">@code </span><span class="s0">start} to {</span><span class="s4">@code </span><span class="s0">end} in the text. In 
+     * addition, the range {</span><span class="s4">@code </span><span class="s0">contextStart} to {</span><span class="s4">@code </span><span class="s0">contextEnd} is used as context for the 
+     * purpose of complex text shaping, such as Arabic text potentially shaped differently based on 
+     * the text next to it. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * All text outside the range {</span><span class="s4">@code </span><span class="s0">contextStart..contextEnd} is ignored. The text between 
+     * {</span><span class="s4">@code </span><span class="s0">start} and {</span><span class="s4">@code </span><span class="s0">end} will be laid out and drawn. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * The direction of the run is explicitly specified by {</span><span class="s4">@code </span><span class="s0">isRtl}. Thus, this method is 
+     * suitable only for runs of a single direction. Alignment of the text is as determined by the 
+     * Paint's TextAlign value. Further, {</span><span class="s4">@code </span><span class="s0">0 &lt;= contextStart &lt;= start &lt;= end &lt;= contextEnd 
+     * &lt;= text.length} must hold on entry. 
+     * </span><span class="s3">&lt;p&gt;</span><span class="s0"> 
+     * Also see {</span><span class="s4">@link </span><span class="s0">android.graphics.Paint#getRunAdvance} for a corresponding method to measure 
+     * the text; the advance width of the text drawn matches the value obtained from that method. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">text the text to render 
+     * </span><span class="s4">@param </span><span class="s0">start the start of the text to render. Data before this position can be used for 
+     *            shaping context. 
+     * </span><span class="s4">@param </span><span class="s0">end the end of the text to render. Data at or after this position can be used for 
+     *            shaping context. 
+     * </span><span class="s4">@param </span><span class="s0">contextStart the index of the start of the shaping context 
+     * </span><span class="s4">@param </span><span class="s0">contextEnd the index of the end of the shaping context 
+     * </span><span class="s4">@param </span><span class="s0">x the x position at which to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">y the y position at which to draw the text 
+     * </span><span class="s4">@param </span><span class="s0">isRtl whether the run is in RTL direction 
+     * </span><span class="s4">@param </span><span class="s0">paint the paint 
+     * </span><span class="s4">@see </span><span class="s0">#drawTextRun(char[], int, int, int, int, float, float, boolean, Paint) 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawTextRun(@NonNull CharSequence text, </span><span class="s2">int </span><span class="s1">start, </span><span class="s2">int </span><span class="s1">end, </span><span class="s2">int </span><span class="s1">contextStart, 
+            </span><span class="s2">int </span><span class="s1">contextEnd, </span><span class="s2">float </span><span class="s1">x, </span><span class="s2">float </span><span class="s1">y, </span><span class="s2">boolean </span><span class="s1">isRtl, @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawTextRun(text, start, end, contextStart, contextEnd, x, y, isRtl, paint); 
+    } 
+ 
+    </span><span class="s0">/** 
+     * Draw the array of vertices, interpreted as triangles (based on mode). The verts array is 
+     * required, and specifies the x,y pairs for each vertex. If texs is non-null, then it is used 
+     * to specify the coordinate in shader coordinates to use at each vertex (the paint must have a 
+     * shader in this case). If there is no texs array, but there is a color array, then each color 
+     * is interpolated across its corresponding triangle in a gradient. If both texs and colors 
+     * arrays are present, then they behave as before, but the resulting color at each pixels is the 
+     * result of multiplying the colors from the shader and the color-gradient together. The indices 
+     * array is optional, but if it is present, then it is used to specify the index of each 
+     * triangle, rather than just walking through the arrays in order. 
+     * 
+     * </span><span class="s4">@param </span><span class="s0">mode How to interpret the array of vertices 
+     * </span><span class="s4">@param </span><span class="s0">vertexCount The number of values in the vertices array (and corresponding texs and 
+     *            colors arrays if non-null). Each logical vertex is two values (x, y), vertexCount 
+     *            must be a multiple of 2. 
+     * </span><span class="s4">@param </span><span class="s0">verts Array of vertices for the mesh 
+     * </span><span class="s4">@param </span><span class="s0">vertOffset Number of values in the verts to skip before drawing. 
+     * </span><span class="s4">@param </span><span class="s0">texs May be null. If not null, specifies the coordinates to sample into the current 
+     *            shader (e.g. bitmap tile or gradient) 
+     * </span><span class="s4">@param </span><span class="s0">texOffset Number of values in texs to skip before drawing. 
+     * </span><span class="s4">@param </span><span class="s0">colors May be null. If not null, specifies a color for each vertex, to be interpolated 
+     *            across the triangle. 
+     * </span><span class="s4">@param </span><span class="s0">colorOffset Number of values in colors to skip before drawing. 
+     * </span><span class="s4">@param </span><span class="s0">indices If not null, array of indices to reference into the vertex (texs, colors) 
+     *            array. 
+     * </span><span class="s4">@param </span><span class="s0">indexCount number of entries in the indices array (if not null). 
+     * </span><span class="s4">@param </span><span class="s0">paint Specifies the shader to use if the texs array is non-null. 
+     */</span><span class="s1"> 
+    </span><span class="s2">public void </span><span class="s1">drawVertices(@NonNull VertexMode mode, </span><span class="s2">int </span><span class="s1">vertexCount, @NonNull </span><span class="s2">float</span><span class="s1">[] verts, 
+            </span><span class="s2">int </span><span class="s1">vertOffset, @Nullable </span><span class="s2">float</span><span class="s1">[] texs, </span><span class="s2">int </span><span class="s1">texOffset, @Nullable </span><span class="s2">int</span><span class="s1">[] colors, 
+            </span><span class="s2">int </span><span class="s1">colorOffset, @Nullable </span><span class="s2">short</span><span class="s1">[] indices, </span><span class="s2">int </span><span class="s1">indexOffset, </span><span class="s2">int </span><span class="s1">indexCount, 
+            @NonNull Paint paint) { 
+        </span><span class="s2">super</span><span class="s1">.drawVertices(mode, vertexCount, verts, vertOffset, texs, texOffset, 
+                colors, colorOffset, indices, indexOffset, indexCount, paint); 
+    } 
+} 
+</span></pre>
+</body>
+</html>

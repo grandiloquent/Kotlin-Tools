@@ -2,12 +2,15 @@ package psycho.euphoria.tools
 
 import android.content.Context
 import android.content.Intent
+import android.content.res.Resources
 import android.graphics.PointF
+import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.support.v4.content.MimeTypeFilter
 import android.util.FloatMath
 import android.util.Log
+import android.util.TypedValue
 import kotlin.math.atan2
 import kotlin.math.sqrt
 import android.view.MotionEvent
@@ -22,8 +25,38 @@ import java.util.regex.Pattern
 
 private const val TAG = "Extension"
 private const val SIXTY_FPS_INTERVAL = 1000 / 60L
-private const val REGEX_FILE_IMAGE="\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
-private const val REGEX_FILE_AUDIO="\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape|au|awb|dct|dss|dvf|flac|gsm|iklax|ivs|m4a|m4b|m4p|mmf|mp3|mpc|msv|nsf|ogg|oga|mogg|opus|ra|rm|raw|sln|tta|vox|wav|webm|wma|wv)$"
+private const val REGEX_FILE_IMAGE = "\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
+private const val REGEX_FILE_AUDIO = "\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape|au|awb|dct|dss|dvf|flac|gsm|iklax|ivs|m4a|m4b|m4p|mmf|mp3|mpc|msv|nsf|ogg|oga|mogg|opus|ra|rm|raw|sln|tta|vox|wav|webm|wma|wv)$"
+
+fun Context.getDrawableCompat(resId: Int): Drawable {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        return resources.getDrawable(resId, theme);
+    } else {
+        return resources.getDrawable(resId);
+    }
+}
+
+fun Context.dp2px(dp: Float): Float {
+    return dp * resources.displayMetrics.density;
+}
+
+fun Context.px2dp(px: Float): Float {
+    return px / resources.displayMetrics.density;
+}
+
+fun Context.sp2px(sp: Float): Float {
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics);
+}
+
+fun Context.px2sp(px: Float): Float {
+    return px / resources.displayMetrics.scaledDensity
+}
+
+fun String.e(t: String, messag: String) {
+
+    Log.e(t, "[$this]: $messag")
+
+}
 
 fun File.isImage(): Boolean {
     return isFile && Regex("\\.(?:jpeg|jpg|bmp|png|gif|tiff)$", RegexOption.IGNORE_CASE).containsMatchIn(name)
