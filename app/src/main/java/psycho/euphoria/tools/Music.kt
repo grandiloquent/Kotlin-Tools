@@ -1,5 +1,4 @@
 package psycho.euphoria.tools
-
 import android.app.Notification
 import android.app.Service
 import android.content.Context
@@ -13,7 +12,6 @@ import android.util.Log
 import android.widget.RemoteViews
 import java.io.File
 import java.io.IOException
-
 class MediaPlaybackService : Service() {
     private var mAudioManager: AudioManager? = null
     private var mCurrentDirectory: File? = null
@@ -71,8 +69,6 @@ class MediaPlaybackService : Service() {
                 }
                 RELEASE_WAKELOCK -> mWakeLock!!.release()
                 FOCUSCHANGE ->
-
-
                     when (msg.arg1) {
                         AudioManager.AUDIOFOCUS_LOSS -> {
                             Log.v(LOGTAG, "AudioFocus: received AUDIOFOCUS_LOSS")
@@ -111,7 +107,6 @@ class MediaPlaybackService : Service() {
             }
         }
     }
-
     private fun disposeAudioManager() {
         mAudioManager!!.abandonAudioFocus(mOnAudioFocusChangeListener)
     }
@@ -184,8 +179,6 @@ class MediaPlaybackService : Service() {
         initializeAudioManager()
         initializeMediaPlayer()
         initializeWakeLock()
-
-
         val msg = mDelayedStopHandler.obtainMessage()
         mDelayedStopHandler.sendMessageDelayed(msg, IDLE_DELAY.toLong())
     }
@@ -206,12 +199,9 @@ class MediaPlaybackService : Service() {
                 gotoPosition(intent.getIntExtra(KEY_PLAY_POSITION, 0))
             }
         }
-
-
         mDelayedStopHandler.removeCallbacksAndMessages(null)
         val msg = mDelayedStopHandler.obtainMessage()
         mDelayedStopHandler.sendMessageDelayed(msg, IDLE_DELAY.toLong())
-
         return Service.START_STICKY
     }
     private fun openCurrentAndNext() {
@@ -287,7 +277,6 @@ class MediaPlaybackService : Service() {
         status.icon = R.mipmap.ic_play_arrow_black_36dp
         startForeground(101, status)
     }
-
     private inner class MultiPlayer {
         private var mCurrentMediaPlayer = MediaPlayer()
         private var mHandler: Handler? = null
@@ -298,9 +287,6 @@ class MediaPlaybackService : Service() {
                 MediaPlayer.MEDIA_ERROR_SERVER_DIED -> {
                     isInitialized = false
                     mCurrentMediaPlayer.release()
-
-
-
                     mCurrentMediaPlayer = CompatMediaPlayer()
                     mCurrentMediaPlayer.setWakeMode(
                             this@MediaPlaybackService, PowerManager.PARTIAL_WAKE_LOCK)
@@ -321,65 +307,52 @@ class MediaPlaybackService : Service() {
             set(sessionId) {
                 mCurrentMediaPlayer.audioSessionId = sessionId
             }
-
         fun duration(): Long {
             return mCurrentMediaPlayer.duration.toLong()
         }
-
         fun pause() {
             mCurrentMediaPlayer.pause()
         }
-
         fun position(): Long {
             return mCurrentMediaPlayer.currentPosition.toLong()
         }
-
         fun release() {
             stop()
             mCurrentMediaPlayer.release()
         }
-
         fun seek(whereto: Long): Long {
             mCurrentMediaPlayer.seekTo(whereto.toInt())
             return whereto
         }
-
         fun setDataSource(path: String?) {
             isInitialized = setDataSourceImpl(mCurrentMediaPlayer, path!!)
             if (isInitialized) {
                 setNextDataSource(null)
             }
         }
-
         fun setHandler(handler: Handler) {
             mHandler = handler
         }
-
         fun setNextDataSource(path: String?) {
             if (path == null) {
                 return
             }
             setDataSourceImpl(mCurrentMediaPlayer, path)
         }
-
         fun setVolume(vol: Float) {
             mCurrentMediaPlayer.setVolume(vol, vol)
         }
-
         fun start() {
             mCurrentMediaPlayer.start()
         }
-
         fun stop() {
             mCurrentMediaPlayer.reset()
             isInitialized = false
         }
-
         init {
             mCurrentMediaPlayer.setWakeMode(
                     this@MediaPlaybackService, PowerManager.PARTIAL_WAKE_LOCK)
         }
-
         private fun setDataSourceImpl(player: MediaPlayer, path: String): Boolean {
             try {
                 player.reset()
@@ -392,13 +365,10 @@ class MediaPlaybackService : Service() {
                 player.setAudioStreamType(AudioManager.STREAM_MUSIC)
                 player.prepare()
             } catch (ex: IOException) {
-
                 return false
             } catch (ex: IllegalArgumentException) {
-
                 return false
             }
-
             player.setOnCompletionListener(listener)
             player.setOnErrorListener(errorListener)
             val i = Intent(AudioEffect.ACTION_OPEN_AUDIO_EFFECT_CONTROL_SESSION)
@@ -408,7 +378,6 @@ class MediaPlaybackService : Service() {
             return true
         }
     }
-
     internal class CompatMediaPlayer : MediaPlayer(), MediaPlayer.OnCompletionListener {
         private var mCompatMode = true
         private var mCompletion: MediaPlayer.OnCompletionListener? = null
@@ -417,12 +386,9 @@ class MediaPlaybackService : Service() {
             if (mCompatMode) {
                 mNextPlayer = next
             } else {
-
-
                 super.setNextMediaPlayer(next)
             }
         }
-
         override fun setOnCompletionListener(listener: MediaPlayer.OnCompletionListener) {
             if (mCompatMode) {
                 mCompletion = listener
@@ -430,7 +396,6 @@ class MediaPlaybackService : Service() {
                 super.setOnCompletionListener(listener)
             }
         }
-
         init {
             try {
                 MediaPlayer::class.java.getMethod("setNextMediaPlayer", MediaPlayer::class.java)
@@ -439,20 +404,15 @@ class MediaPlaybackService : Service() {
                 mCompatMode = true
                 super.setOnCompletionListener(this)
             }
-
         }
-
         override fun onCompletion(mp: MediaPlayer) {
             if (mNextPlayer != null) {
-
-
                 SystemClock.sleep(50)
                 mNextPlayer!!.start()
             }
             mCompletion!!.onCompletion(this)
         }
     }
-
     companion object {
         private const val FADEDOWN = 5
         private const val FADEUP = 6

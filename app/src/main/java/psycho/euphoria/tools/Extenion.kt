@@ -1,5 +1,4 @@
 package psycho.euphoria.tools
-
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -21,13 +20,10 @@ import java.io.FileFilter
 import java.text.Collator
 import java.util.*
 import java.util.regex.Pattern
-
-
 private const val TAG = "Extension"
 private const val SIXTY_FPS_INTERVAL = 1000 / 60L
 private const val REGEX_FILE_IMAGE = "\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
 private const val REGEX_FILE_AUDIO = "\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape|au|awb|dct|dss|dvf|flac|gsm|iklax|ivs|m4a|m4b|m4p|mmf|mp3|mpc|msv|nsf|ogg|oga|mogg|opus|ra|rm|raw|sln|tta|vox|wav|webm|wma|wv)$"
-
 fun Context.getDrawableCompat(resId: Int): Drawable {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         return resources.getDrawable(resId, theme);
@@ -35,39 +31,29 @@ fun Context.getDrawableCompat(resId: Int): Drawable {
         return resources.getDrawable(resId);
     }
 }
-
 fun Context.dp2px(dp: Float): Float {
     return dp * resources.displayMetrics.density;
 }
-
 fun Context.px2dp(px: Float): Float {
     return px / resources.displayMetrics.density;
 }
-
 fun Context.sp2px(sp: Float): Float {
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics);
 }
-
 fun Context.px2sp(px: Float): Float {
     return px / resources.displayMetrics.scaledDensity
 }
-
 fun String.e(t: String, messag: String) {
-
     Log.e(t, "[$this]: $messag")
-
 }
-
 fun File.isImage(): Boolean {
     return isFile && Regex("\\.(?:jpeg|jpg|bmp|png|gif|tiff)$", RegexOption.IGNORE_CASE).containsMatchIn(name)
 }
-
 fun File.listFilesOrderly(): List<File> {
     return listFiles().asList().let {
         it.sortedWith(compareBy<File> { it.isFile }.thenBy { it.name.toLowerCase() })
     }
 }
-
 fun File.listImagesRecursively(): List<File> {
     var dir = this
     if (dir.isFile) {
@@ -75,21 +61,18 @@ fun File.listImagesRecursively(): List<File> {
     }
     val imageRegex = Regex(REGEX_FILE_IMAGE, RegexOption.IGNORE_CASE)
     return dir.walkTopDown().filter { imageRegex.containsMatchIn(it.name) }.toList()
-
-
 }
-
 fun File.listAudio(): List<File> {
     val audioRegex = Regex(REGEX_FILE_AUDIO, RegexOption.IGNORE_CASE)
-
     val accept = fun(f: File): Boolean {
         return f.isFile && audioRegex.containsMatchIn(f.name)
     }
     return listFiles().filter { accept(it) }
 }
-
+fun Int.formatNumberWithLocale(): String {
+    return String.format(Locale.getDefault(), "%d", this)
+}
 fun File.share(context: Context) {
-
     val intent = Intent(Intent.ACTION_SEND)
     val uri = Uri.fromFile(this)
     val extension = MimeTypeMap.getFileExtensionFromUrl(uri.toString())
@@ -98,9 +81,7 @@ fun File.share(context: Context) {
     }
     intent.putExtra(Intent.EXTRA_STREAM, Uri.fromFile(this))
     context.startActivity(Intent.createChooser(intent, "分享"))
-
 }
-
 fun getFileName(filePath: String?): String? {
     if (filePath != null) {
         var where = filePath.lastIndexOf('/')
@@ -119,15 +100,12 @@ fun getFileName(filePath: String?): String? {
         return filePath
     } else return null
 }
-
 fun getPointerIndex(action: Int): Int {
     return action and MotionEvent.ACTION_POINTER_INDEX_MASK shr MotionEvent.ACTION_POINTER_INDEX_SHIFT
 }
-
 fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String> {
     val files = ArrayList<String>()
     val pattern = Pattern.compile("\\.(?:mp3|ogg|wav|flac)$", Pattern.CASE_INSENSITIVE)
-
     val rawFiles = directoryFile.listFiles(object : FileFilter {
         override fun accept(file: File): Boolean {
             if (containsDirectory) {
@@ -139,13 +117,11 @@ fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String
                     return true
                 }
             }
-
             return false
         }
     })
     if (rawFiles != null) {
         val collator = Collator.getInstance(Locale.CHINA)
-
         Arrays.sort(rawFiles, object : Comparator<File> {
             override fun compare(file: File, t1: File): Int {
                 if (containsDirectory) {
@@ -160,15 +136,12 @@ fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String
                 return 0
             }
         })
-
     }
-
     for (file in rawFiles!!) {
         files.add(file.getName())
     }
     return files
 }
-
 fun View.postOnAnimationCompat(runnable: Runnable) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
         postOnAnimation(runnable)

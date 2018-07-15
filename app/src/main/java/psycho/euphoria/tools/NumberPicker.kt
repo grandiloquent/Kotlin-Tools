@@ -4,171 +4,349 @@ import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.drawable.Drawable
+import android.graphics.Rect
 import android.util.AttributeSet
-import android.util.SparseArray
-import android.view.LayoutInflater
+import android.util.Log
+import android.view.MotionEvent
+import android.view.VelocityTracker
 import android.view.View
-import android.view.inputmethod.EditorInfo
-import android.widget.EditText
-import android.widget.LinearLayout
+import android.view.ViewConfiguration
+import android.view.animation.DecelerateInterpolator
+import android.widget.Scroller
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
-import kotlin.math.min
 
-class NumberPicker(context: Context, attributeSet: AttributeSet) :
-        LinearLayout(context, attributeSet) {
-
-    private val mPaint: Paint
-    private var mItemSize: Float = 0.0f
-    private var textSize: Float
-    private var selectedTextSize: Float
-    private val mSelectedText: EditText
-    private var mInitialScrollOffset = Int.MIN_VALUE
-    private var mSelectorTextGapHeight = 0
-    private var mSelectedTextCenterY = 0.0f
-    private var mWheelMiddleItemIndex = 1
-    private var mMaxWidth = 0
-    private var mMinWidth = 0
-    private var mMaxHeight = 0
-    private var mMinHeight = 0
-    private var mCurrentScrollOffset = 0
-    var textColor = 0XFFFF4081
-    var selectedTextColor = 0XFFFF4081
+class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
+    private val mAdjustScroller: Scroller
+    private val mFlingScroller: Scroller
+    private val mMaximumFlingVelocity: Int
+    private val mMinimumFlingVelocity: Int
+    private val mTextPaint: Paint
+    private var mCurrentScrollOffset: Int = 0
+    private var mCurrentValueOffset: Int = 0
+    private var mLastDownEventY: Float = 0.0f
+    private var mLastDownOrMoveEventY: Float = 0.0f
+    private var mScrollerLastY = 0
+    private var mVelocityTracker: VelocityTracker? = null
+    private var textHeight: Int = 0
+    var minHeight = 0
+        set(value) {
+            field = value
+            requestLayout()
+        }
+    var minWidth = 0
+        set(value) {
+            field = value
+            requestLayout()
+        }
+    private var maxValue = 0
+        set(v) {
+            if (v < 0) {
+                throw IllegalArgumentException("maxValue must be >= 0")
+            }
+            field = v
+            if (value > v) {
+                value = v
+            }
+            invalidate()
+        }
+    private var minValue = 0
+        set(v) {
+            if (v < 0) {
+                throw IllegalArgumentException("minValue must be >= 0")
+            }
+            field = v
+            if (value < v) {
+                value = v
+            }
+            invalidate()
+        }
+    var paddingHorizontal = 0
+        set(value) {
+            field = value
+            requestLayout()
+        }
+    var paddingVertical = 0
+        set(value) {
+            field = value
+            requestLayout()
+        }
+    var textColor: Int = DEFAULT_TEXT_COLOR
+        set(value) {
+            field = value
+            mTextPaint.color = value
+            invalidate()
+        }
+    var textSize = 0.0f
+        set(value) {
+            field = value
+            mTextPaint.textSize = value
+            invalidate()
+        }
+    private var value = 0
+        set(v) {
+            if (v < minValue) {
+                throw IllegalArgumentException("value must be >= minValue")
+            }
+            if (v > maxValue) {
+                throw IllegalArgumentException("value must be <= maxValue")
+            }
+            field = v
+            invalidate()
+        }
 
     init {
-        setWillNotDraw(false)
-        textSize = context.dp2px(30.0f)
-        selectedTextSize = context.dp2px(35.0f)
-
-        var t = textSize
-        mPaint = Paint().apply {
+        mTextPaint = Paint().apply {
             isAntiAlias = true
-            textSize = t
             textAlign = Paint.Align.CENTER
-            style = Paint.Style.FILL
         }
+        mFlingScroller = Scroller(context, null, true)
+        mAdjustScroller = Scroller(context, DecelerateInterpolator(2.5f))
+        val configuration = ViewConfiguration.get(context)
+        mMinimumFlingVelocity = configuration.scaledMinimumFlingVelocity
+        mMaximumFlingVelocity = configuration.scaledMaximumFlingVelocity / MAX_FLING_VELOCITY_ADJUSTMENT
+        value = DEFAULT_VALUE
+        textColor = DEFAULT_TEXT_COLOR
+        textSize = context.sp2px(DEFAULT_TEXT_SIZE_SP)
+        paddingVertical = context.dp2px(DEFAULT_PADDING).toInt()
+        paddingHorizontal = paddingVertical
+        maxValue = DEFAULT_MAX_VALUE
+        minValue = DEFAULT_MIN_VALUE
+        minHeight = context.dp2px(DEFAULT_MIN_HEIGHT_DP).toInt()
+        minWidth = context.dp2px(DEFAULT_MIN_WIDTH_DP).toInt()
 
-        mMaxWidth = SIZE_UNSPECIFIED
-        mMinWidth = context.dp2px(DEFAULT_MIN_WIDTH).toInt()
-        mMinHeight = SIZE_UNSPECIFIED
-        mMaxHeight = context.dp2px(DEFAULT_MAX_HEIGHT).toInt()
+        // Log.e(TAG, "configuration => ${configuration} \nmTextPaint => ${mTextPaint} \nmFlingScroller => ${mFlingScroller} \nmAdjustScroller => ${mAdjustScroller} \nmMinimumFlingVelocity => ${mMinimumFlingVelocity} \nmMaximumFlingVelocity => ${mMaximumFlingVelocity} \nvalue => ${value} \ntextColor => ${textColor} \ntextSize => ${textSize} \npaddingVertical => ${paddingVertical} \npaddingHorizontal => ${paddingHorizontal} \nmaxValue => ${maxValue} \nminValue => ${minValue} \n")
+    }
 
-        LayoutInflater.from(context).inflate(R.layout.number_picker_with_selector_wheel, this, true)
-        mSelectedText = findViewById(R.id.np__numberpicker_input);
-        mSelectedText.run {
-            isEnabled = false
-            isFocusable = false
-            imeOptions = EditorInfo.IME_ACTION_NONE
+    private fun adjust(adjustedValueOffset: Int) {
+        if (adjustedValueOffset != mCurrentValueOffset) {
+            if (mCurrentScrollOffset < 0) {
+                mCurrentScrollOffset += measuredHeight
+            } else {
+                mCurrentScrollOffset -= measuredHeight
+            }
+        }
+        mScrollerLastY = mCurrentScrollOffset
+        mCurrentValueOffset = 0
+        mAdjustScroller.startScroll(0, mCurrentScrollOffset, 0, -mCurrentScrollOffset, ADJUSTMENT_DURATION_MILLIS)
+    }
+
+    private fun calculateAdjustedValueOffset(rawScrollOffset: Int): Int {
+        val mCurrentValueOffset = rawScrollOffset / measuredHeight
+        return (mCurrentValueOffset + 0.5 * if (mCurrentValueOffset < 0) -1.0 else 1.0).toInt()
+    }
+
+    private fun calculateAdjustedValueOffset(): Int {
+        return if (abs(mCurrentScrollOffset) < measuredHeight / 2)
+            mCurrentValueOffset
+        else
+            mCurrentValueOffset + if (mCurrentScrollOffset < 0) -1 else 1
+    }
+
+    private fun calculateCurrentOffsets(rawScrollOffset: Int) {
+        mCurrentValueOffset = rawScrollOffset / measuredHeight
+        mCurrentScrollOffset = abs(rawScrollOffset) - abs(mCurrentValueOffset) * measuredHeight
+        mCurrentScrollOffset *= if (rawScrollOffset < 0) -1 else 1
+    }
+
+    private fun calculateTextHeight(): Int {
+        val bounds = Rect()
+        mTextPaint.getTextBounds("0", 0, 1, bounds)
+        textHeight = bounds.height()
+        return textHeight
+    }
+
+    private fun calculateTextHeightWithInternalPadding(): Int {
+        return calculateTextHeight() + paddingVertical * 2
+    }
+
+    private fun calculateTextWidth(): Int {
+        var maxDigitWidth = 0f
+        for (i in 0..9) {
+            val digitWidth = mTextPaint.measureText(formatNumberWithLocale(i))
+            if (digitWidth > maxDigitWidth) {
+                maxDigitWidth = digitWidth
+            }
+        }
+        var numberOfDigits = 0
+        var current = maxValue
+        while (current > 0) {
+            numberOfDigits++
+            current /= 10
+        }
+        return (numberOfDigits * maxDigitWidth).toInt()
+    }
+
+    private fun calculateTextWidthWithInternalPadding(): Int {
+        return calculateTextWidth() + paddingHorizontal * 2
+    }
+
+    override fun computeScroll() {
+        var scroller = mFlingScroller
+        if (scroller.isFinished) {
+            scroller = mAdjustScroller
+            if (scroller.isFinished) {
+                return
+            }
+        }
+        scroller.computeScrollOffset()
+        val currentScrollerY = scroller.currY
+        val diffScrollY = mScrollerLastY - currentScrollerY
+        mCurrentScrollOffset -= diffScrollY
+        mScrollerLastY = currentScrollerY
+        if (mAdjustScroller.isFinished) {
+            if (mFlingScroller.isFinished) {
+                if (mCurrentScrollOffset != 0) {
+                    val adjustedValueOffset = calculateAdjustedValueOffset(measuredHeight)
+                    value = getValue(adjustedValueOffset)
+                    adjust(adjustedValueOffset)
+                }
+            } else {
+                val newScrollOffset = mCurrentScrollOffset % measuredHeight
+                if (newScrollOffset != mCurrentScrollOffset) {
+                    val numberOfValuesScrolled = (mCurrentScrollOffset - newScrollOffset) / measuredHeight
+                    mCurrentValueOffset += numberOfValuesScrolled
+                    mCurrentScrollOffset = newScrollOffset
+                }
+            }
+        }
+        invalidate()
+    }
+
+    private fun fling(velocity: Int) {
+        if (velocity > 0) {
+            mScrollerLastY = 0
+            mFlingScroller.fling(0, mScrollerLastY, 0, velocity, 0, 0, 0, Integer.MAX_VALUE)
+        } else {
+            mScrollerLastY = Integer.MAX_VALUE
+            mFlingScroller.fling(0, mScrollerLastY, 0, velocity, 0, 0, 0, Integer.MAX_VALUE)
         }
     }
 
-    private fun getMaxTextSize(): Float {
-        return max(textSize, selectedTextSize)
+    private fun formatNumberWithLocale(value: Int): String {
+        return String.format(Locale.getDefault(), "%d", value)
     }
 
-    fun initialize() {
-        val textGapCount = 3
-        val totalTextSize = ((3 - 1) * textSize + selectedTextSize).toInt()
-        val totalTextGapHeight = bottom - top - totalTextSize
-        mSelectorTextGapHeight = totalTextGapHeight / textGapCount
-        mItemSize = getMaxTextSize() + mSelectorTextGapHeight
-        mInitialScrollOffset = (mSelectedTextCenterY - mItemSize * mWheelMiddleItemIndex).toInt()
-        mCurrentScrollOffset = mInitialScrollOffset
+    fun getMaxValue(): Int {
+        return maxValue
     }
 
-    override fun onDrawForeground(canvas: Canvas?) {
-        super.onDrawForeground(canvas)
-        "onDrawForeground".e(TAG, "")
+    fun getMinValue(): Int {
+        return minValue
+    }
 
+    private fun getValue(offset: Int): Int {
+        var offset = offset
+        offset %= maxValue - minValue
+        if (value + offset < minValue) {
+            return maxValue - (abs(offset) - (value - minValue)) + 1
+        } else if (value + offset > maxValue) {
+            return minValue + offset - (maxValue - value) - 1
+        }
+        return value + offset
+    }
+
+
+    private fun measureHeight(heightMeasureSpec: Int): Int {
+        val specMode = View.MeasureSpec.getMode(heightMeasureSpec)
+        val specSize = View.MeasureSpec.getSize(heightMeasureSpec)
+        val result: Int
+        if (specMode == View.MeasureSpec.EXACTLY) {
+            result = specSize
+        } else {
+            result = max(minHeight.toInt(), calculateTextHeightWithInternalPadding()) + paddingTop + paddingBottom
+        }
+        return result
+    }
+
+    private fun measureWidth(widthMeasureSpec: Int): Int {
+        val specMode = View.MeasureSpec.getMode(widthMeasureSpec)
+        val specSize = View.MeasureSpec.getSize(widthMeasureSpec)
+        val result: Int
+        if (specMode == View.MeasureSpec.EXACTLY) {
+            result = specSize
+        } else {
+            result = max(minWidth.toInt(), calculateTextWidthWithInternalPadding()) + paddingLeft + paddingRight
+        }
+        return result
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
+        val x = ((right - left) / 2).toFloat()
+        val y = ((bottom - top) / 2 + textHeight / 2).toFloat()
+        val currentValueStart = (y + mCurrentScrollOffset).toInt()
+        val prevValueStart = currentValueStart - measuredHeight
+        val nextValueStart = currentValueStart + measuredHeight
+        canvas.drawText(getValue(mCurrentValueOffset + 1).toString() + "", x, prevValueStart.toFloat(), mTextPaint)
+        canvas.drawText(getValue(mCurrentValueOffset).toString() + "", x, currentValueStart.toFloat(), mTextPaint)
+        canvas.drawText(getValue(mCurrentValueOffset - 1).toString() + "", x, nextValueStart.toFloat(), mTextPaint)
     }
 
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val newWidthMeasureSpec = makeMeasureSpec(widthMeasureSpec, mMaxWidth);
-        val newHeightMeasureSpec = makeMeasureSpec(heightMeasureSpec, mMaxHeight);
-        super.onMeasure(newWidthMeasureSpec, newHeightMeasureSpec);
-
-        val widthSize = resolveSizeAndStateRespectingMinSize(mMinWidth, getMeasuredWidth(), widthMeasureSpec);
-        val heightSize = resolveSizeAndStateRespectingMinSize(mMinHeight, getMeasuredHeight(), heightMeasureSpec);
-        setMeasuredDimension(widthSize, heightSize);
+        val widthSize = measureWidth(widthMeasureSpec)
+        val heightSize = measureHeight(heightMeasureSpec)
+        setMeasuredDimension(widthSize, heightSize)
     }
 
-    private fun resolveSizeAndStateRespectingMinSize(minSize: Int, measuredSize: Int, measureSpec: Int): Int {
-        if (minSize != SIZE_UNSPECIFIED) {
-            val desiredWidth = Math.max(minSize, measuredSize)
-            return View.resolveSizeAndState(desiredWidth, measureSpec, 0)
-        } else {
-            return measuredSize
+    override fun onTouchEvent(event: MotionEvent): Boolean {
+        if (!isEnabled) {
+            return false
         }
-    }
-
-    private fun makeMeasureSpec(measureSpec: Int, maxSize: Int): Int {
-        if (maxSize == SIZE_UNSPECIFIED) {
-            return measureSpec
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain()
         }
-        val size = View.MeasureSpec.getSize(measureSpec)
-        val mode = View.MeasureSpec.getMode(measureSpec)
-        when (mode) {
-            View.MeasureSpec.EXACTLY -> return measureSpec
-            View.MeasureSpec.AT_MOST -> return View.MeasureSpec.makeMeasureSpec(Math.min(size, maxSize), View.MeasureSpec.EXACTLY)
-            View.MeasureSpec.UNSPECIFIED -> return View.MeasureSpec.makeMeasureSpec(maxSize, View.MeasureSpec.EXACTLY)
-            else -> throw IllegalArgumentException("Unknown measure mode: $mode")
-        }
-    }
-
-    override fun onLayout(changed: Boolean, l: Int, t: Int, r: Int, b: Int) {
-
-        val tl = (measuredWidth - mSelectedText.measuredWidth) / 2
-        val tt = (measuredHeight - mSelectedText.measuredHeight) / 2
-        val tr = tl + mSelectedText.measuredWidth
-        val tb = tt + mSelectedText.measuredHeight
-
-        mSelectedText.layout(tl, tt, tr, tb);
-        mSelectedTextCenterY = mSelectedText.y + mSelectedText.measuredHeight / 2;
-
-        "onLayout".e(TAG, "$tl $tt $mSelectedTextCenterY $mItemSize")
-        if (changed) {
-            initialize()
-        }
-    }
-
-    override fun onDraw(canvas: Canvas?) {
-
-
-        canvas?.run {
-            save()
-
-            var xl = (right - left) / 2.0f
-            var yl = mCurrentScrollOffset.toFloat()
-
-
-            for (i in 0..2) {
-                if (i == 1) {
-                    mPaint.setTextSize(selectedTextSize);
-                    mPaint.setColor(selectedTextColor.toInt());
-                } else {
-                    mPaint.setTextSize(textSize);
-                    mPaint.setColor(textColor.toInt());
+        mVelocityTracker?.addMovement(event)
+        when (event.action and MotionEvent.ACTION_MASK) {
+            MotionEvent.ACTION_DOWN -> {
+                if (!mFlingScroller.isFinished) {
+                    mFlingScroller.forceFinished(true)
                 }
-
-                    drawText(i.toString(), xl, yl + getPaintCenterY(mPaint.getFontMetrics()), mPaint);
-                yl += mItemSize
+                if (!mAdjustScroller.isFinished) {
+                    mAdjustScroller.forceFinished(true)
+                }
+                mLastDownEventY = event.y
+                this.parent.requestDisallowInterceptTouchEvent(true)
             }
-            restore()
+            MotionEvent.ACTION_MOVE -> {
+                mLastDownOrMoveEventY = event.y
+                val rawScrollOffset = (mLastDownOrMoveEventY - mLastDownEventY).toInt()
+                calculateCurrentOffsets(rawScrollOffset)
+                invalidate()
+            }
+            MotionEvent.ACTION_UP -> {
+                mVelocityTracker?.computeCurrentVelocity(1000, mMaximumFlingVelocity.toFloat())
+                val initialVelocity = mVelocityTracker?.yVelocity ?: 0.0f
+                if (abs(initialVelocity) > mMinimumFlingVelocity) {
+                    fling(initialVelocity.toInt())
+                } else {
+                    val rawScrollOffset = (mLastDownOrMoveEventY - mLastDownEventY).toInt()
+                    val adjustedValueOffset = calculateAdjustedValueOffset(rawScrollOffset)
+                    calculateCurrentOffsets(rawScrollOffset)
+                    value = getValue(adjustedValueOffset)
+                    adjust(adjustedValueOffset)
+                }
+                invalidate()
+                mVelocityTracker?.recycle()
+                mVelocityTracker = null
+                this.parent.requestDisallowInterceptTouchEvent(false)
+            }
         }
-    }
-
-    private fun getPaintCenterY(fontMetrics: Paint.FontMetrics): Float {
-        return abs(fontMetrics.top + fontMetrics.bottom) / 2
+        return true
     }
 
     companion object {
-        private const val DEFAULT_MAX_HEIGHT = 180.0f
-        private const val DEFAULT_MIN_WIDTH = 64.0f
-        private const val SIZE_UNSPECIFIED = -1
-        private const val DEFAULT_TEXT_COLOR = 0xFF000000
-        private const val DEFAULT_TEXT_SIZE = 25f;
+        private const val DEFAULT_MIN_HEIGHT_DP = 20.0f
+        private const val DEFAULT_MIN_WIDTH_DP = 14.0f
+        private const val DEFAULT_MAX_VALUE = 9
+        private const val DEFAULT_MIN_VALUE = 0
+        private const val DEFAULT_VALUE = 0
+        private const val DEFAULT_TEXT_COLOR = Color.BLACK
+        private const val DEFAULT_TEXT_SIZE_SP = 25.0f
+        private const val DEFAULT_PADDING = 12.0f
+        private const val ADJUSTMENT_DURATION_MILLIS = 800
+        private const val MAX_FLING_VELOCITY_ADJUSTMENT = 6
         private const val TAG = "NumberPicker"
-
     }
 }
