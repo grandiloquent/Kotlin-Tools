@@ -1,4 +1,4 @@
-package psycho.euphoria.tools
+package psycho.euphoria.tools.downloads
 
 import android.content.Intent
 import android.os.Process

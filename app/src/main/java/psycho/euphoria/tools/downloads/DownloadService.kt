@@ -1,4 +1,4 @@
-package psycho.euphoria.tools
+package psycho.euphoria.tools.downloads
 
 import android.app.AlarmManager
 import android.app.Service
@@ -19,16 +19,13 @@ class DownloadService() : Service() {
     private var mAlarmManager: AlarmManager? = null
     @Volatile
     private var mLastStartId: Int = 0
-    private val mUpdateCallback = object : Handler.Callback {
-        override fun handleMessage(msg: Message): Boolean {
-            Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-            val startId = msg.arg1
-            val isActive: Boolean
-            synchronized(mDownloads) {
-            }
-            return true
+    private val mUpdateCallback = Handler.Callback { msg ->
+        Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
+        val startId = msg.arg1
+        val isActive: Boolean
+        synchronized(mDownloads) {
         }
-
+        true
     }
 
     override fun onCreate() {
@@ -59,13 +56,15 @@ class DownloadService() : Service() {
     }
 
     fun enqueueUpdate() {
-        if (mUpdateHandler != null) {
-            mUpdateHandler?.run {
-                removeMessages(MSG_UPDATE)
-                obtainMessage(MSG_UPDATE, mLastStartId, -1).sendToTarget()
-            }
 
-        }
+
+//        if (mUpdateHandler != null) {
+//            mUpdateHandler?.run {
+//                removeMessages(MSG_UPDATE)
+//                obtainMessage(MSG_UPDATE, mLastStartId, -1).sendToTarget()
+//            }
+//
+//        }
     }
 
 

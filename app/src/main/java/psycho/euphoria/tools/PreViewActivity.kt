@@ -8,6 +8,7 @@ import android.os.Bundle
 import android.os.Environment
 import android.widget.NumberPicker
 import android.widget.Toast
+import psycho.euphoria.tools.downloads.*
 import java.io.File
 
 class PreViewActivity : Activity() {

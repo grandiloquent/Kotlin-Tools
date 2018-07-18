@@ -1,5 +1,4 @@
-package psycho.euphoria.tools
-
+package psycho.euphoria.tools.downloads
 import android.os.Environment
 import android.util.Log
 import java.io.File

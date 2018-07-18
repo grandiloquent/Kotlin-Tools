@@ -1,5 +1,4 @@
-package psycho.euphoria.tools
-
+package psycho.euphoria.tools.downloads
 import java.net.Proxy
 
 data class DownloadInfo(

@@ -2,11 +2,15 @@ package psycho.euphoria.tools
 
 import android.Manifest
 import android.app.Activity
+import android.app.AlertDialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
+import android.widget.EditText
 import com.github.chrisbanes.photoview.PhotoView
+import psycho.euphoria.tools.downloads.DownloadDatabase
+import psycho.euphoria.tools.downloads.DownloadService
 
 class MainActivity : Activity() {
     private lateinit var mButtonPicture: Button
@@ -29,7 +33,19 @@ class MainActivity : Activity() {
     }
 
     fun downloadFile() {
+        val editText = EditText(this)
+        AlertDialog.Builder(this)
+                .setView(editText)
+                .setNegativeButton("取消") { dialog, _ -> dialog.dismiss() }
+                .setPositiveButton("确定") { dialog, _ ->
 
+                    if (editText.text.toString().isNotBlank()) {
+                        DownloadDatabase.getInstance(MainActivity@ this).insert(editText.text.toString().trim())
+                        val intent = Intent(MainActivity@ this, DownloadService::class.java)
+                        startService(intent)
+                    }
+
+                }.show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
