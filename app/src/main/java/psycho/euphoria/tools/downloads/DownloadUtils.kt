@@ -11,11 +11,7 @@ fun getTimeStamp(): Long {
     return System.currentTimeMillis() / 1000
 }
 
-fun buildDownloadInfo(url: String): DownloadInfo {
-    val fileName = generateFileNameFromURL(url, Environment.getExternalStorageDirectory())
-    val file = File(fileName)
-    return DownloadInfo(url, fileName, if (file.exists() && file.isFile) file.length() else -1L)
-}
+
 
 fun ClosedRange<Char>.randomString(lenght: Int) =
         (1..lenght)

@@ -28,12 +28,12 @@ class DownloadDatabase(private val context: Context) :
         databae.execSQL(sb.toString())
     }
 
-    fun list(): ArrayList<String> {
-        val cursor = readableDatabase.rawQuery("select url from downloads where finish = 0", null)
+    fun list(): ArrayList<Pair<Long, String>> {
+        val cursor = readableDatabase.rawQuery("select id,url from downloads where finish = 0", null)
         try {
-            val ls = ArrayList<String>()
+            val ls = ArrayList<Pair<Long, String>>()
             while (cursor.moveToNext()) {
-                ls.add(cursor.getString(0))
+                ls.add(Pair(cursor.getLong(0), cursor.getString(1)))
             }
             return ls
         } finally {

@@ -1,7 +1,9 @@
 package psycho.euphoria.tools.downloads
+
 import java.net.Proxy
 
 data class DownloadInfo(
+        var id: Long,
         var url: String,
         val fileName: String,
         var currentBytes: Long = 0L,
