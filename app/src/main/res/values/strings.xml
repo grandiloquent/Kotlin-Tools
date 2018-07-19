@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">Tools</string>
+
+    <string name="download_unknown_title"></string>
+    <string name="notification_download_complete"></string>
+    <string name="notification_download_failed"></string>
 </resources>

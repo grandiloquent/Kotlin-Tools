@@ -4,17 +4,21 @@ import android.content.Intent
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
+import psycho.euphoria.tools.commons.formatSize
 import java.io.InputStream
 import java.io.RandomAccessFile
+import java.math.RoundingMode
 import java.net.HttpURLConnection
 import java.net.URL
+import kotlin.math.round
+import kotlin.math.roundToInt
 
 
-class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
+class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
     private var mSpeed = 0L
-    var notifyDownloadSpeed: ((Long, Long) -> Unit)? = null
+    var notifyDownloadSpeed: ((Long, Long, Double) -> Unit)? = null
     var notifyCompleted: ((Long, String) -> Unit)? = null
     var notifyErrorOccurred: ((Long, String?) -> Unit)? = null
 
@@ -39,7 +43,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
         val resuming = downloadInfo.currentBytes != 0L
         var url = URL(downloadInfo.url)
         var redirectCount = 0
-        while (redirectCount++ < MAX_REDIRECTS) {
+        outer@ while (redirectCount++ < MAX_REDIRECTS) {
             var con: HttpURLConnection? = null
             try {
                 con = ((if (downloadInfo.proxy != null) url.openConnection(downloadInfo.proxy) else url.openConnection()) as HttpURLConnection).apply {
@@ -54,12 +58,15 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
                         if (resuming) throw Exception("Expected partial, but received OK")
                         parseOkHeaders(con)
                         transferData(con)
+                        notifyCompleted?.invoke(downloadInfo.id, downloadInfo.fileName)
+
                         return
                     }
                     HttpURLConnection.HTTP_PARTIAL -> {
                         if (!resuming) throw  Exception("Expected OK, but received partial")
-                        Log.e(TAG, "[executeDownload]:HTTP_PARTIAL")
+                        parseOkHeaders(con)
                         transferData(con)
+                        notifyCompleted?.invoke(downloadInfo.id, downloadInfo.fileName)
                         return
                     }
                     HttpURLConnection.HTTP_MOVED_PERM,
@@ -71,17 +78,21 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
                         if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
                             downloadInfo.url = url.toString()
                         }
+                        return@outer
                     }
                     HttpURLConnection.HTTP_PRECON_FAILED,
                     HTTP_REQUESTED_RANGE_NOT_SATISFIABLE,
                     HttpURLConnection.HTTP_UNAVAILABLE,
                     HttpURLConnection.HTTP_INTERNAL_ERROR -> {
+                        notifyErrorOccurred?.invoke(downloadInfo.id, "")
                     }
                     else -> {
+
+                        notifyErrorOccurred?.invoke(downloadInfo.id, "")
                     }
                 }
             } catch (e: Exception) {
-                notifyErrorOccurred?.invoke(0L, e.message)
+                notifyErrorOccurred?.invoke(downloadInfo.id, e.message)
                 Log.e(TAG, "[executeDownload]:${e.message}")
             } finally {
                 con?.disconnect()
@@ -102,13 +113,12 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
             downloadInfo.totalBytes = -1L
         }
         downloadInfo.etag = conn.getHeaderField("ETag")
-        Log.e(TAG, "$contentDisposition $contentLocation transferEncoding => ${transferEncoding} \nmimeType => ${downloadInfo.mimeType} \ntotalBytes => ${downloadInfo.totalBytes.formatSize()} \netag => ${downloadInfo.etag} \n")
+        // Log.e(TAG, "$contentDisposition $contentLocation transferEncoding => ${transferEncoding} \nmimeType => ${downloadInfo.mimeType} \ntotalBytes => ${downloadInfo.totalBytes.formatSize()} \netag => ${downloadInfo.etag} \n")
     }
 
     override fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
         executeDownload()
-        notifyCompleted?.invoke(0L, downloadInfo.fileName)
     }
 
     private fun transferData(conn: HttpURLConnection) {
@@ -133,8 +143,8 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
                     while (bytes >= 0) {
                         output.write(buffer, 0, bytes)
                         downloadInfo.currentBytes += bytes
-                        bytes = input.read(buffer)
                         updateProgress()
+                        bytes = input.read(buffer)
                     }
                 }
             }
@@ -157,7 +167,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Thread() {
             }
 
             if (mSpeedSampleStart != 0L) {
-                notifyDownloadSpeed?.invoke(1L, mSpeed)
+                notifyDownloadSpeed?.invoke(downloadInfo.id, mSpeed, ((downloadInfo.currentBytes* 100 / downloadInfo.totalBytes).toBigDecimal().setScale(2, RoundingMode.UP)).toDouble())
             }
             mSpeedSampleStart = now
             mSpeedSampleBytes = currentBytes

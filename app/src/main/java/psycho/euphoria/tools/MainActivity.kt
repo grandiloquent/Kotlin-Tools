@@ -8,7 +8,6 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
-import com.github.chrisbanes.photoview.PhotoView
 import psycho.euphoria.tools.downloads.DownloadDatabase
 import psycho.euphoria.tools.downloads.DownloadService
 
@@ -33,6 +32,8 @@ class MainActivity : Activity() {
     }
 
     fun downloadFile() {
+
+
         val editText = EditText(this)
         AlertDialog.Builder(this)
                 .setView(editText)
@@ -52,7 +53,8 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf(
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.INTERNET,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE
             ), REQUEST_PERMISSIONS_CODE);
         } else initialize()

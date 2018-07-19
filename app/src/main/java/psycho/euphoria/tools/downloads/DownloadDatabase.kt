@@ -21,8 +21,8 @@ class DownloadDatabase(private val context: Context) :
         sb.append("`url`\tTEXT NOT NULL UNIQUE,")
         sb.append("`finish`\tINTEGER NOT NULL,")
         sb.append("`create_time`\tINTEGER,")
-        sb.append("`updte_time`\tINTEGER,")
-        sb.append("PRIMARY KEY(`_id`)")
+        sb.append("`update_time`\tINTEGER,")
+        sb.append("PRIMARY KEY(`id`)")
         sb.append(");")
 
         databae.execSQL(sb.toString())
@@ -41,16 +41,28 @@ class DownloadDatabase(private val context: Context) :
         }
     }
 
+    fun listOne(): Pair<Long, String>? {
+        val cursor = readableDatabase.rawQuery("select id,url from downloads where finish = 0 order by create_time desc ", null)
+        try {
+            if (cursor.moveToNext()) {
+                return cursor.getLong(0) to cursor.getString(1)
+            } else
+                return null
+        } finally {
+            cursor.close()
+        }
+    }
+
     fun insert(url: String) {
         val v = ContentValues()
         v.put("url", url)
         v.put("finish", 0)
         v.put("create_time", getTimeStamp())
         v.put("update_time", getTimeStamp())
-        writableDatabase.insert("downloads", null, v)
+        writableDatabase.insertWithOnConflict("downloads", null, v,SQLiteDatabase.CONFLICT_IGNORE)
     }
 
-    fun update(id: Int) {
+    fun update(id: Long) {
         val v = ContentValues()
 
         v.put("finish", 1)

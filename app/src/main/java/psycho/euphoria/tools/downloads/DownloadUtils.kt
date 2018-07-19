@@ -1,10 +1,6 @@
 package psycho.euphoria.tools.downloads
-import android.os.Environment
-import android.util.Log
+import psycho.euphoria.tools.commons.randomString
 import java.io.File
-import java.text.DecimalFormat
-import java.util.*
-import java.util.concurrent.*
 
 
 fun getTimeStamp(): Long {
@@ -13,21 +9,7 @@ fun getTimeStamp(): Long {
 
 
 
-fun ClosedRange<Char>.randomString(lenght: Int) =
-        (1..lenght)
-                .map { (Random().nextInt(endInclusive.toInt() - start.toInt()) + start.toInt()).toChar() }
-                .joinToString("")
 
-fun ClosedRange<Int>.random() =
-        Random().nextInt((endInclusive + 1) - start) + start
-
-fun Long.formatSize(): String {
-    if (this <= 0)
-        return "0 B"
-    val units = arrayOf("B", "kB", "MB", "GB", "TB")
-    val digitGroups = (Math.log10(toDouble()) / Math.log10(1024.0)).toInt()
-    return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
-}
 
 fun generateFileNameFromURL(url: String, directory: File): String {
     if (url.isBlank()) {
@@ -46,30 +28,3 @@ fun generateFileNameFromURL(url: String, directory: File): String {
     }
 }
 
-fun getExecutor(): ExecutorService {
-    val maxConcurrent = 3
-    val executor = object : ThreadPoolExecutor(
-            maxConcurrent, maxConcurrent, 10, TimeUnit.SECONDS,
-            LinkedBlockingQueue<Runnable>()) {
-        override fun afterExecute(r: Runnable, t: Throwable?) {
-            var t = t
-            super.afterExecute(r, t)
-            if (t == null && r is Future<*>) {
-                try {
-                    (r as Future<*>).get()
-                } catch (ce: CancellationException) {
-                    t = ce
-                } catch (ee: ExecutionException) {
-                    t = ee.cause
-                } catch (ie: InterruptedException) {
-                    Thread.currentThread().interrupt()
-                }
-            }
-            if (t != null) {
-                Log.w("ExecutorService", "Uncaught exception", t)
-            }
-        }
-    }
-    executor.allowCoreThreadTimeOut(true)
-    return executor
-}
