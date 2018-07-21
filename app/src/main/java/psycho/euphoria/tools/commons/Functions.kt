@@ -1,14 +1,35 @@
 package psycho.euphoria.tools.commons
 
+import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
+import android.os.Build
+import android.support.annotation.RequiresApi
 import android.util.Log
 import java.io.File
 import java.io.FileDescriptor
 import java.util.*
 import java.util.concurrent.*
+import android.support.v4.graphics.TypefaceCompatUtil.closeQuietly
+import android.text.Editable
+import android.widget.EditText
+import java.io.ByteArrayOutputStream
+import java.io.FileInputStream
 
+fun dialog(context: Context, content: String?, title: String?, positiveListener: (Editable?) -> Unit) {
+
+    val editText = EditText(context)
+    editText.setText(content)
+    AlertDialog.Builder(context)
+            .setView(editText)
+            .setTitle(title)
+            .setNegativeButton("取消") { dialog, _ -> dialog.dismiss() }
+            .setPositiveButton("确定") { dialog, _ ->
+                dialog.dismiss()
+                positiveListener(editText.text)
+            }.show()
+}
 
 fun append(array: LongArray, currentSize: Int, element: Long): LongArray {
     var array = array
@@ -123,9 +144,24 @@ fun isStatusError(status: Int): Boolean {
     return status >= 400 && status < 600
 }
 
+@RequiresApi(Build.VERSION_CODES.KITKAT)
+fun closeQuietly(closeable: AutoCloseable?) {
+    if (closeable != null) {
+        try {
+            closeable.close()
+        } catch (rethrown: RuntimeException) {
+            throw rethrown
+        } catch (ignored: Exception) {
+        }
+
+    }
+}
+
+
 fun NotificationManager.postNotification(id: Long, notification: Notification) {
     notify(id.toInt(), notification)
 }
+
 fun getExecutor(): ExecutorService {
     val maxConcurrent = 3
     val executor = object : ThreadPoolExecutor(

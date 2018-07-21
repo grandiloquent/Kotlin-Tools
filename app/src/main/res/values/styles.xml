@@ -1,5 +1,17 @@
 <resources>
 
+    <style name="TextAppearance" parent="@android:style/TextAppearance">
+        <item name="android:textColor">?android:attr/textColorPrimary</item>
+    </style>
+
+    <style name="TextAppearance.Regular">
+
+    </style>
+
+    <style name="TextAppearance.Regular.Body1">
+        <item name="android:textSize">14sp</item>
+    </style>
+
     <declare-styleable name="MeterNumberPicker">
         <attr name="mnp_min" format="integer" />
         <attr name="mnp_max" format="integer" />

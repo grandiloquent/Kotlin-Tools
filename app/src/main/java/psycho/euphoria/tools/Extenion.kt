@@ -19,6 +19,7 @@ import java.io.FileFilter
 import java.text.Collator
 import java.util.*
 import java.util.regex.Pattern
+import kotlin.collections.ArrayList
 
 
 private val physicalPaths = arrayListOf(
@@ -144,6 +145,7 @@ fun Context.getStorageDirectories(): Array<String> {
     }
     return paths.toTypedArray()
 }
+
 fun Context.getPermissionString(id: Int) = when (id) {
     PERMISSION_READ_STORAGE -> Manifest.permission.READ_EXTERNAL_STORAGE
     PERMISSION_WRITE_STORAGE -> Manifest.permission.WRITE_EXTERNAL_STORAGE
@@ -156,6 +158,7 @@ fun Context.getPermissionString(id: Int) = when (id) {
     PERMISSION_CALL_PHONE -> Manifest.permission.CALL_PHONE
     else -> ""
 }
+
 fun Context.px2dp(px: Float): Float {
     return px / resources.displayMetrics.density;
 }
@@ -182,7 +185,9 @@ fun File.listAudio(): List<File> {
 }
 
 fun File.listFilesOrderly(): List<File> {
-    return listFiles().asList().let {
+    var files = listFiles()
+    if (files == null) return ArrayList<File>()
+    return files.asList().let {
         it.sortedWith(compareBy<File> { it.isFile }.thenBy { it.name.toLowerCase() })
     }
 }

@@ -4,7 +4,8 @@ import android.content.Intent
 import android.os.Process
 import android.os.SystemClock
 import android.util.Log
-import psycho.euphoria.tools.commons.formatSize
+import psycho.euphoria.tools.commons.*
+import java.io.IOException
 import java.io.InputStream
 import java.io.RandomAccessFile
 import java.math.RoundingMode
@@ -12,30 +13,59 @@ import java.net.HttpURLConnection
 import java.net.URL
 import kotlin.math.round
 import kotlin.math.roundToInt
+import java.net.ProtocolException
 
+
+class StopRequestException(val finalStatus: Int, message: String?, throwable: Throwable?) : Exception(message, throwable) {
+    constructor(finalStatus: Int, throwable: Throwable) : this(finalStatus, null, throwable)
+    constructor(finalStatus: Int, message: String) : this(finalStatus, message, null)
+
+    companion object {
+
+        @JvmStatic
+        fun throwUnhandledHttpError(code: Int, message: String) {
+            val error = "Unhandled HTTP response: $code $message"
+            if (code in 400..599) {
+                throw StopRequestException(code, error)
+            } else if (code >= 300 && code < 400) {
+                throw StopRequestException(STATUS_UNHANDLED_REDIRECT, error)
+            } else {
+                throw StopRequestException(STATUS_UNHANDLED_HTTP_CODE, error)
+            }
+        }
+    }
+}
 
 class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
     private var mSpeed = 0L
-    var notifyDownloadSpeed: ((Long, Long, Double) -> Unit)? = null
-    var notifyCompleted: ((Long, String) -> Unit)? = null
+    private val mId: Long;
+    private var mLastUpdateBytes = 0L
+    private var mLastUpdateTime = 0L
+    var notifyDownloadSpeed: ((Long, Long) -> Unit)? = null
+    var notifyCompleted: ((Long) -> Unit)? = null
     var notifyErrorOccurred: ((Long, String?) -> Unit)? = null
+    var notifyStart: ((Long) -> Unit)? = null
+
+    init {
+        mId = downloadInfo.id
+    }
 
     private fun addRequestHeaders(conn: HttpURLConnection, resuming: Boolean) {
         for (header in downloadInfo.getHeaders()) {
             conn.addRequestProperty(header.first, header.second)
         }
-        if (conn.getRequestProperty(UserAgent) == null) {
-            conn.addRequestProperty(UserAgent, HEADER_USER_AGENT)
+
+        if (conn.getRequestProperty("User-Agent") == null) {
+            conn.userAgent = DEFAULT_USER_AGENT
         }
-        conn.addRequestProperty(AcceptEncoding, "identity")
-        conn.addRequestProperty(Connection, "close")
+        conn.acceptEncoding = "identity"
+        conn.connection = "close"
         if (resuming) {
-            if (downloadInfo.etag != null) {
-                conn.addRequestProperty(IfMatch, downloadInfo.etag)
-            }
-            conn.addRequestProperty(Range, "bytes=" + downloadInfo.currentBytes + "-");
+
+            downloadInfo.etag?.let { conn.ifMatch = it }
+            conn.range = "bytes=" + downloadInfo.currentBytes + "-";
         }
     }
 
@@ -44,6 +74,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
         var url = URL(downloadInfo.url)
         var redirectCount = 0
         outer@ while (redirectCount++ < MAX_REDIRECTS) {
+            Tracker.e("executeDownload", "redirectCount => $redirectCount")
             var con: HttpURLConnection? = null
             try {
                 con = ((if (downloadInfo.proxy != null) url.openConnection(downloadInfo.proxy) else url.openConnection()) as HttpURLConnection).apply {
@@ -54,107 +85,126 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
                 addRequestHeaders(con, resuming)
                 val responseCode = con.responseCode
                 when (responseCode) {
-                    HttpURLConnection.HTTP_OK -> {
-                        if (resuming) throw Exception("Expected partial, but received OK")
+                    HTTP_OK -> {
+                        if (resuming) throw   StopRequestException(
+                                STATUS_CANNOT_RESUME, "Expected partial, but received OK");
                         parseOkHeaders(con)
                         transferData(con)
-                        notifyCompleted?.invoke(downloadInfo.id, downloadInfo.fileName)
+
 
                         return
                     }
-                    HttpURLConnection.HTTP_PARTIAL -> {
-                        if (!resuming) throw  Exception("Expected OK, but received partial")
-                        parseOkHeaders(con)
+                    HTTP_PARTIAL -> {
+                        if (!resuming) throw  StopRequestException(
+                                STATUS_CANNOT_RESUME, "Expected OK, but received partial");
                         transferData(con)
-                        notifyCompleted?.invoke(downloadInfo.id, downloadInfo.fileName)
+
                         return
                     }
-                    HttpURLConnection.HTTP_MOVED_PERM,
-                    HttpURLConnection.HTTP_MOVED_TEMP,
-                    HttpURLConnection.HTTP_SEE_OTHER,
+                    HTTP_MOVED_PERM,
+                    HTTP_MOVED_TEMP,
+                    HTTP_SEE_OTHER,
                     HTTP_TEMP_REDIRECT -> {
-                        val location = con.getHeaderField(Location)
-                        url = URL(url, location)
+                        url = URL(url, con.location)
                         if (responseCode == HttpURLConnection.HTTP_MOVED_PERM) {
                             downloadInfo.url = url.toString()
                         }
                         return@outer
                     }
-                    HttpURLConnection.HTTP_PRECON_FAILED,
-                    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE,
-                    HttpURLConnection.HTTP_UNAVAILABLE,
-                    HttpURLConnection.HTTP_INTERNAL_ERROR -> {
-                        notifyErrorOccurred?.invoke(downloadInfo.id, "")
-                    }
+                    HTTP_PRECON_FAILED -> throw StopRequestException(
+                            STATUS_CANNOT_RESUME, "Precondition failed");
+
+                    HTTP_REQUESTED_RANGE_NOT_SATISFIABLE -> throw  StopRequestException(
+                            STATUS_CANNOT_RESUME, "Requested range not satisfiable");
+                    HTTP_UNAVAILABLE -> throw  StopRequestException(
+                            HTTP_UNAVAILABLE, con.responseMessage);
+                    HTTP_INTERNAL_ERROR -> throw  StopRequestException(
+                            HTTP_INTERNAL_ERROR, con.responseMessage);
                     else -> {
 
-                        notifyErrorOccurred?.invoke(downloadInfo.id, "")
+                        StopRequestException.throwUnhandledHttpError(
+                                responseCode, con.responseMessage);
                     }
                 }
-            } catch (e: Exception) {
-                notifyErrorOccurred?.invoke(downloadInfo.id, e.message)
-                Log.e(TAG, "[executeDownload]:${e.message}")
+            } catch (e: IOException) {
+                if (e is ProtocolException && e.message!!.startsWith("Unexpected status line")) {
+                    throw StopRequestException(STATUS_UNHANDLED_HTTP_CODE, e)
+                } else {
+                    Tracker.e("executeDownload", "throw IOException")
+                    // Trouble with low-level sockets
+                    throw StopRequestException(STATUS_HTTP_DATA_ERROR, e)
+                }
             } finally {
                 con?.disconnect()
             }
         }
+        throw StopRequestException(STATUS_TOO_MANY_REDIRECTS, "Too many redirects")
     }
 
     private fun parseOkHeaders(conn: HttpURLConnection) {
-        val contentDisposition = conn.getHeaderField("Content-Disposition");
-        val contentLocation = conn.getHeaderField("Content-Location");
-        if (downloadInfo.mimeType == null) {
-            downloadInfo.mimeType = Intent.normalizeMimeType(conn.contentType)
-        }
-        val transferEncoding = conn.getHeaderField(TransferEncoding)
-        if (transferEncoding == null) {
-            downloadInfo.totalBytes = conn.getHeaderField(ContentLength).toLongOrNull() ?: -1L
+        if (conn.transferEncoding == null) {
+            downloadInfo.totalBytes = conn.contentLength_.toLongOrNull() ?: -1L
         } else {
             downloadInfo.totalBytes = -1L
         }
-        downloadInfo.etag = conn.getHeaderField("ETag")
+        downloadInfo.etag = conn.eTag
+        downloadInfo.writeToDatabase()
+        Tracker.e("parseOkHeaders", "totalBytes => ${downloadInfo.totalBytes}")
+
         // Log.e(TAG, "$contentDisposition $contentLocation transferEncoding => ${transferEncoding} \nmimeType => ${downloadInfo.mimeType} \ntotalBytes => ${downloadInfo.totalBytes.formatSize()} \netag => ${downloadInfo.etag} \n")
     }
 
     override fun run() {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
-        executeDownload()
+        try {
+            notifyStart?.invoke(mId)
+            executeDownload()
+            if (downloadInfo.totalBytes != -1L && downloadInfo.currentBytes >= downloadInfo.totalBytes) {
+                downloadInfo.finish = true
+            }
+            notifyCompleted?.invoke(mId)
+        } catch (e: StopRequestException) {
+            Tracker.e("run", "${e.finalStatus} ${e.message ?: "Unknown error occurred."}")
+        } finally {
+            downloadInfo.writeToDatabase()
+
+        }
     }
 
     private fun transferData(conn: HttpURLConnection) {
-        val hasLength = downloadInfo.totalBytes != -1L
-        val isConnectionClose = "close".equals(conn.getHeaderField(Connection), true)
-        val isEncodingChunked = "chunked".equals(conn.getHeaderField(TransferEncoding), true)
-        val finishKnown = hasLength || isConnectionClose || isEncodingChunked
-        if (!finishKnown) {
-            throw Exception("can't know size of download, giving up")
+
+
+        if (!(downloadInfo.totalBytes != -1L || "close".equals(conn.connection, true) || "chunked".equals(conn.transferEncoding, true))) {
+            throw StopRequestException(STATUS_CANNOT_RESUME, "can't know size of download, giving up")
         }
         var inputStream: InputStream? = null
-        var outputStream: RandomAccessFile? = null
+        var outputStream: RandomAccessFile?
+
         try {
             inputStream = conn.inputStream
-            outputStream = RandomAccessFile(downloadInfo.fileName, "rwd")
-            outputStream.seek(downloadInfo.currentBytes)
-            inputStream.use { input ->
-                outputStream.use { output ->
+        } catch (e: IOException) {
+            throw StopRequestException(STATUS_HTTP_DATA_ERROR, e)
+        }
+        outputStream = RandomAccessFile(downloadInfo.fileName, "rwd")
+        outputStream.seek(downloadInfo.currentBytes)
+        inputStream.use { input ->
+            outputStream.use { output ->
 
-                    val buffer = ByteArray(8 * 1024)
-                    var bytes = input.read(buffer)
-                    while (bytes >= 0) {
-                        output.write(buffer, 0, bytes)
-                        downloadInfo.currentBytes += bytes
-                        updateProgress()
-                        bytes = input.read(buffer)
-                    }
+                val buffer = ByteArray(8 * 1024)
+                var bytes = input.read(buffer)
+                while (bytes >= 0) {
+                    output.write(buffer, 0, bytes)
+                    downloadInfo.currentBytes += bytes
+                    updateProgress()
+                    bytes = input.read(buffer)
                 }
             }
-        } catch (e: Exception) {
-            Log.e(TAG, "[transferData]:${e.message}")
         }
+
     }
 
 
-    fun updateProgress() {
+    private fun updateProgress() {
         val now = SystemClock.elapsedRealtime()
         val currentBytes = downloadInfo.currentBytes
         val sampleDelta = now - mSpeedSampleStart
@@ -167,28 +217,24 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
             }
 
             if (mSpeedSampleStart != 0L) {
-                notifyDownloadSpeed?.invoke(downloadInfo.id, mSpeed, ((downloadInfo.currentBytes* 100 / downloadInfo.totalBytes).toBigDecimal().setScale(2, RoundingMode.UP)).toDouble())
+                notifyDownloadSpeed?.invoke(mId, mSpeed)
             }
             mSpeedSampleStart = now
             mSpeedSampleBytes = currentBytes
         }
+        val bytesDelta = currentBytes - mLastUpdateBytes;
+        val timeDelta = now - mLastUpdateTime;
+        if (bytesDelta > MIN_PROGRESS_STEP && timeDelta > MIN_PROGRESS_TIME) {
 
+
+            downloadInfo.writeToDatabase()
+            mLastUpdateBytes = currentBytes;
+            mLastUpdateTime = now;
+        }
     }
 
     companion object {
         private const val TAG = "Downloader"
-        private const val TransferEncoding = "Transfer-Encoding";
-        private const val Location = "Location";
-        private const val ContentLength = "Content-Length"
-        private const val HTTP_TEMP_REDIRECT = 307
-        private const val HTTP_REQUESTED_RANGE_NOT_SATISFIABLE = 416
-        private const val AcceptEncoding = "Accept-Encoding";
-        private const val Connection = "Connection";
         private const val DEFAULT_TIMEOUT = 20000
-        private const val HEADER_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"
-        private const val IfMatch = "If-Match";
-        private const val MAX_REDIRECTS = 5
-        private const val Range = "Range";
-        private const val UserAgent = "User-Agent";
     }
 }

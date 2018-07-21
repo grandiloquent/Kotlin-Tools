@@ -5,50 +5,31 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.os.*
-import android.support.annotation.RequiresApi
 import android.support.v4.app.NotificationCompat
-import android.support.v4.app.NotificationCompat.PRIORITY_MIN
-import android.util.Log
-import android.widget.Toast
+import psycho.euphoria.tools.R
+import psycho.euphoria.tools.commons.Tracker
 import psycho.euphoria.tools.commons.formatSize
-import psycho.euphoria.tools.commons.postNotification
-import java.io.File
-import java.util.*
+import psycho.euphoria.tools.commons.notificationManager
+import psycho.euphoria.tools.commons.round
 
 class DownloadService() : Service() {
 
-    private val mDownloads = HashMap<Long, DownloadInfo>()
-
-    private var mUpdateThread: HandlerThread? = null
-    private var mUpdateHandler: Handler? = null
-    private var mWorkThread: HandlerThread? = null
-    private var mWorkHandler: Handler? = null
+    private lateinit var mNotificationBuilder: NotificationCompat.Builder
+    private lateinit var mNotificationManager: NotificationManager
+    private lateinit var mUpdateHandler: Handler
+    private lateinit var mUpdateThread: HandlerThread
+    private lateinit var mWorkThread: HandlerThread
     private var mAlarmManager: AlarmManager? = null
-    @Volatile
-    private var mLastStartId: Int = 0
-
-    private var mNotificationBuilder: NotificationCompat.Builder? = null
-    private var mNotificationManager: NotificationManager? = null
+    private var mCurrentDownloadInfo: DownloadInfo? = null
+    private var mWorkHandler: Handler? = null
 
     private val mUpdateCallback = Handler.Callback { msg ->
         when (msg.what) {
 
-            MSG_UPDATE -> {
-                val speed = (msg.obj as String)
-
-                Log.e(TAG, "[MSG_UPDATE]:$speed")
-
-                mNotificationBuilder?.run {
-
-                    setContentText(speed)
-                    mNotificationManager?.notify(NOTIFICATION_ID, build())
-                }
-
-
-            }
+            MSG_UPDATE -> updateNotify(msg.obj as Long)
             MSG_COMPLETE -> {
 
-                DownloadDatabase.getInstance(this).update((msg.obj as Long))
+
                 downStart()
             }
 
@@ -57,96 +38,121 @@ class DownloadService() : Service() {
     }
 
     override fun onCreate() {
+        Tracker.e("onCreate")
         super.onCreate()
+
         mAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        mNotificationManager = notificationManager
+
         mUpdateThread = HandlerThread(TAG + "-UpdateThread");
-        mUpdateThread?.start()
-        mUpdateHandler = Handler(mUpdateThread?.looper, mUpdateCallback)
+        mUpdateThread.start()
+        mUpdateHandler = Handler(mUpdateThread.looper, mUpdateCallback)
 
         mWorkThread = HandlerThread(TAG + "-WorkThread")
-        mWorkThread?.start()
-        mWorkHandler = Handler(mWorkThread?.looper)
+        mWorkThread.start()
+        mWorkHandler = Handler(mWorkThread.looper)
 
-        startForeground()
+        startForeground(NOTIFICATION_ID, makeNotify())
 
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        Tracker.e("onStartCommand")
         val returnValue = super.onStartCommand(intent, flags, startId)
-        mLastStartId = startId
+
         downStart()
         return returnValue
     }
 
-    private fun startForeground() {
-        val channelId =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    createNotificationChannel()
-                } else {
-                    // If earlier version channel ID is not used
-                    // https://developer.android.com/reference/android/support/v4/app/NotificationCompat.Builder.html#NotificationCompat.Builder(android.content.Context)
-                    ""
-                }
 
-        mNotificationBuilder = NotificationCompat.Builder(this, channelId)
-        val notification = mNotificationBuilder!!.setOngoing(true)
-                .setSmallIcon(android.R.drawable.stat_sys_download_done)
-                .setPriority(PRIORITY_MIN)
-                .setCategory(Notification.CATEGORY_SERVICE)
-                .build()
-        startForeground(NOTIFICATION_ID, notification)
-    }
-
-    @RequiresApi(Build.VERSION_CODES.O)
     private fun createNotificationChannel(): String {
-        val channelId = "my_service"
-        val channelName = TAG
-        val chan = NotificationChannel(channelId,
-                channelName, NotificationManager.IMPORTANCE_NONE)
-        chan.lightColor = Color.BLUE
-        chan.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
-        val service = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        service.createNotificationChannel(chan)
-        return channelId
+        if (Build.VERSION.SDK_INT >= 26) {
+            // NotificationManager.IMPORTANCE_NONE Turn off the notifition sound
+            mNotificationManager.createNotificationChannel(NotificationChannel(CHANNEL_ACTIVE,
+                    TAG, NotificationManager.IMPORTANCE_NONE).also {
+                it.lightColor = Color.BLUE
+                it.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            })
+        }
+        return CHANNEL_ACTIVE
     }
 
-    fun downStart() {
-        val i = DownloadDatabase.getInstance(this).listOne();
-        if (i != null) {
-            var filename = generateFileNameFromURL(i.second, Environment.getExternalStorageDirectory())
-            val runnable = Downloader(
-                    DownloadInfo(
-                            i.first,
-                            i.second,
-                            filename,
-                            currentBytes = if (File(filename).exists()) File(filename).length() else 0L
-                    )
-            ).apply {
-                notifyCompleted = fun(id, filename) {
-                    mUpdateHandler?.sendMessage(mUpdateHandler?.obtainMessage(MSG_COMPLETE, id))
+    private fun downStart() {
+
+
+        mCurrentDownloadInfo = fecthDownloadInfo()
+
+
+        if (mCurrentDownloadInfo == null) {
+
+        } else {
+            val runnable = Downloader(mCurrentDownloadInfo!!).apply {
+                notifyCompleted = fun(id) {
+                    mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_COMPLETE, id))
+                    Tracker.e("notifyCompleted")
 
                 }
-                notifyDownloadSpeed = fun(id, speed, totalByts) {
-                    mUpdateHandler?.sendMessage(mUpdateHandler?.obtainMessage(MSG_UPDATE, " ${speed.formatSize()} ${totalByts}%"))
+                notifyDownloadSpeed = fun(id, speed) {
+
+
+                    mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_UPDATE, speed))
                 }
                 notifyErrorOccurred = fun(id, filename) {
-                    mUpdateHandler?.sendMessage(mUpdateHandler?.obtainMessage(MSG_ERROR))
+                    Tracker.e("notifyErrorOccurred")
+                    mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_ERROR))
                 }
             }
             mWorkHandler?.post(runnable)
-        } else {
-            Toast.makeText(this, "No", Toast.LENGTH_SHORT).show()
         }
+
+
+    }
+
+    private fun fecthDownloadInfo(): DownloadInfo? {
+        val downloadInfo = DownloadDatabase.getInstance(this).listOne()
+        if (downloadInfo != null && downloadInfo.fileName == null) {
+            downloadInfo.fileName = generateFileNameFromURL(downloadInfo.url, Environment.getExternalStorageDirectory())
+        }
+        return downloadInfo
     }
 
     override fun onDestroy() {
         mUpdateThread?.quit()
 
+        Tracker.e("onDestroy")
         super.onDestroy()
 
     }
 
+    private fun makeNotify(): Notification {
+        createNotificationChannel()
+        val title = resources.getString(R.string.notifiaction_download_title)
+        mNotificationBuilder = NotificationCompat.Builder(this, CHANNEL_ACTIVE)
+                .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                .setContentTitle(title)
+                .setContentText(title)
+                .setWhen(System.currentTimeMillis())
+        return mNotificationBuilder.build()
+    }
+
+    private fun updateNotify(speed: Long) {
+
+        mCurrentDownloadInfo?.let {
+            val totalBytes = it.totalBytes
+
+            if (totalBytes == 0L) {
+                Tracker.e("updateNotify", "totalBytes => $totalBytes fileName=${it.fileName}")
+            }
+            if (totalBytes > 0L) {
+
+                mNotificationBuilder.setProgress(100, (it.currentBytes * 100 / totalBytes).toInt(), false)
+                mNotificationBuilder.setContentText("${it.currentBytes.formatSize()}/${totalBytes.formatSize()}(${(it.currentBytes * 100.0 / totalBytes).round()}%)");
+            }
+
+
+            mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build())
+        }
+    }
 
     override fun onBind(i: Intent?): IBinder {
         throw  UnsupportedOperationException("Cannot bind to Download Manager Service");
@@ -154,11 +160,14 @@ class DownloadService() : Service() {
 
 
     companion object {
+        private const val MSG_START = 0
         private const val MSG_UPDATE = 1
         private const val MSG_COMPLETE = 2
         private const val MSG_ERROR = 3
         private const val TAG = "DownloadService"
         private const val NOTIFICATION_ID = 151;
+        private const val CHANNEL_ACTIVE = "active"
+
 
     }
 }

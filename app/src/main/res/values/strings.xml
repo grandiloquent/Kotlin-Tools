@@ -4,4 +4,9 @@
     <string name="download_unknown_title"></string>
     <string name="notification_download_complete"></string>
     <string name="notification_download_failed"></string>
+
+    <string name="activity_download_title">Download</string>
+    <string name="menu_add_download_task">Add Download Task</string>
+    <string name="menu_strat_download_service">Start Download</string>
+    <string name="notifiaction_download_title">Download</string>
 </resources>
