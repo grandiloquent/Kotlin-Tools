@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
-
+import psycho.euphoria.tools.commons.KEY_PATH
 import android.support.v7.app.AppCompatActivity
 import android.view.*
 import android.widget.AdapterView
@@ -43,6 +43,10 @@ class FileActivity : AppCompatActivity() {
                 if (intent.getBooleanExtra(TYPE_PICTURE, false) && file.isImage()) {
                     val intent = Intent(this, PictureActivity::class.java)
                     intent.putExtra(KEY_DIRECTORY, file.absolutePath)
+                    startActivity(intent)
+                } else if (file.name.endsWith(".mp4")) {
+                    val intent = Intent(this, VideoPlayerActivity::class.java)
+                    intent.putExtra(KEY_PATH, file.absolutePath)
                     startActivity(intent)
                 }
             }

@@ -189,3 +189,18 @@ fun getExecutor(): ExecutorService {
     executor.allowCoreThreadTimeOut(true)
     return executor
 }
+
+inline fun then(a: () -> Boolean, b: () -> Unit, c: () -> Unit) {
+    if (a()) b() else c()
+}
+
+inline fun thenOr(funtions: Array<Pair<() -> Boolean, () -> Unit>>, final: () -> Unit) {
+
+    for ((a, b) in funtions) {
+        if (a()) {
+            b()
+            return
+        }
+    }
+    final()
+}

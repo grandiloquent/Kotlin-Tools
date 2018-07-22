@@ -35,6 +35,7 @@
             android:name=".downloads.DownloadService"
             android:label="@string/activity_download_title" />
 
+        <activity android:name=".VideoPlayerActivity"></activity>
     </application>
 
 

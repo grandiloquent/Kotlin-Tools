@@ -1,6 +1,6 @@
 package psycho.euphoria.tools.commons
 
-const val DESTINATION_EXTERNAL= 0
+const val DESTINATION_EXTERNAL = 0
 const val _DATA = "_data"
 const val _ID = "_id"
 const val AUTHORITY = "downloads"
@@ -114,6 +114,7 @@ const val HTTP_ACCEPTED = 202
 const val HTTP_BAD_GATEWAY = 502
 const val HTTP_BAD_METHOD = 405
 const val HTTP_BAD_REQUEST = 400
+const val KEY_PATH = "path"
 const val HTTP_CLIENT_TIMEOUT = 408
 const val HTTP_CONFLICT = 409
 const val HTTP_CREATED = 201

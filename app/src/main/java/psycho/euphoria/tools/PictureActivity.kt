@@ -36,8 +36,8 @@ class PictureActivity : AppCompatActivity() {
         }
         return super.onCreateOptionsMenu(menu)
     }
-    override fun onOptionsItemSelected(item: MenuItem?): Boolean {
-        when (item?.itemId) {
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
             MENU_SHARE -> mFileAdapter?.getItem(mViewPager.currentItem)?.share(this)
         }
         return true

@@ -8,6 +8,8 @@ import android.os.Build
 import android.support.annotation.RequiresApi
 import android.widget.Toast
 
+val Context.version: Int get() = Build.VERSION.SDK_INT
+
 val Context.notificationManager: NotificationManager
     get() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)

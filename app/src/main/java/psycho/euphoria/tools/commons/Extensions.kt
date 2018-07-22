@@ -6,7 +6,6 @@ import java.text.DecimalFormat
 import java.util.*
 
 
-
 fun ClosedRange<Char>.randomString(lenght: Int) =
         (1..lenght)
                 .map { (Random().nextInt(endInclusive.toInt() - start.toInt()) + start.toInt()).toChar() }
@@ -30,3 +29,4 @@ fun Double.round(newScale: Int = 2): Double {
 fun String.isValidURL(): Boolean {
     return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
 }
+

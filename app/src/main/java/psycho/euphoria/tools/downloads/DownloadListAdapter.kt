@@ -39,7 +39,7 @@ class DownloadListAdapter(private val downloads: ArrayList<DownloadInfo>,
     override fun onBindViewHolder(viewHolder: ViewHolder, position: Int) {
         viewHolder.bindDownloadInfo(downloads[position])
 
-        
+
     }
 
     override fun getItemCount(): Int {
