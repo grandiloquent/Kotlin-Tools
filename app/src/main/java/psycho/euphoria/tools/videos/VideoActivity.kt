@@ -11,7 +11,6 @@ import android.os.Bundle
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.*
 import android.widget.SeekBar
 import com.google.android.exoplayer2.*
