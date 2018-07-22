@@ -45,7 +45,7 @@ class FileActivity : AppCompatActivity() {
                     intent.putExtra(KEY_DIRECTORY, file.absolutePath)
                     startActivity(intent)
                 } else if (file.name.endsWith(".mp4")) {
-                    val intent = Intent(this, VideoPlayerActivity::class.java)
+                    val intent = Intent(this, VideoActivity::class.java)
                     intent.putExtra(KEY_PATH, file.absolutePath)
                     startActivity(intent)
                 }

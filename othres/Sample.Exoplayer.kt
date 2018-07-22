@@ -2,33 +2,25 @@ package psycho.euphoria.tools
 
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
 import android.util.Pair
 import android.view.KeyEvent
 import android.view.View
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.drm.DefaultDrmSessionManager
-import com.google.android.exoplayer2.drm.FrameworkMediaCrypto
-import com.google.android.exoplayer2.drm.UnsupportedDrmException
+import com.google.android.exoplayer2.source.ExtractorMediaSource
+import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
+import com.google.android.exoplayer2.trackselection.RandomTrackSelection
 import com.google.android.exoplayer2.ui.PlayerControlView
-import com.google.android.exoplayer2.util.ErrorMessageProvider
+import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import kotlinx.android.synthetic.main.activity_video.*
-import java.util.*
-import com.google.android.exoplayer2.drm.FrameworkMediaDrm
-import com.google.android.exoplayer2.drm.HttpMediaDrmCallback
-import com.google.android.exoplayer2.extractor.DefaultExtractorsFactory
-import com.google.android.exoplayer2.source.ExtractorMediaSource
-import com.google.android.exoplayer2.trackselection.RandomTrackSelection
-import com.google.android.exoplayer2.upstream.DataSpec
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
-import com.google.android.exoplayer2.upstream.FileDataSource
-import com.google.android.exoplayer2.upstream.HttpDataSource
-import psycho.euphoria.tools.commons.*
+import psycho.euphoria.tools.commons.KEY_PATH
+import psycho.euphoria.tools.commons.requestFullScreen
+import psycho.euphoria.tools.commons.version
 import java.io.File
+import kotlin.math.max
 
 
 class VideoPlayerActivity : AppCompatActivity(), View.OnClickListener, PlaybackPreparer, PlayerControlView.VisibilityListener {
@@ -39,7 +31,8 @@ class VideoPlayerActivity : AppCompatActivity(), View.OnClickListener, PlaybackP
     private var mStartPosition = 0L
     private lateinit var mTrackSelectorParameters: DefaultTrackSelector.Parameters
     private var mPlayer: SimpleExoPlayer? = null
-
+    private var mTrackSelector: DefaultTrackSelector? = null
+    private var mMediaSource: MediaSource? = null
 
     private fun clearStartPosition() {
         mStartAutoPlayer = true
@@ -65,26 +58,39 @@ class VideoPlayerActivity : AppCompatActivity(), View.OnClickListener, PlaybackP
 
 
         if (mPlayer == null) {
-            val trackSelector = DefaultTrackSelector(RandomTrackSelection.Factory())
-            trackSelector.setParameters(mTrackSelectorParameters)
-            mPlayer = ExoPlayerFactory.newSimpleInstance(DefaultRenderersFactory(this), trackSelector).apply {
+            mTrackSelector = DefaultTrackSelector(RandomTrackSelection.Factory()).also {
+                it.parameters = mTrackSelectorParameters
+            }
+
+            mPlayer = ExoPlayerFactory.newSimpleInstance(DefaultRenderersFactory(this), mTrackSelector).apply {
                 addListener(object : Player.DefaultEventListener() {
                     override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
 
                     }
                 })
+                playWhenReady = mStartAutoPlayer
                 player_view.player = this
             }
 
             player_view.setPlaybackPreparer(this)
         }
 
-        val fileDataSource = FileDataSource()
-        fileDataSource.open(DataSpec(Uri.fromFile(File(path))))
-        val dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, "VideoPlayerActivity"))
-        val videoSource = ExtractorMediaSource(fileDataSource.uri, dataSourceFactory, DefaultExtractorsFactory(), null, null)
-        mPlayer?.prepare(videoSource, false, false)
+//        val fileDataSource = FileDataSource()
+//        fileDataSource.open(DataSpec(Uri.fromFile(File(path))))
+//        val dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, "VideoPlayerActivity"))
+//        val videoSource = ExtractorMediaSource(fileDataSource.uri, dataSourceFactory, DefaultExtractorsFactory(), null, null)
+        mMediaSource = buildMediaSource(Uri.fromFile(File(path)))
+        val haveStartPosition = mStartWindow != C.INDEX_UNSET
+        if (haveStartPosition) {
+            mPlayer?.seekTo(mStartWindow, mStartPosition)
+        }
+        mPlayer?.prepare(mMediaSource, !haveStartPosition, false)
 
+    }
+
+    private fun buildMediaSource(uri: Uri): MediaSource {
+        val dataSourceFactory = DefaultDataSourceFactory(this, Util.getUserAgent(this, "VideoPlayerActivity"))
+        return ExtractorMediaSource.Factory(dataSourceFactory).createMediaSource(uri);
     }
 
     override fun onClick(view: View?) {
@@ -95,16 +101,17 @@ class VideoPlayerActivity : AppCompatActivity(), View.OnClickListener, PlaybackP
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        requestFullScreen()
         savedInstanceState?.let {
             mTrackSelectorParameters = it.getParcelable(KEY_TRACK_SELECTOR_PARAMETERS)
             mStartAutoPlayer = it.getBoolean(KEY_AUTO_PLAY)
             mStartWindow = it.getInt(KEY_WINDOW)
             mStartPosition = it.getLong(KEY_POSITION)
-        }
-        if (savedInstanceState == null) {
+        } ?: run {
             mTrackSelectorParameters = DefaultTrackSelector.ParametersBuilder().build()
             clearStartPosition()
         }
+
         super.onCreate(savedInstanceState)
 
         initialize()
@@ -160,26 +167,39 @@ class VideoPlayerActivity : AppCompatActivity(), View.OnClickListener, PlaybackP
     }
 
     private fun releasePlayer() {
+        mPlayer?.let {
+            updateTrackSelectorParameters()
+            updateStartPosition()
+            it.release()
+            mTrackSelector = null
+            mMediaSource = null
+            mPlayer = null
+        }
+
     }
 
     private fun updateStartPosition() {
+        mPlayer?.let {
+            mStartAutoPlayer = it.playWhenReady
+            mStartWindow = it.currentWindowIndex
+            mStartPosition = max(0, it.contentPosition)
+        }
     }
 
     private fun updateTrackSelectorParameters() {
+        mTrackSelector?.let {
+
+            mTrackSelectorParameters = it.parameters
+        }
     }
 
     companion object {
-        private const val DRM_LICENSE_URL_EXTRA = ""
-        private const val DRM_SCHEME_UUID_EXTRA = ""
-        private const val DRM_KEY_REQUEST_PROPERTIES_EXTRA = ""
-        private const val DRM_MULTI_SESSION_EXTRA = ""
+
+
         private const val KEY_AUTO_PLAY = "auto_play"
         private const val KEY_WINDOW = "window"
         private const val KEY_POSITION = "position"
         private const val KEY_TRACK_SELECTOR_PARAMETERS = "track_selector_parameters"
-        const val ACTION_VIEW = "psycho.euphoria.tools.VIEW"
-        const val EXTENSION_EXTRA = "extension"
-        const val URI_LIST_EXTRA = "uri_list"
-        const val ACTION_VIEW_LIST = "psycho.euphoria.tools.VIEW_LIST"
+
     }
 }

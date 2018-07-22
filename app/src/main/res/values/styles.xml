@@ -34,4 +34,8 @@
         <attr name="mv_enabled" format="boolean" />
     </declare-styleable>
 
+    <style name="MyBorderlessBackgroundStyle">
+        <item name="android:background">?attr/selectableItemBackground</item>
+    </style>
+
 </resources>

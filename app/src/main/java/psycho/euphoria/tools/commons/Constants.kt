@@ -1,10 +1,23 @@
 package psycho.euphoria.tools.commons
 
-const val DESTINATION_EXTERNAL = 0
+import android.os.Build
+import android.os.Looper
+
+
+fun isOnMainThread() = Looper.myLooper() == Looper.getMainLooper()
+fun isJellyBean1Plus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1
+fun isAndroidFour() = Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT_WATCH
+fun isKitkatPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT
+fun isLollipopPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+fun isNougatPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
+fun isOreoPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+
 const val _DATA = "_data"
 const val _ID = "_id"
 const val AUTHORITY = "downloads"
 const val BUFFER_SIZE = 8192
+const val CLICK_MAX_DURATION = 150
 const val COLUMN_ALLOW_METERED = "allow_metered"
 const val COLUMN_ALLOW_ROAMING = "allow_roaming"
 const val COLUMN_ALLOW_WRITE = "allow_write"
@@ -109,12 +122,31 @@ const val CONST_X_POWERED_BY = "X-Powered-By"
 const val CONTROL_PAUSED = 1
 const val CONTROL_RUN = 0
 const val DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36"
+const val DESTINATION_EXTERNAL = 0
+const val DRAG_THRESHOLD = 8
 const val ETAG = "etag"
+const val EXT_ALBUM = 1024
+const val EXT_ARTIST = 512
+const val EXT_CAMERA_MODEL = 64
+const val EXT_DATE_TAKEN = 32
+const val EXT_DURATION = 256
+const val EXT_EXIF_PROPERTIES = 128
+const val EXT_LAST_MODIFIED = 16
+const val EXT_NAME = 1
+const val EXT_PATH = 2
+const val EXT_RESOLUTION = 8
+const val EXT_SIZE = 4
+const val GROUP_BY_DATE_TAKEN = 4
+const val GROUP_BY_EXTENSION = 16
+const val GROUP_BY_FILE_TYPE = 8
+const val GROUP_BY_FOLDER = 32
+const val GROUP_BY_LAST_MODIFIED = 2
+const val GROUP_BY_NONE = 1
+const val GROUP_DESCENDING = 1024
 const val HTTP_ACCEPTED = 202
 const val HTTP_BAD_GATEWAY = 502
 const val HTTP_BAD_METHOD = 405
 const val HTTP_BAD_REQUEST = 400
-const val KEY_PATH = "path"
 const val HTTP_CLIENT_TIMEOUT = 408
 const val HTTP_CONFLICT = 409
 const val HTTP_CREATED = 201
@@ -149,12 +181,29 @@ const val HTTP_UNAVAILABLE = 503
 const val HTTP_UNSUPPORTED_TYPE = 415
 const val HTTP_USE_PROXY = 305
 const val HTTP_VERSION = 505
+const val KEY_PATH = "path"
 const val MAX_REDIRECTS = 5
 const val MAX_RETRIES = 5
 const val MIMETYPE_DRM_MESSAGE = "application/vnd.oma.drm.message"
 const val MIN_PROGRESS_STEP = 65536
 const val MIN_PROGRESS_TIME = 2000
+const val PREFS_KEY = "Prefs"
 const val RETRY_AFTER_X_REDIRECT_COUNT = "method"
+const val SORT_BY_ARTIST = 4096
+const val SORT_BY_DATE_MODIFIED = 2
+const val SORT_BY_DATE_TAKEN = 8
+const val SORT_BY_DURATION = 8192
+const val SORT_BY_EXTENSION = 16
+const val SORT_BY_FIRST_NAME = 128
+const val SORT_BY_MIDDLE_NAME = 256
+const val SORT_BY_NAME = 1
+const val SORT_BY_NUMBER = 64
+const val SORT_BY_PATH = 32
+const val SORT_BY_SIZE = 4
+const val SORT_BY_SURNAME = 512
+const val SORT_BY_TITLE = 2048
+const val SORT_DESCENDING = 1024
+const val SORT_ORDER = "sort_order"
 const val STATUS_BAD_REQUEST = 400
 const val STATUS_BLOCKED = 498
 const val STATUS_CANCELED = 490
@@ -179,7 +228,15 @@ const val STATUS_UNHANDLED_REDIRECT = 493
 const val STATUS_UNKNOWN_ERROR = 491
 const val STATUS_WAITING_FOR_NETWORK = 195
 const val STATUS_WAITING_TO_RETRY = 194
+const val TYPE_GIFS = 4
+const val TYPE_IMAGES = 1
+const val TYPE_RAWS = 8
+const val TYPE_VIDEOS = 2
 const val VISIBILITY_HIDDEN = 2
 const val VISIBILITY_VISIBLE = 0
 const val VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1
 const val VISIBILITY_VISIBLE_NOTIFY_ONLY_COMPLETION = 3
+val audioExtensions: Array<String> get() = arrayOf(".mp3", ".wav", ".wma", ".ogg", ".m4a", ".opus", ".flac", ".aac")
+val photoExtensions: Array<String> get() = arrayOf(".jpg", ".png", ".jpeg", ".bmp", ".webp")
+val rawExtensions: Array<String> get() = arrayOf(".dng", ".orf", ".nef")
+val videoExtensions: Array<String> get() = arrayOf(".mp4", ".mkv", ".webm", ".avi", ".3gp", ".mov", ".m4v", ".3gpp")
