@@ -9,8 +9,7 @@ import android.graphics.Point
 import android.media.AudioManager
 import android.os.Build
 import android.os.Environment
-import android.support.annotation.RequiresApi
-import android.view.ViewGroup
+import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.widget.Toast
 import psycho.euphoria.tools.Config
@@ -24,10 +23,11 @@ val Context.navigationBarHeight: Int get() = if (navigationBarBottom) navigation
 val Context.navigationBarRight: Boolean get() = usableScreenSize.x < realScreenSize.x
 val Context.navigationBarWidth: Int get() = if (navigationBarRight) navigationBarSize.x else 0
 val Context.portrait get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
-val Context.screenHeight: Int get() = resources.displayMetrics.heightPixels
-val Context.screenWidth: Int get() = resources.displayMetrics.widthPixels
 val Context.version: Int get() = Build.VERSION.SDK_INT
 val Context.windowManager: WindowManager get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
+
+
+
 
 internal val Context.navigationBarSize: Point
     get() = when {
@@ -35,7 +35,6 @@ internal val Context.navigationBarSize: Point
         navigationBarBottom -> Point(usableScreenSize.x, realScreenSize.y - usableScreenSize.y)
         else -> Point()
     }
-
 
 
 val Context.alarmManager: AlarmManager
