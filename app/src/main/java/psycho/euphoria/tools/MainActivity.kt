@@ -6,7 +6,9 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
+import psycho.euphoria.tools.commons.App
 import psycho.euphoria.tools.downloads.DownloadActivity
+import psycho.euphoria.tools.videos.VideoActivity
 
 class MainActivity : Activity() {
     private lateinit var mButtonPicture: Button
@@ -14,6 +16,9 @@ class MainActivity : Activity() {
         setContentView(R.layout.activity_main)
         mButtonPicture = findViewById(R.id.buttonPicture)
         mButtonPicture.setOnClickListener {
+//            val i=Intent(App.instance,VideoActivity::class.java)
+//            i.putExtra("path","/storage/emulated/0/xvideos.com_fb8f508653cb923e569700c1944944a0.mp4")
+//            startActivity(i)
             val i = Intent(MainActivity@ this, FileActivity::class.java)
             i.putExtra(TYPE_PICTURE, true)
             startActivity(i)

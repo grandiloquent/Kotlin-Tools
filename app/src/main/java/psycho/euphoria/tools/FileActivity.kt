@@ -13,6 +13,7 @@ import android.widget.ListView
 import android.widget.TextView
 import psycho.euphoria.tools.MainActivity.Companion.TYPE_MUSIC
 import psycho.euphoria.tools.MainActivity.Companion.TYPE_PICTURE
+import psycho.euphoria.tools.videos.VideoActivity
 import java.io.File
 
 class FileActivity : AppCompatActivity() {
