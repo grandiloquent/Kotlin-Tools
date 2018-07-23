@@ -1,4 +1,4 @@
-package psycho.euphoria.tools
+package psycho.euphoria.tools.music
 import android.app.Notification
 import android.app.Service
 import android.content.Context
@@ -10,6 +10,9 @@ import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.widget.RemoteViews
+import psycho.euphoria.tools.R
+import psycho.euphoria.tools.getFileName
+import psycho.euphoria.tools.listAudioFiles
 import java.io.File
 import java.io.IOException
 class MediaPlaybackService : Service() {

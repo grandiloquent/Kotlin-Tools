@@ -165,6 +165,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
             notifyCompleted?.invoke(mId)
         } catch (e: StopRequestException) {
             Tracker.e("run", "${e.finalStatus} ${e.message ?: "Unknown error occurred."}")
+            notifyErrorOccurred?.invoke(mId, e.message)
         } finally {
             downloadInfo.writeToDatabase()
 

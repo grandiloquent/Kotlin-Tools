@@ -32,6 +32,7 @@ class DownloadService() : Service() {
 
                 downStart()
             }
+            MSG_ERROR -> downStart()
 
         }
         true

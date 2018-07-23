@@ -95,7 +95,7 @@ var HttpURLConnection.date: String
     get() = getHeaderField("Date")
     set(value) = addRequestProperty("Date", value)
 
-var HttpURLConnection.eTag: String
+var HttpURLConnection.eTag: String?
     get() = getHeaderField("ETag")
     set(value) = addRequestProperty("ETag", value)
 

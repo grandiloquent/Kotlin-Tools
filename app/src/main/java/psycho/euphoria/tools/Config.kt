@@ -1,6 +1,7 @@
 package psycho.euphoria.tools
 
 import android.content.Context
+import android.os.Environment
 import psycho.euphoria.tools.commons.BasicConfig
 import psycho.euphoria.tools.commons.EXT_EXIF_PROPERTIES
 import psycho.euphoria.tools.commons.EXT_LAST_MODIFIED
@@ -15,9 +16,15 @@ const val KEY_ALLOW_INSTANT_CHANGE = "allow_instant_change"
 const val KEY_BOTTOM_ACTIONS = "bottom_actions"
 const val KEY_LOOP_VIDEOS = "loop_videos"
 const val KEY_HIDE_EXTENDED_DETAILS = "hide_extended_details"
+const val KEY_RECENT_DIRECTORY = "recent_directory"
+
 val Context.config: Config get() = Config.newInstance(applicationContext)
 
 class Config(context: Context) : BasicConfig(context) {
+
+    var recentDirectory: String
+        get() = prefs.getString(KEY_RECENT_DIRECTORY, Environment.getExternalStorageDirectory().absolutePath)
+        set(value) = prefs.edit().putString(KEY_RECENT_DIRECTORY, value).apply()
 
     var allowInstantChange: Boolean
         get() = prefs.getBoolean(KEY_ALLOW_INSTANT_CHANGE, false)

@@ -13,6 +13,7 @@ fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 fun isNougatPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
 fun isOreoPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
+const val KEY_SDCARD_PATH = "sdcard_path"
 const val _DATA = "_data"
 const val _ID = "_id"
 const val AUTHORITY = "downloads"

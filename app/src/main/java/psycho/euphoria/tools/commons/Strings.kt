@@ -1,5 +1,6 @@
 package psycho.euphoria.tools.commons
 
+import android.content.Context
 import android.graphics.BitmapFactory
 import android.graphics.Point
 import android.media.ExifInterface
@@ -7,6 +8,9 @@ import android.media.MediaMetadataRetriever
 import android.util.Patterns
 import java.text.SimpleDateFormat
 import java.util.*
+import android.content.Intent
+import android.net.Uri
+import java.io.File
 
 
 fun String.getFilenameExtension() = substring(lastIndexOf(".") + 1)
@@ -32,6 +36,7 @@ fun String.getExifCameraModel(exif: ExifInterface): String {
     }
     return ""
 }
+
 fun String.getExifDateTaken(exif: ExifInterface): String {
     exif.getAttribute(ExifInterface.TAG_DATETIME).let {
         if (it?.isNotEmpty() == true) {
@@ -44,6 +49,7 @@ fun String.getExifDateTaken(exif: ExifInterface): String {
     }
     return ""
 }
+
 fun String.getExifProperties(exif: ExifInterface): String {
     var exifString = ""
     exif.getAttribute(ExifInterface.TAG_F_NUMBER).let {
@@ -72,6 +78,7 @@ fun String.getExifProperties(exif: ExifInterface): String {
     }
     return exifString.trim()
 }
+
 fun String.getImageResolution(): Point? {
     val options = BitmapFactory.Options()
     options.inJustDecodeBounds = true
@@ -84,6 +91,7 @@ fun String.getImageResolution(): Point? {
         null
     }
 }
+
 fun String.getMimeType(): String {
     val typesMap = HashMap<String, String>().apply {
         put("323", "text/h323")
@@ -688,6 +696,7 @@ fun String.getMimeType(): String {
     }
     return typesMap[getFilenameExtension().toLowerCase()] ?: ""
 }
+
 fun String.getResolution(): Point? {
     return if (isImageFast() || isImageSlow()) {
         getImageResolution()
@@ -697,6 +706,7 @@ fun String.getResolution(): Point? {
         null
     }
 }
+
 fun String.getVideoResolution(): Point? {
     return try {
         val retriever = MediaMetadataRetriever()
@@ -708,6 +718,26 @@ fun String.getVideoResolution(): Point? {
         null
     }
 }
+
 fun String.isValidURL(): Boolean {
     return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
+}
+
+fun String.triggerScanFile(context: Context = App.instance) {
+    val file = File(this)
+    if (!file.exists()) return
+
+    val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+    val uri = Uri.fromFile(file)
+    mediaScanIntent.data = uri
+    context.sendBroadcast(mediaScanIntent)
+}
+
+fun String.convertToSeconds(): Int {
+
+    val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+
+    return if (strings.size > 1) {
+        Integer.parseInt(strings[0]) * 60 + Integer.parseInt(strings[1])
+    } else 0
 }

@@ -7,4 +7,9 @@
     <string name="notifiaction_download_title">Download</string>
     <string name="an_error_occurred">An error occurred: %s</string>
 
+    <string name="menu_downlaod">Download</string>
+    <string name="menu_detelte">Delete</string>
+    <string name="menu_storage">Storage</string>
+    <string name="menu_sd_card">SD Card</string>
+    <string name="menu_split_video">Split Video</string>
 </resources>
