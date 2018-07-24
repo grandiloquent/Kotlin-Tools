@@ -164,6 +164,10 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
             }
             notifyCompleted?.invoke(mId)
         } catch (e: StopRequestException) {
+            // 489 Requested range not satisfiable
+            if (e.finalStatus == STATUS_CANNOT_RESUME /*489*/ && downloadInfo.currentBytes == downloadInfo.totalBytes) {
+                downloadInfo.finish = true
+            }
             Tracker.e("run", "${e.finalStatus} ${e.message ?: "Unknown error occurred."}")
             notifyErrorOccurred?.invoke(mId, e.message)
         } finally {

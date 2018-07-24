@@ -60,7 +60,6 @@ fun isLollipopPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
 fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 private const val REGEX_FILE_AUDIO = "\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape|au|awb|dct|dss|dvf|flac|gsm|iklax|ivs|m4a|m4b|m4p|mmf|mp3|mpc|msv|nsf|ogg|oga|mogg|opus|ra|rm|raw|sln|tta|vox|wav|webm|wma|wv)$"
 private const val REGEX_FILE_IMAGE = "\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
-private const val SIXTY_FPS_INTERVAL = 1000 / 60L
 private const val TAG = "Extension"
 val Context.sdCardPath: String get() = getSDCardPath()
 val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
@@ -146,18 +145,7 @@ fun Context.getStorageDirectories(): Array<String> {
     return paths.toTypedArray()
 }
 
-fun Context.getPermissionString(id: Int) = when (id) {
-    PERMISSION_READ_STORAGE -> Manifest.permission.READ_EXTERNAL_STORAGE
-    PERMISSION_WRITE_STORAGE -> Manifest.permission.WRITE_EXTERNAL_STORAGE
-    PERMISSION_CAMERA -> Manifest.permission.CAMERA
-    PERMISSION_RECORD_AUDIO -> Manifest.permission.RECORD_AUDIO
-    PERMISSION_READ_CONTACTS -> Manifest.permission.READ_CONTACTS
-    PERMISSION_WRITE_CONTACTS -> Manifest.permission.WRITE_CONTACTS
-    PERMISSION_READ_CALENDAR -> Manifest.permission.READ_CALENDAR
-    PERMISSION_WRITE_CALENDAR -> Manifest.permission.WRITE_CALENDAR
-    PERMISSION_CALL_PHONE -> Manifest.permission.CALL_PHONE
-    else -> ""
-}
+
 
 fun Context.px2dp(px: Float): Float {
     return px / resources.displayMetrics.density;
@@ -184,13 +172,6 @@ fun File.listAudio(): List<File> {
     return listFiles().filter { accept(it) }
 }
 
-fun File.listFilesOrderly(): List<File> {
-    var files = listFiles()
-    if (files == null) return ArrayList<File>()
-    return files.asList().let {
-        it.sortedWith(compareBy<File> { it.isFile }.thenBy { it.name.toLowerCase() })
-    }
-}
 
 fun File.listImagesRecursively(): List<File> {
     var dir = this
@@ -233,10 +214,6 @@ fun getFileName(filePath: String?): String? {
 
 fun getPointerIndex(action: Int): Int {
     return action and MotionEvent.ACTION_POINTER_INDEX_MASK shr MotionEvent.ACTION_POINTER_INDEX_SHIFT
-}
-
-fun Int.formatNumberWithLocale(): String {
-    return String.format(Locale.getDefault(), "%d", this)
 }
 
 fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String> {
@@ -283,11 +260,7 @@ fun String.e(t: String, messag: String) {
     Log.e(t, "[$this]: $messag")
 }
 
-fun View.postOnAnimationCompat(runnable: Runnable) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN)
-        postOnAnimation(runnable)
-    else postDelayed(runnable, SIXTY_FPS_INTERVAL)
-}
+
 
 fun Context.getSharedPrefs() = getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
 

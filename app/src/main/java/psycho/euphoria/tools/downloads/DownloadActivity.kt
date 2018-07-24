@@ -118,8 +118,7 @@ class DownloadActivity() : AppCompatActivity() {
 
     override fun onStop() {
         super.onStop()
-        if (mOnPrimaryClipChangedListener != null)
-            clipboardManager.removePrimaryClipChangedListener(mOnPrimaryClipChangedListener)
+
     }
     override fun onDestroy() {
 

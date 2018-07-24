@@ -38,6 +38,11 @@ fun Long.formatSize(): String {
     val digitGroups = (Math.log10(toDouble()) / Math.log10(1024.0)).toInt()
     return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
 }
+
+fun Int.formatNumberWithLocale(): String {
+    return String.format(Locale.getDefault(), "%d", this)
+}
+
 fun Point.getMPx(): String {
     val px = x * y / 1000000.toFloat()
     val rounded = Math.round(px * 10) / 10.toFloat()

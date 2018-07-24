@@ -12,4 +12,5 @@
     <string name="menu_storage">Storage</string>
     <string name="menu_sd_card">SD Card</string>
     <string name="menu_split_video">Split Video</string>
+    <string name="menu_sort_by_last_modified">Sort By Last Modified</string>
 </resources>

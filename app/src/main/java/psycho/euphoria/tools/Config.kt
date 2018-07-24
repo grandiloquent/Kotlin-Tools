@@ -2,10 +2,7 @@ package psycho.euphoria.tools
 
 import android.content.Context
 import android.os.Environment
-import psycho.euphoria.tools.commons.BasicConfig
-import psycho.euphoria.tools.commons.EXT_EXIF_PROPERTIES
-import psycho.euphoria.tools.commons.EXT_LAST_MODIFIED
-import psycho.euphoria.tools.commons.EXT_RESOLUTION
+import psycho.euphoria.tools.commons.*
 
 const val KEY_SHOW_EXTENDED_DETAILS = "show_extended_details"
 const val KEY_EXTENDED_DETAILS = "extended_details"
@@ -17,11 +14,15 @@ const val KEY_BOTTOM_ACTIONS = "bottom_actions"
 const val KEY_LOOP_VIDEOS = "loop_videos"
 const val KEY_HIDE_EXTENDED_DETAILS = "hide_extended_details"
 const val KEY_RECENT_DIRECTORY = "recent_directory"
+const val KEY_SORT_ORDER = "sort_order"
 
 val Context.config: Config get() = Config.newInstance(applicationContext)
 
 class Config(context: Context) : BasicConfig(context) {
 
+    var sortOrder: Int
+        get() = prefs.getInt(KEY_SORT_ORDER, SORT_BY_NAME)
+        set(value) = prefs.edit().putInt(KEY_SORT_ORDER, value).apply()
     var recentDirectory: String
         get() = prefs.getString(KEY_RECENT_DIRECTORY, Environment.getExternalStorageDirectory().absolutePath)
         set(value) = prefs.edit().putString(KEY_RECENT_DIRECTORY, value).apply()

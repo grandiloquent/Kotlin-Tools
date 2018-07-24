@@ -12,9 +12,11 @@ import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
 import kotlinx.android.extensions.LayoutContainer
+import kotlinx.android.synthetic.main.abc_activity_chooser_view_list_item.*
 import kotlinx.android.synthetic.main.item_file.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.FileItem
+import psycho.euphoria.tools.commons.SORT_BY_NAME
 import psycho.euphoria.tools.commons.formatSize
 import psycho.euphoria.tools.commons.getColoredDrawableWithColor
 
@@ -25,6 +27,7 @@ class FileAdapter(private val context: Context,
     private val mFileDrawble: Drawable
     private val mFolderDrawable: Drawable
     private val mOptions: RequestOptions
+
 
     init {
 
@@ -67,6 +70,7 @@ class FileAdapter(private val context: Context,
 
         init {
             itemView.isLongClickable = true
+
         }
 
         fun bindFileItem(fileItem: FileItem) {
@@ -75,8 +79,7 @@ class FileAdapter(private val context: Context,
                 item_name.text = name
                 if (isDirectory) {
                     item_icon.setImageDrawable(mFolderDrawable)
-                    item_details.text = "0"
-
+                    item_details.text = "$count item"
 //                    item_details.post {
 //                        item_details.text = "${File(fileItem.path).listFiles().size}"
 //                    } // maybe cause some performance problem

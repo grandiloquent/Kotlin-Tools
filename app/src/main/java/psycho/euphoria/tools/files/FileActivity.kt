@@ -26,6 +26,7 @@ class FileActivity : AppCompatActivity() {
 
     private lateinit var mRecentDirectory: String
     private var mFileAdapter: FileAdapter? = null
+    private var mSortOrder = SORT_BY_NAME
 
 
     private fun initializeRecyclerView() {
@@ -87,6 +88,7 @@ class FileActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_file)
+        mSortOrder = config.sortOrder
         initializeRecyclerView()
         mRecentDirectory = config.recentDirectory
         refreshRecyclerView(mRecentDirectory)
@@ -97,6 +99,7 @@ class FileActivity : AppCompatActivity() {
             add(0, KEY_INTERNAL_STORAGE, 0, getString(R.string.menu_storage))
             add(0, KEY_SDCARD, 0, getString(R.string.menu_sd_card))
             add(0, KEY_DOWNLOAD, 0, getString(R.string.menu_downlaod))
+            add(0, KEY_SORT_BY_LAST_MODIFIED,1,getString(R.string.menu_sort_by_last_modified))
         }
         return super.onCreateOptionsMenu(menu)
     }
@@ -122,12 +125,17 @@ class FileActivity : AppCompatActivity() {
                 val intent = Intent(this, DownloadActivity::class.java)
                 startActivity(intent)
             }
+            KEY_SORT_BY_LAST_MODIFIED -> {
+                mSortOrder = SORT_BY_DATE_MODIFIED
+                refreshRecyclerView()
+            }
         }
         return super.onOptionsItemSelected(item)
     }
 
     override fun onPause() {
         config.recentDirectory = mRecentDirectory
+        config.sortOrder = mSortOrder
         super.onPause()
     }
 
@@ -136,7 +144,7 @@ class FileActivity : AppCompatActivity() {
     }
 
     private fun refreshRecyclerView(path: String) {
-        File(path).listFileItems()?.let {
+        File(path).listFileItems(mSortOrder)?.let {
             if (mFileAdapter == null) {
                 mFileAdapter = FileAdapter(this, it) {
                     if (it.isDirectory) {
@@ -207,6 +215,8 @@ class FileActivity : AppCompatActivity() {
         private const val KEY_INTERNAL_STORAGE = 0
         private const val KEY_SDCARD = 1
         private const val KEY_DOWNLOAD = 2
+        private const val KEY_SORT_BY_LAST_MODIFIED = 3
+
         private const val MENU_COPY = 11
         private const val MENU_DELELTE = 12
         private const val MENU_SPLIT_VIDEO = 13

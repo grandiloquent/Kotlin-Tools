@@ -1,5 +1,6 @@
 package psycho.euphoria.tools.commons
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.ClipboardManager
@@ -13,7 +14,7 @@ import android.text.TextUtils
 import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.widget.Toast
-import psycho.euphoria.tools.Config
+import psycho.euphoria.tools.*
 import java.io.File
 import java.util.*
 import java.util.regex.Pattern
@@ -145,6 +146,18 @@ fun Context.getStorageDirectories(): Array<String> {
         Collections.addAll(paths, *rawSecondaryStorages)
     }
     return paths.toTypedArray()
+}
+fun Context.getPermissionString(id: Int) = when (id) {
+    PERMISSION_READ_STORAGE -> Manifest.permission.READ_EXTERNAL_STORAGE
+    PERMISSION_WRITE_STORAGE -> Manifest.permission.WRITE_EXTERNAL_STORAGE
+    PERMISSION_CAMERA -> Manifest.permission.CAMERA
+    PERMISSION_RECORD_AUDIO -> Manifest.permission.RECORD_AUDIO
+    PERMISSION_READ_CONTACTS -> Manifest.permission.READ_CONTACTS
+    PERMISSION_WRITE_CONTACTS -> Manifest.permission.WRITE_CONTACTS
+    PERMISSION_READ_CALENDAR -> Manifest.permission.READ_CALENDAR
+    PERMISSION_WRITE_CALENDAR -> Manifest.permission.WRITE_CALENDAR
+    PERMISSION_CALL_PHONE -> Manifest.permission.CALL_PHONE
+    else -> ""
 }
 // http://stackoverflow.com/a/40582634/1967672
 fun Context.getSDCardPath(): String {

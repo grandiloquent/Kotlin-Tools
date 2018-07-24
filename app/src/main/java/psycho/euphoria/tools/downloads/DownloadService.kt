@@ -146,6 +146,7 @@ class DownloadService() : Service() {
             }
             if (totalBytes > 0L) {
 
+                mNotificationBuilder.setContentTitle(speed.formatSize())
                 mNotificationBuilder.setProgress(100, (it.currentBytes * 100 / totalBytes).toInt(), false)
                 mNotificationBuilder.setContentText("${it.currentBytes.formatSize()}/${totalBytes.formatSize()}(${(it.currentBytes * 100.0 / totalBytes).round()}%)");
             }
