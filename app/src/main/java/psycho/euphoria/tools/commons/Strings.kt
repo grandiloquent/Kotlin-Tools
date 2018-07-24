@@ -732,7 +732,13 @@ fun String.triggerScanFile(context: Context = App.instance) {
     mediaScanIntent.data = uri
     context.sendBroadcast(mediaScanIntent)
 }
+fun String.getGenericMimeType(): String {
+    if (!contains("/"))
+        return this
 
+    val type = substring(0, indexOf("/"))
+    return "$type/*"
+}
 fun String.convertToSeconds(): Int {
 
     val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()

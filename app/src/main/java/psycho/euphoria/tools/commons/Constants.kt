@@ -233,6 +233,8 @@ const val TYPE_GIFS = 4
 const val TYPE_IMAGES = 1
 const val TYPE_RAWS = 8
 const val TYPE_VIDEOS = 2
+const val REAL_FILE_PATH = "real_file_path_2"
+
 const val VISIBILITY_HIDDEN = 2
 const val VISIBILITY_VISIBLE = 0
 const val VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1

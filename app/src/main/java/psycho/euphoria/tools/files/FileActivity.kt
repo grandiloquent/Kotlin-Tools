@@ -4,6 +4,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
+import android.support.v4.content.FileProvider
 import android.support.v7.app.AppCompatActivity
 import android.view.ContextMenu
 import android.view.Menu
@@ -19,6 +20,10 @@ import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.videos.SplitVideo
 import psycho.euphoria.tools.videos.VideoActivity
 import java.io.File
+import android.R.attr.path
+import android.content.pm.ResolveInfo
+import android.content.pm.PackageManager
+import android.os.Build
 
 
 class FileActivity : AppCompatActivity() {
@@ -73,7 +78,7 @@ class FileActivity : AppCompatActivity() {
                         File(fileItem.path).deletes()
                         refreshRecyclerView()
                     }
-                    MENU_DELELTE -> {
+                    MENU_SPLIT_VIDEO -> {
                         val fileItem = it.getItem(menuInfo.position)
                         splitVideo(fileItem.path)
 
@@ -99,7 +104,7 @@ class FileActivity : AppCompatActivity() {
             add(0, KEY_INTERNAL_STORAGE, 0, getString(R.string.menu_storage))
             add(0, KEY_SDCARD, 0, getString(R.string.menu_sd_card))
             add(0, KEY_DOWNLOAD, 0, getString(R.string.menu_downlaod))
-            add(0, KEY_SORT_BY_LAST_MODIFIED,1,getString(R.string.menu_sort_by_last_modified))
+            add(0, KEY_SORT_BY_LAST_MODIFIED, 1, getString(R.string.menu_sort_by_last_modified))
         }
         return super.onCreateOptionsMenu(menu)
     }
@@ -179,9 +184,9 @@ class FileActivity : AppCompatActivity() {
             }
             else -> {
                 try {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.fromFile(File(path)))
-                    if (intent.resolveActivity(packageManager) != null)
-                        startActivity(intent)
+
+                    tryOpenPathIntent(path, false)
+
                 } catch (e: Exception) {
                     showErrorToast(e)
                 }

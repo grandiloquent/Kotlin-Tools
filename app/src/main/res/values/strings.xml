@@ -1,12 +1,14 @@
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
 
+    <string name="unknown_error_occurred">An unknown error occurred</string>
     <string name="app_name">Tools</string>
     <string name="activity_download_title">Download</string>
     <string name="menu_add_download_task">Add Download Task</string>
     <string name="menu_strat_download_service">Start Download</string>
     <string name="notifiaction_download_title">Download</string>
     <string name="an_error_occurred">An error occurred: %s</string>
-
+    <string name="open_with">Open with</string>
+    <string name="no_app_found">No valid app found</string>
     <string name="menu_downlaod">Download</string>
     <string name="menu_detelte">Delete</string>
     <string name="menu_storage">Storage</string>

@@ -86,6 +86,7 @@ class DownloadService() : Service() {
 
         if (mCurrentDownloadInfo == null) {
 
+            stopSelf()
         } else {
             val runnable = Downloader(mCurrentDownloadInfo!!).apply {
                 notifyCompleted = fun(id) {

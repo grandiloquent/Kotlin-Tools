@@ -8,6 +8,9 @@ data class FileItem(val path: String,
                     val count: Int,
                     val isDirectory: Boolean)
 
+fun File.isImageVideoGif() = absolutePath.isImageFast() || absolutePath.isVideoFast() || absolutePath.isGif() || absolutePath.isRawFast()
+
+
 fun File.createDirectory() {
     if (!exists()) mkdirs()
 }
