@@ -54,8 +54,7 @@ const val PERMISSION_CALL_PHONE = 9
 const val GENERIC_PERM_HANDLER = 100
 const val OTG_PATH = "otg:/"
 fun getInternalStoragePath() = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
-fun Context.isPathOnSD(path: String) = sdCardPath.isNotEmpty() && path.startsWith(sdCardPath)
-fun Context.needsStupidWritePermissions(path: String) = (isPathOnSD(path) || path.startsWith(OTG_PATH)) && isLollipopPlus()
+
 fun isLollipopPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
 fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 private const val REGEX_FILE_AUDIO = "\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape|au|awb|dct|dss|dvf|flac|gsm|iklax|ivs|m4a|m4b|m4p|mmf|mp3|mpc|msv|nsf|ogg|oga|mogg|opus|ra|rm|raw|sln|tta|vox|wav|webm|wma|wv)$"

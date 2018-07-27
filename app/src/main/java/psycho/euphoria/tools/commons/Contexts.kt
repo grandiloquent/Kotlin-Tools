@@ -7,6 +7,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.res.Configuration
 import android.database.Cursor
+import android.graphics.Color
 import android.graphics.Point
 import android.media.AudioManager
 import android.media.MediaScannerConnection
@@ -18,6 +19,7 @@ import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v4.provider.DocumentFile
 import android.text.TextUtils
+import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Toast
 import com.simplemobiletools.commons.extensions.getIntValue
@@ -46,29 +48,24 @@ private val physicalPaths = arrayListOf(
         "/storage/usbdisk2"
 )
 
+fun Context.getAdjustedPrimaryColor() = if (isBlackAndWhiteTheme()) Color.WHITE else baseConfig.primaryColor
+fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists() ?: false else File(path).exists()
 fun Context.getInternalStoragePath() = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 fun Context.getSharedPrefs() = getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
+fun Context.isBlackAndWhiteTheme() = baseConfig.textColor == Color.WHITE && baseConfig.primaryColor == Color.BLACK && baseConfig.backgroundColor == Color.BLACK
+fun Context.isPathOnSD(path: String) = sdCardPath.isNotEmpty() && path.startsWith(sdCardPath)
+fun Context.needsStupidWritePermissions(path: String) = (isPathOnSD(path) || path.startsWith(OTG_PATH)) && isLollipopPlus()
 val Context.audioManager get() = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
 val Context.config: Config get() = Config.newInstance(applicationContext)
 val Context.navigationBarBottom: Boolean get() = usableScreenSize.y < realScreenSize.y
 val Context.navigationBarHeight: Int get() = if (navigationBarBottom) navigationBarSize.y else 0
 val Context.navigationBarRight: Boolean get() = usableScreenSize.x < realScreenSize.x
 val Context.navigationBarWidth: Int get() = if (navigationBarRight) navigationBarSize.x else 0
 val Context.portrait get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
+val Context.sdCardPath: String get() = baseConfig.sdCardPath
 val Context.version: Int get() = Build.VERSION.SDK_INT
 val Context.windowManager: WindowManager get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
-val Context.sdCardPath: String get() = baseConfig.sdCardPath
-fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists()
-        ?: false else File(path).exists()
-
-internal val Context.navigationBarSize: Point
-    get() = when {
-        navigationBarRight -> Point(realScreenSize.x - usableScreenSize.x, usableScreenSize.y)
-        navigationBarBottom -> Point(usableScreenSize.x, realScreenSize.y - usableScreenSize.y)
-        else -> Point()
-    }
-
 
 val Context.alarmManager: AlarmManager
     get() {
@@ -84,7 +81,12 @@ val Context.clipboardManager: ClipboardManager
         else
             return getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
-
+internal val Context.navigationBarSize: Point
+    get() = when {
+        navigationBarRight -> Point(realScreenSize.x - usableScreenSize.x, usableScreenSize.y)
+        navigationBarBottom -> Point(usableScreenSize.x, realScreenSize.y - usableScreenSize.y)
+        else -> Point()
+    }
 val Context.notificationManager: NotificationManager
     get() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
@@ -105,8 +107,6 @@ val Context.usableScreenSize: Point
         windowManager.defaultDisplay.getSize(size)
         return size
     }
-
-
 
 fun Context.deleteFromMediaStore(path: String): Boolean {
     if (getDoesFilePathExist(path) || getIsPathDirectory(path)) {
@@ -321,6 +321,13 @@ fun Context.getUriMimeType(path: String, newUri: Uri): String {
     }
     return mimeType
 }
+fun Context.hasProperStoredTreeUri(): Boolean {
+    val hasProperUri = contentResolver.persistedUriPermissions.any { it.uri.toString() == baseConfig.treeUri }
+    if (!hasProperUri) {
+        baseConfig.treeUri = ""
+    }
+    return hasProperUri
+}
 fun Context.humanizePath(path: String): String {
     return ""
 }
@@ -379,4 +386,6 @@ fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolea
             callback?.invoke(true)
         }
     }
+}
+fun Context.updateTextColors(viewGroup: ViewGroup, tmpTextColor: Int = 0, tmpAccentColor: Int = 0) {
 }

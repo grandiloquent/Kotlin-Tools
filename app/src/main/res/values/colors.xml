@@ -15,4 +15,6 @@
     <color name="md_red_700">#D32F2F</color>
     <color name="pressed_item_foreground">#08000000</color>
     <color name="activated_item_foreground">#44888888</color>
+    <color name="default_text_color">@color/theme_dark_text_color</color>
+    <color name="default_background_color">@color/theme_dark_background_color</color>
 </resources>
