@@ -13,7 +13,7 @@ fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 fun isNougatPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
 fun isOreoPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 
-const val KEY_SDCARD_PATH = "sdcard_path"
+
 const val _DATA = "_data"
 const val _ID = "_id"
 const val AUTHORITY = "downloads"
@@ -182,13 +182,18 @@ const val HTTP_UNAVAILABLE = 503
 const val HTTP_UNSUPPORTED_TYPE = 415
 const val HTTP_USE_PROXY = 305
 const val HTTP_VERSION = 505
+const val KEY_OTG_PARTITION="otg_partition"
+const val KEY_OTG_TREE_URI="otg_tree_uri"
 const val KEY_PATH = "path"
+const val KEY_SDCARD_PATH = "sdcard_path"
+const val KEY_TREE_URI="tree_uri"
 const val MAX_REDIRECTS = 5
 const val MAX_RETRIES = 5
 const val MIMETYPE_DRM_MESSAGE = "application/vnd.oma.drm.message"
 const val MIN_PROGRESS_STEP = 65536
 const val MIN_PROGRESS_TIME = 2000
 const val PREFS_KEY = "Prefs"
+const val REAL_FILE_PATH = "real_file_path_2"
 const val RETRY_AFTER_X_REDIRECT_COUNT = "method"
 const val SORT_BY_ARTIST = 4096
 const val SORT_BY_DATE_MODIFIED = 2
@@ -233,8 +238,6 @@ const val TYPE_GIFS = 4
 const val TYPE_IMAGES = 1
 const val TYPE_RAWS = 8
 const val TYPE_VIDEOS = 2
-const val REAL_FILE_PATH = "real_file_path_2"
-
 const val VISIBILITY_HIDDEN = 2
 const val VISIBILITY_VISIBLE = 0
 const val VISIBILITY_VISIBLE_NOTIFY_COMPLETED = 1

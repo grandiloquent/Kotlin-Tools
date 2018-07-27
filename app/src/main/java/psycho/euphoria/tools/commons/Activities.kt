@@ -56,6 +56,7 @@ fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: 
         }
     }.start()
 }
+
 fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boolean {
     var genericMimeType = mimeType.getGenericMimeType()
     if (genericMimeType.isEmpty()) {
@@ -70,6 +71,7 @@ fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boo
         false
     }
 }
+
 fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: Boolean = false) {
     if (!forceChooser && path.endsWith(".apk", true)) {
         val uri = if (isNougatPlus()) {
@@ -92,6 +94,7 @@ fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: 
         openPath(path, forceChooser, openAsText)
     }
 }
+
 fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
     val uri = try {
         ensurePublicUri(path, applicationId)
@@ -107,6 +110,7 @@ fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
 
     return uri
 }
+
 fun AppCompatActivity.hideSystemUI(toggleActionBarVisibility: Boolean) {
     if (toggleActionBarVisibility) {
         supportActionBar?.hide()
@@ -120,6 +124,12 @@ fun AppCompatActivity.hideSystemUI(toggleActionBarVisibility: Boolean) {
             View.SYSTEM_UI_FLAG_IMMERSIVE
 }
 
+
+fun <T> Activity.launchActivity(clazz: Class<T>) {
+
+    val intent = Intent(this, clazz)
+    startActivity(intent)
+}
 
 fun AppCompatActivity.showSystemUI(toggleActionBarVisibility: Boolean) {
     if (toggleActionBarVisibility) {

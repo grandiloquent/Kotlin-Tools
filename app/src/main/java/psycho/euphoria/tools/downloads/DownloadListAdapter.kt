@@ -42,6 +42,10 @@ class DownloadListAdapter(private val downloads: ArrayList<DownloadInfo>,
 
     }
 
+    fun getItem(position: Int): DownloadInfo {
+        return downloads.get(position)
+    }
+
     override fun getItemCount(): Int {
         return downloads.size
     }

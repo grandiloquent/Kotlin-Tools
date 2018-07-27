@@ -15,10 +15,7 @@ import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.abc_activity_chooser_view_list_item.*
 import kotlinx.android.synthetic.main.item_file.*
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.commons.FileItem
-import psycho.euphoria.tools.commons.SORT_BY_NAME
-import psycho.euphoria.tools.commons.formatSize
-import psycho.euphoria.tools.commons.getColoredDrawableWithColor
+import psycho.euphoria.tools.commons.*
 
 class FileAdapter(private val context: Context,
                   private val files: ArrayList<FileItem>,
@@ -32,8 +29,8 @@ class FileAdapter(private val context: Context,
     init {
 
 
-        mFileDrawble = context.resources.getColoredDrawableWithColor(R.mipmap.ic_file, TEXT_COLOR.toInt())
-        mFolderDrawable = context.resources.getColoredDrawableWithColor(R.mipmap.ic_folder, TEXT_COLOR.toInt())
+        mFileDrawble = context.resources.getDrawable(R.drawable.ic_insert_drive_file_48px) //context.resources.getColoredDrawableWithColor(R.mipmap.ic_file, TEXT_COLOR.toInt())
+        mFolderDrawable = context.resources.getDrawable(R.drawable.ic_folder_48px) //context.resources.getColoredDrawableWithColor(R.mipmap.ic_folder, TEXT_COLOR.toInt())
         mOptions = RequestOptions()
                 .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
                 .error(mFileDrawble)
@@ -85,23 +82,29 @@ class FileAdapter(private val context: Context,
 //                    } // maybe cause some performance problem
                 } else {
                     item_details.text = size.formatSize()
-                    var itemToLoad = if (fileItem.name.endsWith(".apk", true)) {
-                        val packageManager = context.packageManager
-                        val packageInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
-                        if (packageInfo != null) {
-                            val appInfo = packageInfo.applicationInfo.apply {
-                                sourceDir = path
-                                publicSourceDir = path
+                    if (name.isImageFast() || name.isVideoFast()) {
+                        var itemToLoad = if (fileItem.name.endsWith(".apk", true)) {
+                            val packageManager = context.packageManager
+                            val packageInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
+                            if (packageInfo != null) {
+                                val appInfo = packageInfo.applicationInfo.apply {
+                                    sourceDir = path
+                                    publicSourceDir = path
 
+                                }
+                                appInfo.loadIcon(packageManager)
+                            } else {
+                                path
                             }
-                            appInfo.loadIcon(packageManager)
                         } else {
                             path
                         }
+                        Glide.with(context).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(mOptions).into(item_icon)
                     } else {
-                        path
+                        item_icon.setImageDrawable(mFileDrawble)
+
                     }
-                    Glide.with(context).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(mOptions).into(item_icon)
+
 
                 }
             }

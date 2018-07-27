@@ -62,7 +62,6 @@ private const val REGEX_FILE_AUDIO = "\\.(?:3gp|8svx|aa|aac|aax|act|aiff|amr|ape
 private const val REGEX_FILE_IMAGE = "\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
 private const val TAG = "Extension"
 val Context.sdCardPath: String get() = getSDCardPath()
-val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
 
 fun Context.dp2px(dp: Float): Float {
     return dp * resources.displayMetrics.density;
@@ -263,18 +262,18 @@ fun String.e(t: String, messag: String) {
 
 
 fun Context.getSharedPrefs() = getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
-
-open class BaseConfig(val context: Context) {
-    protected val prefs = context.getSharedPrefs()
-
-    var accessedDirectory: String
-        get() = prefs.getString(PREFS_ACCESSED_DIRECTORY, getInternalStoragePath())
-        set(accessdDirectory) = prefs.edit().putString(PREFS_ACCESSED_DIRECTORY, accessdDirectory).apply()
-
-    companion object {
-        fun newInstance(context: Context) = BaseConfig(context)
-    }
-}
+//
+//open class BaseConfig(val context: Context) {
+//    protected val prefs = context.getSharedPrefs()
+//
+//    var accessedDirectory: String
+//        get() = prefs.getString(PREFS_ACCESSED_DIRECTORY, getInternalStoragePath())
+//        set(accessdDirectory) = prefs.edit().putString(PREFS_ACCESSED_DIRECTORY, accessdDirectory).apply()
+//
+//    companion object {
+//        fun newInstance(context: Context) = BaseConfig(context)
+//    }
+//}
 
 abstract class BaseActivity() : Activity() {
 

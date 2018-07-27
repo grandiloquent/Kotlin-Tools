@@ -10,6 +10,7 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.Intent
 import android.net.Uri
+import psycho.euphoria.tools.OTG_PATH
 import java.io.File
 
 
@@ -25,7 +26,8 @@ fun String.isPng() = endsWith(".png", true)
 fun String.isRawFast() = rawExtensions.any { endsWith(it, true) }
 fun String.isVideoFast() = videoExtensions.any { endsWith(it, true) }
 fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
-
+fun String.getDuration() = getFileDurationSeconds()?.getFormattedDuration()
+fun String.getFilenameFromPath() = substring(lastIndexOf("/") + 1)
 
 fun String.getExifCameraModel(exif: ExifInterface): String {
     exif.getAttribute(ExifInterface.TAG_MAKE).let {
@@ -36,7 +38,13 @@ fun String.getExifCameraModel(exif: ExifInterface): String {
     }
     return ""
 }
-
+fun String.getParentPath(): String {
+    var parent = removeSuffix("/${getFilenameFromPath()}")
+    if (parent == "otg:") {
+        parent = OTG_PATH
+    }
+    return parent
+}
 fun String.getExifDateTaken(exif: ExifInterface): String {
     exif.getAttribute(ExifInterface.TAG_DATETIME).let {
         if (it?.isNotEmpty() == true) {
@@ -706,6 +714,35 @@ fun String.getResolution(): Point? {
         null
     }
 }
+fun String.getFileAlbum(): String? {
+    return try {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this)
+        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUM)
+    } catch (ignored: Exception) {
+        null
+    }
+}
+fun String.getFileArtist(): String? {
+    return try {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this)
+        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST)
+    } catch (ignored: Exception) {
+        null
+    }
+}
+fun String.getFileDurationSeconds(): Int? {
+    return try {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this)
+        val time = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+        val timeInMs = java.lang.Long.parseLong(time)
+        (timeInMs / 1000).toInt()
+    } catch (e: Exception) {
+        null
+    }
+}
 
 fun String.getVideoResolution(): Point? {
     return try {
@@ -722,7 +759,15 @@ fun String.getVideoResolution(): Point? {
 fun String.isValidURL(): Boolean {
     return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
 }
-
+fun String.getFileSongTitle(): String? {
+    return try {
+        val retriever = MediaMetadataRetriever()
+        retriever.setDataSource(this)
+        retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
+    } catch (ignored: Exception) {
+        null
+    }
+}
 fun String.triggerScanFile(context: Context = App.instance) {
     val file = File(this)
     if (!file.exists()) return

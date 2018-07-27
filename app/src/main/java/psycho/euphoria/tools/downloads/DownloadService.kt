@@ -7,10 +7,7 @@ import android.graphics.Color
 import android.os.*
 import android.support.v4.app.NotificationCompat
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.commons.Tracker
-import psycho.euphoria.tools.commons.formatSize
-import psycho.euphoria.tools.commons.notificationManager
-import psycho.euphoria.tools.commons.round
+import psycho.euphoria.tools.commons.*
 
 class DownloadService() : Service() {
 
@@ -38,32 +35,6 @@ class DownloadService() : Service() {
         true
     }
 
-    override fun onCreate() {
-        Tracker.e("onCreate")
-        super.onCreate()
-
-        mAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        mNotificationManager = notificationManager
-
-        mUpdateThread = HandlerThread(TAG + "-UpdateThread");
-        mUpdateThread.start()
-        mUpdateHandler = Handler(mUpdateThread.looper, mUpdateCallback)
-
-        mWorkThread = HandlerThread(TAG + "-WorkThread")
-        mWorkThread.start()
-        mWorkHandler = Handler(mWorkThread.looper)
-
-        startForeground(NOTIFICATION_ID, makeNotify())
-
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Tracker.e("onStartCommand")
-        val returnValue = super.onStartCommand(intent, flags, startId)
-
-        downStart()
-        return returnValue
-    }
 
 
     private fun createNotificationChannel(): String {
@@ -77,39 +48,29 @@ class DownloadService() : Service() {
         }
         return CHANNEL_ACTIVE
     }
-
     private fun downStart() {
-
-
         mCurrentDownloadInfo = fecthDownloadInfo()
-
-
         if (mCurrentDownloadInfo == null) {
-
             stopSelf()
+            Logger.getInstance().d("Download service called the method: downStart,All tasks are downloaded.Stop the download service.")
         } else {
             val runnable = Downloader(mCurrentDownloadInfo!!).apply {
                 notifyCompleted = fun(id) {
+                    Logger.getInstance().d("Downloader called the method:notifyCompleted.")
                     mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_COMPLETE, id))
-                    Tracker.e("notifyCompleted")
-
                 }
                 notifyDownloadSpeed = fun(id, speed) {
-
-
+                    Logger.getInstance().d("Downloader called the method: notifyDownloadSpeed.")
                     mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_UPDATE, speed))
                 }
                 notifyErrorOccurred = fun(id, filename) {
-                    Tracker.e("notifyErrorOccurred")
+                    Logger.getInstance().e("Downloader called the method: notifyErrorOccured. $filename")
                     mUpdateHandler.sendMessage(mUpdateHandler.obtainMessage(MSG_ERROR))
                 }
             }
             mWorkHandler?.post(runnable)
         }
-
-
     }
-
     private fun fecthDownloadInfo(): DownloadInfo? {
         val downloadInfo = DownloadDatabase.getInstance(this).listOne()
         if (downloadInfo != null && downloadInfo.fileName == null) {
@@ -117,15 +78,6 @@ class DownloadService() : Service() {
         }
         return downloadInfo
     }
-
-    override fun onDestroy() {
-        mUpdateThread?.quit()
-
-        Tracker.e("onDestroy")
-        super.onDestroy()
-
-    }
-
     private fun makeNotify(): Notification {
         createNotificationChannel()
         val title = resources.getString(R.string.notifiaction_download_title)
@@ -136,31 +88,47 @@ class DownloadService() : Service() {
                 .setWhen(System.currentTimeMillis())
         return mNotificationBuilder.build()
     }
-
+    override fun onBind(i: Intent?): IBinder {
+        throw  UnsupportedOperationException("Cannot bind to Download Manager Service");
+    }
+    override fun onCreate() {
+        Logger.getInstance().d("Download Service called method: onCreate()")
+        super.onCreate()
+        mAlarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        mNotificationManager = notificationManager
+        mUpdateThread = HandlerThread(TAG + "-UpdateThread");
+        mUpdateThread.start()
+        mUpdateHandler = Handler(mUpdateThread.looper, mUpdateCallback)
+        mWorkThread = HandlerThread(TAG + "-WorkThread")
+        mWorkThread.start()
+        mWorkHandler = Handler(mWorkThread.looper)
+        startForeground(NOTIFICATION_ID, makeNotify())
+    }
+    override fun onDestroy() {
+        mUpdateThread?.quit()
+        Tracker.e("关闭")
+        super.onDestroy()
+    }
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val returnValue = super.onStartCommand(intent, flags, startId)
+        Logger.getInstance().d("Download Service called the method: onStartCommand,the return value = $returnValue")
+        downStart()
+        return returnValue
+    }
     private fun updateNotify(speed: Long) {
-
         mCurrentDownloadInfo?.let {
             val totalBytes = it.totalBytes
-
             if (totalBytes == 0L) {
                 Tracker.e("updateNotify", "totalBytes => $totalBytes fileName=${it.fileName}")
             }
             if (totalBytes > 0L) {
-
                 mNotificationBuilder.setContentTitle(speed.formatSize())
                 mNotificationBuilder.setProgress(100, (it.currentBytes * 100 / totalBytes).toInt(), false)
                 mNotificationBuilder.setContentText("${it.currentBytes.formatSize()}/${totalBytes.formatSize()}(${(it.currentBytes * 100.0 / totalBytes).round()}%)");
             }
-
-
             mNotificationManager.notify(NOTIFICATION_ID, mNotificationBuilder.build())
         }
     }
-
-    override fun onBind(i: Intent?): IBinder {
-        throw  UnsupportedOperationException("Cannot bind to Download Manager Service");
-    }
-
 
     companion object {
         private const val MSG_START = 0

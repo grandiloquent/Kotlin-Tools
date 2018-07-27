@@ -9,17 +9,21 @@ import android.content.res.Configuration
 import android.database.Cursor
 import android.graphics.Point
 import android.media.AudioManager
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.support.v4.content.FileProvider
+import android.support.v4.provider.DocumentFile
 import android.text.TextUtils
-import android.util.DisplayMetrics
 import android.view.WindowManager
 import android.widget.Toast
 import com.simplemobiletools.commons.extensions.getIntValue
-import psycho.euphoria.tools.*
+
+import psycho.euphoria.tools.Config
+import psycho.euphoria.tools.OTG_PATH
 import java.io.File
 import java.util.*
 import java.util.regex.Pattern
@@ -53,7 +57,10 @@ val Context.navigationBarWidth: Int get() = if (navigationBarRight) navigationBa
 val Context.portrait get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 val Context.version: Int get() = Build.VERSION.SDK_INT
 val Context.windowManager: WindowManager get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-
+val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
+val Context.sdCardPath: String get() = baseConfig.sdCardPath
+fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists()
+        ?: false else File(path).exists()
 
 internal val Context.navigationBarSize: Point
     get() = when {
@@ -100,19 +107,174 @@ val Context.usableScreenSize: Point
     }
 
 
-fun Context.humanizePath(path: String): String {
-    return ""
-}
 
-fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, message, duration).show()
+fun Context.deleteFromMediaStore(path: String): Boolean {
+    if (getDoesFilePathExist(path) || getIsPathDirectory(path)) {
+        return false
+    }
+    return try {
+        val where = "${MediaStore.MediaColumns.DATA} = ?"
+        val args = arrayOf(path)
+        contentResolver.delete(getFileUri(path), where, args) == 1
+    } catch (e: Exception) {
+        false
+    }
 }
-
+fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
+    return if (path.startsWith(OTG_PATH)) {
+        null
+        // getDocumentFile(path)?.uri
+    } else {
+        val uri = Uri.parse(path)
+        if (uri.scheme == "content") {
+            uri
+        } else {
+            val newPath = if (uri.toString().startsWith("/")) uri.toString() else uri.path
+            val file = File(newPath)
+            getFilePublicUri(file, applicationId)
+        }
+    }
+}
+fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
+    return if (uri.scheme == "content") {
+        uri
+    } else {
+        val file = File(uri.path)
+        getFilePublicUri(file, applicationId)
+    }
+}
+fun Context.getDocumentFile(path: String): DocumentFile? {
+    if (!isLollipopPlus()) {
+        return null
+    }
+    val isOTG = path.startsWith(OTG_PATH)
+    var relativePath = path.substring(if (isOTG) OTG_PATH.length else sdCardPath.length)
+    if (relativePath.startsWith(File.separator)) {
+        relativePath = relativePath.substring(1)
+    }
+    var document = DocumentFile.fromTreeUri(applicationContext, Uri.parse(if (isOTG) baseConfig.OTGTreeUri else baseConfig.treeUri))
+    val parts = relativePath.split("/").filter { it.isNotEmpty() }
+    for (part in parts) {
+        document = document?.findFile(part)
+    }
+    return document
+}
+fun Context.getFastDocumentFile(path: String): DocumentFile? {
+    if (!isLollipopPlus()) {
+        return null
+    }
+    if (path.startsWith(OTG_PATH)) {
+        return getOTGFastDocumentFile(path)
+    }
+    val sdCardPath = baseConfig.sdCardPath
+    if (sdCardPath.isEmpty()) {
+        return null
+    }
+    val relativePath = Uri.encode(path.substring(sdCardPath.length).trim('/'))
+    val externalPathPart = sdCardPath.split("/").lastOrNull(String::isNotEmpty)?.trim('/')
+            ?: return null
+    val fullUri = "${baseConfig.treeUri}/document/$externalPathPart%3A$relativePath"
+    return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
+}
+fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
+    // for images/videos/gifs try getting a media content uri first, like content://media/external/images/media/438
+    // if media content uri is null, get our custom uri like content://com.simplemobiletools.gallery.provider/external_files/emulated/0/DCIM/IMG_20171104_233915.jpg
+    return if (file.isImageVideoGif()) {
+        getMediaContentUri(file.absolutePath)
+                ?: FileProvider.getUriForFile(this, "$applicationId.provider", file)
+    } else {
+        FileProvider.getUriForFile(this, "$applicationId.provider", file)
+    }
+}
+fun Context.getFileUri(path: String) = when {
+    path.isImageSlow() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+    path.isVideoSlow() -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+    else -> MediaStore.Files.getContentUri("external")
+}
 fun Context.getHumanizedFilename(path: String): String {
     val humanized = humanizePath(path)
     return humanized.substring(humanized.lastIndexOf("/") + 1)
 }
-
+fun Context.getIsPathDirectory(path: String): Boolean {
+    return if (path.startsWith(OTG_PATH)) {
+        getOTGFastDocumentFile(path)?.isDirectory ?: false
+    } else {
+        File(path).isDirectory
+    }
+}
+fun Context.getMediaContent(path: String, uri: Uri): Uri? {
+    val projection = arrayOf(MediaStore.Images.Media._ID)
+    val selection = MediaStore.Images.Media.DATA + "= ?"
+    val selectionArgs = arrayOf(path)
+    var cursor: Cursor? = null
+    try {
+        cursor = contentResolver.query(uri, projection, selection, selectionArgs, null)
+        if (cursor?.moveToFirst() == true) {
+            val id = cursor.getIntValue(MediaStore.Images.Media._ID).toString()
+            return Uri.withAppendedPath(uri, id)
+        }
+    } catch (e: Exception) {
+    } finally {
+        cursor?.close()
+    }
+    return null
+}
+fun Context.getMediaContentUri(path: String): Uri? {
+    val uri = when {
+        path.isImageFast() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        path.isVideoFast() -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+        else -> MediaStore.Files.getContentUri("external")
+    }
+    return getMediaContent(path, uri)
+}
+fun Context.getMimeTypeFromUri(uri: Uri): String {
+    var mimetype = uri.path.getMimeType()
+    if (mimetype.isEmpty()) {
+        try {
+            mimetype = contentResolver.getType(uri)
+        } catch (e: IllegalStateException) {
+        }
+    }
+    return mimetype
+}
+fun Context.getOTGFastDocumentFile(path: String): DocumentFile? {
+    if (baseConfig.OTGTreeUri.isEmpty()) {
+        return null
+    }
+    if (baseConfig.OTGPartition.isEmpty()) {
+        baseConfig.OTGPartition = baseConfig.OTGTreeUri.removeSuffix("%3A").substringAfterLast('/')
+    }
+    val relativePath = Uri.encode(path.substring(OTG_PATH.length).trim('/'))
+    val fullUri = "${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A$relativePath"
+    return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
+}
+// http://stackoverflow.com/a/40582634/1967672
+fun Context.getSDCardPath(): String {
+    val directories = getStorageDirectories().filter { it.trimEnd('/') != getInternalStoragePath() }
+    var sdCardPath = directories.firstOrNull { !physicalPaths.contains(it.toLowerCase().trimEnd('/')) }
+            ?: ""
+    // on some devices no method retrieved any SD card path, so test if its not sdcard1 by any chance. It happened on an Android 5.1
+    if (sdCardPath.trimEnd('/').isEmpty()) {
+        val file = File("/storage/sdcard1")
+        if (file.exists()) {
+            return file.absolutePath
+        }
+        sdCardPath = directories.firstOrNull() ?: ""
+    }
+    if (sdCardPath.isEmpty()) {
+        val SDpattern = Pattern.compile("^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$")
+        try {
+            File("/storage").listFiles()?.forEach {
+                if (SDpattern.matcher(it.name).matches()) {
+                    sdCardPath = "/storage/${it.name}"
+                }
+            }
+        } catch (e: Exception) {
+        }
+    }
+    val finalPath = sdCardPath.trimEnd('/')
+    return finalPath
+}
 fun Context.getStorageDirectories(): Array<String> {
     val paths = HashSet<String>()
     val rawExternalStorage = System.getenv("EXTERNAL_STORAGE")
@@ -152,87 +314,6 @@ fun Context.getStorageDirectories(): Array<String> {
     }
     return paths.toTypedArray()
 }
-
-fun Context.getPermissionString(id: Int) = when (id) {
-    PERMISSION_READ_STORAGE -> Manifest.permission.READ_EXTERNAL_STORAGE
-    PERMISSION_WRITE_STORAGE -> Manifest.permission.WRITE_EXTERNAL_STORAGE
-    PERMISSION_CAMERA -> Manifest.permission.CAMERA
-    PERMISSION_RECORD_AUDIO -> Manifest.permission.RECORD_AUDIO
-    PERMISSION_READ_CONTACTS -> Manifest.permission.READ_CONTACTS
-    PERMISSION_WRITE_CONTACTS -> Manifest.permission.WRITE_CONTACTS
-    PERMISSION_READ_CALENDAR -> Manifest.permission.READ_CALENDAR
-    PERMISSION_WRITE_CALENDAR -> Manifest.permission.WRITE_CALENDAR
-    PERMISSION_CALL_PHONE -> Manifest.permission.CALL_PHONE
-    else -> ""
-}
-
-fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
-    return if (path.startsWith(OTG_PATH)) {
-        null
-        // getDocumentFile(path)?.uri
-    } else {
-        val uri = Uri.parse(path)
-        if (uri.scheme == "content") {
-            uri
-        } else {
-            val newPath = if (uri.toString().startsWith("/")) uri.toString() else uri.path
-            val file = File(newPath)
-            getFilePublicUri(file, applicationId)
-        }
-    }
-}
-
-fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
-    // for images/videos/gifs try getting a media content uri first, like content://media/external/images/media/438
-    // if media content uri is null, get our custom uri like content://com.simplemobiletools.gallery.provider/external_files/emulated/0/DCIM/IMG_20171104_233915.jpg
-    return if (file.isImageVideoGif()) {
-        getMediaContentUri(file.absolutePath)
-                ?: FileProvider.getUriForFile(this, "$applicationId.provider", file)
-    } else {
-        FileProvider.getUriForFile(this, "$applicationId.provider", file)
-    }
-}
-fun Context.toast(id: Int, length: Int = Toast.LENGTH_SHORT) {
-    Toast.makeText(this, id, length).show()
-}
-
-fun Context.getMediaContentUri(path: String): Uri? {
-    val uri = when {
-        path.isImageFast() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-        path.isVideoFast() -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        else -> MediaStore.Files.getContentUri("external")
-    }
-
-    return getMediaContent(path, uri)
-}
-
-fun Context.getMediaContent(path: String, uri: Uri): Uri? {
-    val projection = arrayOf(MediaStore.Images.Media._ID)
-    val selection = MediaStore.Images.Media.DATA + "= ?"
-    val selectionArgs = arrayOf(path)
-    var cursor: Cursor? = null
-    try {
-        cursor = contentResolver.query(uri, projection, selection, selectionArgs, null)
-        if (cursor?.moveToFirst() == true) {
-            val id = cursor.getIntValue(MediaStore.Images.Media._ID).toString()
-            return Uri.withAppendedPath(uri, id)
-        }
-    } catch (e: Exception) {
-    } finally {
-        cursor?.close()
-    }
-    return null
-}
-
-fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
-    return if (uri.scheme == "content") {
-        uri
-    } else {
-        val file = File(uri.path)
-        getFilePublicUri(file, applicationId)
-    }
-}
-
 fun Context.getUriMimeType(path: String, newUri: Uri): String {
     var mimeType = path.getMimeType()
     if (mimeType.isEmpty()) {
@@ -240,43 +321,62 @@ fun Context.getUriMimeType(path: String, newUri: Uri): String {
     }
     return mimeType
 }
-
-fun Context.getMimeTypeFromUri(uri: Uri): String {
-    var mimetype = uri.path.getMimeType()
-    if (mimetype.isEmpty()) {
-        try {
-            mimetype = contentResolver.getType(uri)
-        } catch (e: IllegalStateException) {
-        }
-    }
-    return mimetype
+fun Context.humanizePath(path: String): String {
+    return ""
 }
-
-// http://stackoverflow.com/a/40582634/1967672
-fun Context.getSDCardPath(): String {
-    val directories = getStorageDirectories().filter { it.trimEnd('/') != getInternalStoragePath() }
-    var sdCardPath = directories.firstOrNull { !physicalPaths.contains(it.toLowerCase().trimEnd('/')) }
-            ?: ""
-    // on some devices no method retrieved any SD card path, so test if its not sdcard1 by any chance. It happened on an Android 5.1
-    if (sdCardPath.trimEnd('/').isEmpty()) {
-        val file = File("/storage/sdcard1")
-        if (file.exists()) {
-            return file.absolutePath
-        }
-        sdCardPath = directories.firstOrNull() ?: ""
+fun Context.rescanDeletedPath(path: String, callback: (() -> Unit)? = null) {
+    if (path.startsWith(filesDir.toString())) {
+        callback?.invoke()
+        return
     }
-    if (sdCardPath.isEmpty()) {
-        val SDpattern = Pattern.compile("^[A-Za-z0-9]{4}-[A-Za-z0-9]{4}$")
-        try {
-            File("/storage").listFiles()?.forEach {
-                if (SDpattern.matcher(it.name).matches()) {
-                    sdCardPath = "/storage/${it.name}"
-                }
+    if (deleteFromMediaStore(path)) {
+        callback?.invoke()
+    } else {
+        if (getIsPathDirectory(path)) {
+            callback?.invoke()
+            return
+        }
+        MediaScannerConnection.scanFile(applicationContext, arrayOf(path), null) { s, uri ->
+            try {
+                applicationContext.contentResolver.delete(uri, null, null)
+            } catch (e: Exception) {
             }
-        } catch (e: Exception) {
+            callback?.invoke()
         }
     }
-    val finalPath = sdCardPath.trimEnd('/')
-
-    return finalPath
+}
+fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, message, duration).show()
+}
+fun Context.toast(id: Int, length: Int = Toast.LENGTH_SHORT) {
+    Toast.makeText(this, id, length).show()
+}
+fun Context.tryFastDocumentDelete(path: String, allowDeleteFolder: Boolean): Boolean {
+    val document = getFastDocumentFile(path)
+    return if (document?.isFile == true || allowDeleteFolder) {
+        try {
+            DocumentsContract.deleteDocument(contentResolver, document?.uri)
+        } catch (e: Exception) {
+            false
+        }
+    } else {
+        false
+    }
+}
+fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    var fileDeleted = tryFastDocumentDelete(fileDirItem.path, allowDeleteFolder)
+    if (!fileDeleted) {
+        val document = getDocumentFile(fileDirItem.path)
+        if (document != null && (fileDirItem.isDirectory == document.isDirectory)) {
+            try {
+                fileDeleted = (document.isFile == true || allowDeleteFolder) && DocumentsContract.deleteDocument(applicationContext.contentResolver, document.uri)
+            } catch (ignored: Exception) {
+            }
+        }
+    }
+    if (fileDeleted) {
+        rescanDeletedPath(fileDirItem.path) {
+            callback?.invoke(true)
+        }
+    }
 }

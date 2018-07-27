@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_refresh"
+        android:icon="@drawable/ic_refresh_24px"
+        android:title="@string/menu_refresh"
+        app:showAsAction="always"></item>
+    <item
+        android:id="@+id/action_storage"
+        android:icon="@drawable/ic_storage_24px"
+        android:title="@string/menu_storage"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_sort_alpha"
+        android:icon="@drawable/ic_sort_by_alpha_24px"
+        android:title="@string/menu_sort_by_name"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_sort_last_modified"
+        android:title="@string/menu_sort_by_last_modified"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_sort_size"
+        android:title="@string/menu_sort_by_size"
+        app:showAsAction="never" />
+    <item
+        android:id="@+id/action_download"
+        android:icon="@drawable/ic_file_download_24px"
+        android:title="@string/menu_downlaod"
+        app:showAsAction="never"></item>
+    <item
+        android:id="@+id/action_translator"
+        android:icon="@drawable/ic_g_translate_24px"
+        android:title="@string/menu_translator"
+        app:showAsAction="never">
+
+    </item>
+</menu>

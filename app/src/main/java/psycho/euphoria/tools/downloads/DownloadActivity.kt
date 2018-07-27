@@ -82,7 +82,9 @@ class DownloadActivity() : AppCompatActivity() {
                     override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
                         Tracker.e("onSwiped", "direction => $direction")
                         viewHolder?.let {
-                            // DownloadDatabase.getInstance(App.instance)
+                            val downloadInfo = mAdapter.getItem(it.adapterPosition)
+                            downloadInfo.finish = true
+                            DownloadDatabase.getInstance(App.instance).update(downloadInfo)
                             mAdapter.removeAt(it)
                         }
                     }
@@ -120,6 +122,7 @@ class DownloadActivity() : AppCompatActivity() {
         super.onStop()
 
     }
+
     override fun onDestroy() {
 
         super.onDestroy()

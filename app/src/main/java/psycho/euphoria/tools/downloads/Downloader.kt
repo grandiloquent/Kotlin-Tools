@@ -158,17 +158,20 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
         Process.setThreadPriority(Process.THREAD_PRIORITY_BACKGROUND)
         try {
             notifyStart?.invoke(mId)
+            Logger.getInstance().d("Downloader called the method: run, fileName => ${downloadInfo.fileName}")
             executeDownload()
             if (downloadInfo.totalBytes != -1L && downloadInfo.currentBytes >= downloadInfo.totalBytes) {
+                Logger.getInstance().d("Downloader. Because the totalBytes is -1L,set the finish to true.")
                 downloadInfo.finish = true
             }
             notifyCompleted?.invoke(mId)
+            Logger.getInstance().d("Downloader.run.notifyCompleted")
         } catch (e: StopRequestException) {
             // 489 Requested range not satisfiable
             if (e.finalStatus == STATUS_CANNOT_RESUME /*489*/ && downloadInfo.currentBytes == downloadInfo.totalBytes) {
                 downloadInfo.finish = true
             }
-            Tracker.e("run", "${e.finalStatus} ${e.message ?: "Unknown error occurred."}")
+            Logger.getInstance().e("Downloader.run.${e.message}")
             notifyErrorOccurred?.invoke(mId, e.message)
         } finally {
             downloadInfo.writeToDatabase()
