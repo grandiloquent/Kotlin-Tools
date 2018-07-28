@@ -1,20 +1,27 @@
 package psycho.euphoria.tools.music
+
 import android.app.Notification
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.audiofx.AudioEffect
 import android.net.Uri
 import android.os.*
+import android.support.v4.app.NotificationCompat
 import android.util.Log
 import android.widget.RemoteViews
 import psycho.euphoria.tools.R
+import psycho.euphoria.tools.downloads.DownloadService
 import psycho.euphoria.tools.getFileName
 import psycho.euphoria.tools.listAudioFiles
 import java.io.File
 import java.io.IOException
+
 class MediaPlaybackService : Service() {
     private var mAudioManager: AudioManager? = null
     private var mCurrentDirectory: File? = null
@@ -29,6 +36,9 @@ class MediaPlaybackService : Service() {
     private var mPlayer: MultiPlayer? = null
     private val mRepeatMode = REPEAT_NONE
     private var mServiceStartId = -1
+    private lateinit var mNotificationBuilder: NotificationCompat.Builder
+    private lateinit var mNotificationManager: NotificationManager
+
     private val mDelayedStopHandler = object : Handler() {
         override fun handleMessage(msg: Message) {
             if (isPlaying || mPausedByTransientLossOfFocus) {
@@ -110,16 +120,32 @@ class MediaPlaybackService : Service() {
             }
         }
     }
+
     private fun disposeAudioManager() {
         mAudioManager!!.abandonAudioFocus(mOnAudioFocusChangeListener)
     }
+
     private fun disposeMediaPlayer() {
         mPlayer!!.release()
         mPlayer = null
     }
+
     private fun disposeWakeLock() {
         mWakeLock!!.release()
     }
+
+    private fun createNotificationChannel(): String {
+        if (Build.VERSION.SDK_INT >= 26) {
+            // NotificationManager.IMPORTANCE_NONE Turn off the notification sound
+            mNotificationManager.createNotificationChannel(NotificationChannel(CHANNEL_ACTIVE,
+                    TAG, NotificationManager.IMPORTANCE_NONE).also {
+                it.lightColor = Color.BLUE
+                it.lockscreenVisibility = Notification.VISIBILITY_PRIVATE
+            })
+        }
+        return CHANNEL_ACTIVE
+    }
+
     private fun getNextPosition(force: Boolean): Int {
         if (mPlayPos < 0) return 0
         return if (mPlayPos + 1 < mPlayList!!.size) {
@@ -128,12 +154,14 @@ class MediaPlaybackService : Service() {
             0
         }
     }
+
     private fun gotoIdleState() {
         mDelayedStopHandler.removeCallbacksAndMessages(null)
         val msg = mDelayedStopHandler.obtainMessage()
         mDelayedStopHandler.sendMessageDelayed(msg, IDLE_DELAY.toLong())
         stopForeground(true)
     }
+
     fun gotoNext(force: Boolean) {
         synchronized(this) {
             if (mPlayList!!.size <= 0) {
@@ -154,6 +182,7 @@ class MediaPlaybackService : Service() {
             play()
         }
     }
+
     fun gotoPosition(position: Int) {
         synchronized(this) {
             mPlayPos = position
@@ -162,35 +191,44 @@ class MediaPlaybackService : Service() {
             play()
         }
     }
+
     private fun initializeAudioManager() {
         mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
+
     private fun initializeMediaPlayer() {
         mPlayer = MultiPlayer()
         mPlayer!!.setHandler(mMediaplayerHandler)
     }
+
     private fun initializeWakeLock() {
         val pm = getSystemService(Context.POWER_SERVICE) as PowerManager
         mWakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, this.javaClass.name)
         mWakeLock!!.setReferenceCounted(false)
     }
+
     override fun onBind(intent: Intent): IBinder? {
         return null
     }
+
     override fun onCreate() {
         super.onCreate()
         initializeAudioManager()
         initializeMediaPlayer()
         initializeWakeLock()
+        mNotificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
         val msg = mDelayedStopHandler.obtainMessage()
         mDelayedStopHandler.sendMessageDelayed(msg, IDLE_DELAY.toLong())
     }
+
     override fun onDestroy() {
         disposeMediaPlayer()
         disposeAudioManager()
         disposeWakeLock()
         super.onDestroy()
     }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         mServiceStartId = startId
         mDelayedStopHandler.removeCallbacksAndMessages(null)
@@ -207,6 +245,7 @@ class MediaPlaybackService : Service() {
         mDelayedStopHandler.sendMessageDelayed(msg, IDLE_DELAY.toLong())
         return Service.START_STICKY
     }
+
     private fun openCurrentAndNext() {
         synchronized(this) {
             if (mPlayListLen == 0) {
@@ -216,6 +255,7 @@ class MediaPlaybackService : Service() {
             setNextTrack()
         }
     }
+
     fun pause() {
         synchronized(this) {
             mMediaplayerHandler.removeMessages(FADEUP)
@@ -226,6 +266,7 @@ class MediaPlaybackService : Service() {
             }
         }
     }
+
     fun play() {
         mAudioManager!!.requestAudioFocus(
                 mOnAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN)
@@ -239,6 +280,7 @@ class MediaPlaybackService : Service() {
             }
         }
     }
+
     fun seek(pos: Long): Long {
         var pos = pos
         if (mPlayer!!.isInitialized) {
@@ -248,6 +290,7 @@ class MediaPlaybackService : Service() {
         }
         return -1
     }
+
     private fun setNextTrack() {
         if (mPlayPos >= 0) {
             mFileToPlay = mCurrentDirectory!!.absolutePath + "/" + mPlayList!![mPlayPos]
@@ -256,6 +299,7 @@ class MediaPlaybackService : Service() {
             mPlayer!!.setDataSource(null)
         }
     }
+
     private fun stop(remove_status_icon: Boolean) {
         if (mPlayer != null && mPlayer!!.isInitialized) {
             mPlayer!!.stop()
@@ -270,16 +314,24 @@ class MediaPlaybackService : Service() {
             isPlaying = false
         }
     }
+
     private fun updateNotification() {
         val views = RemoteViews(packageName, R.layout.statusbar)
         views.setImageViewResource(R.id.icon, R.mipmap.ic_play_arrow_black_36dp)
         views.setTextViewText(R.id.trackname, getFileName(mFileToPlay))
-        val status = Notification()
-        status.contentView = views
-        status.flags = status.flags or Notification.FLAG_ONGOING_EVENT
-        status.icon = R.mipmap.ic_play_arrow_black_36dp
-        startForeground(101, status)
+        mNotificationBuilder = NotificationCompat.Builder(this, CHANNEL_ACTIVE)
+                .setSmallIcon(R.mipmap.ic_play_arrow_black_36dp)
+                .setContentTitle("音乐")
+                .setCustomContentView(views)
+                //.setContentText(title)
+                .setWhen(System.currentTimeMillis())
+//        val status = Notification()
+//        status.contentView = views
+//        status.flags = status.flags or Notification.FLAG_ONGOING_EVENT
+//        status.icon = R.mipmap.ic_play_arrow_black_36dp
+        startForeground(101, mNotificationBuilder.build())
     }
+
     private inner class MultiPlayer {
         private var mCurrentMediaPlayer = MediaPlayer()
         private var mHandler: Handler? = null
@@ -310,52 +362,65 @@ class MediaPlaybackService : Service() {
             set(sessionId) {
                 mCurrentMediaPlayer.audioSessionId = sessionId
             }
+
         fun duration(): Long {
             return mCurrentMediaPlayer.duration.toLong()
         }
+
         fun pause() {
             mCurrentMediaPlayer.pause()
         }
+
         fun position(): Long {
             return mCurrentMediaPlayer.currentPosition.toLong()
         }
+
         fun release() {
             stop()
             mCurrentMediaPlayer.release()
         }
+
         fun seek(whereto: Long): Long {
             mCurrentMediaPlayer.seekTo(whereto.toInt())
             return whereto
         }
+
         fun setDataSource(path: String?) {
             isInitialized = setDataSourceImpl(mCurrentMediaPlayer, path!!)
             if (isInitialized) {
                 setNextDataSource(null)
             }
         }
+
         fun setHandler(handler: Handler) {
             mHandler = handler
         }
+
         fun setNextDataSource(path: String?) {
             if (path == null) {
                 return
             }
             setDataSourceImpl(mCurrentMediaPlayer, path)
         }
+
         fun setVolume(vol: Float) {
             mCurrentMediaPlayer.setVolume(vol, vol)
         }
+
         fun start() {
             mCurrentMediaPlayer.start()
         }
+
         fun stop() {
             mCurrentMediaPlayer.reset()
             isInitialized = false
         }
+
         init {
             mCurrentMediaPlayer.setWakeMode(
                     this@MediaPlaybackService, PowerManager.PARTIAL_WAKE_LOCK)
         }
+
         private fun setDataSourceImpl(player: MediaPlayer, path: String): Boolean {
             try {
                 player.reset()
@@ -381,6 +446,7 @@ class MediaPlaybackService : Service() {
             return true
         }
     }
+
     internal class CompatMediaPlayer : MediaPlayer(), MediaPlayer.OnCompletionListener {
         private var mCompatMode = true
         private var mCompletion: MediaPlayer.OnCompletionListener? = null
@@ -392,6 +458,7 @@ class MediaPlaybackService : Service() {
                 super.setNextMediaPlayer(next)
             }
         }
+
         override fun setOnCompletionListener(listener: MediaPlayer.OnCompletionListener) {
             if (mCompatMode) {
                 mCompletion = listener
@@ -399,6 +466,7 @@ class MediaPlaybackService : Service() {
                 super.setOnCompletionListener(listener)
             }
         }
+
         init {
             try {
                 MediaPlayer::class.java.getMethod("setNextMediaPlayer", MediaPlayer::class.java)
@@ -408,6 +476,7 @@ class MediaPlaybackService : Service() {
                 super.setOnCompletionListener(this)
             }
         }
+
         override fun onCompletion(mp: MediaPlayer) {
             if (mNextPlayer != null) {
                 SystemClock.sleep(50)
@@ -416,6 +485,7 @@ class MediaPlaybackService : Service() {
             mCompletion!!.onCompletion(this)
         }
     }
+
     companion object {
         private const val FADEDOWN = 5
         private const val FADEUP = 6
@@ -432,5 +502,11 @@ class MediaPlaybackService : Service() {
         const val REPEAT_CURRENT = 1
         const val REPEAT_NONE = 0
         const val PLAYBACKSERVICE_STATUS = 1
+
+
+        private const val TAG = "MediaPlaybackService"
+        private const val CHANNEL_ACTIVE = "active"
+
+
     }
 }

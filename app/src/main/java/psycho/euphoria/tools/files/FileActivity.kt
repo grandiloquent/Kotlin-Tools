@@ -44,9 +44,9 @@ class FileActivity : AppCompatActivity() {
                             if (mMultiSelector.isSelected(i, 0)) {
                                 val fileItem = it.getItem(i)
                                 File(fileItem.path).deletes()
-                                it.notifyItemRemoved(i)
                             }
                         }
+                        refreshRecyclerView()
                     }
                     // Clear selected state
                     mMultiSelector.clearSelections()

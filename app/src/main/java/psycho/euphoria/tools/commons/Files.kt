@@ -52,8 +52,10 @@ fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
     val files = listFiles()
     if (files == null) return null
     when (sort) {
+
         SORT_BY_DATE_MODIFIED -> files.sortWith(compareBy<File> { it.isFile }.thenByDescending { it.lastModified() })
-        SORT_BY_SIZE -> files.sortWith(compareBy<File> { it.isFile }.thenBy { it.length() })
+    // Sort files in descending order, so the larger the file size, the more front
+        SORT_BY_SIZE -> files.sortWith(compareBy<File> { it.isFile }.thenByDescending { it.length() })
         else -> files.sortWith(compareBy<File> { it.isFile }.thenBy { it.name })
     }
     val ls = ArrayList<FileItem>()
