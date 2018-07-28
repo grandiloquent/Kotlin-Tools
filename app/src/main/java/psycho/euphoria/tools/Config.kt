@@ -18,7 +18,7 @@ const val KEY_SORT_ORDER = "sort_order"
 
 val Context.config: Config get() = Config.newInstance(applicationContext)
 
-class Config(context: Context) : BasicConfig(context) {
+class Config(context: Context) : BaseConfig(context) {
 
     var sortOrder: Int
         get() = prefs.getInt(KEY_SORT_ORDER, SORT_BY_NAME)

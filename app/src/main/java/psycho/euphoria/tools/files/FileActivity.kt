@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.view.ActionMode
 import android.view.ContextMenu
 import android.view.Menu
 import android.view.MenuItem
@@ -12,6 +13,8 @@ import kotlinx.android.synthetic.main.activity_download.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
 import psycho.euphoria.tools.commons.*
+import psycho.euphoria.tools.commons.ui.ModalMultiSelectorCallback
+import psycho.euphoria.tools.commons.ui.MultiSelector
 import psycho.euphoria.tools.config
 import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.music.MediaPlaybackService
@@ -26,13 +29,47 @@ class FileActivity : AppCompatActivity() {
 
     private lateinit var mRecentDirectory: String
     private var mFileAdapter: FileAdapter? = null
-    private var mSortOrder = SORT_BY_NAME
+    private var mSortOrder = SORT_BY_NAME // Sort by file name by default
+    private val mMultiSelector = MultiSelector()
+    private val mActionMode = object : ModalMultiSelectorCallback(mMultiSelector) {
+        // Set the menu for pops up when selecting the item
+        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+            when (item.itemId) {
+                R.id.action_delete -> {
 
+                    // Close the opened top toolbar
+                    mode.finish()
+                    mFileAdapter?.let {
+                        for (i in 0 until it.itemCount) {
+                            if (mMultiSelector.isSelected(i, 0)) {
+                                val fileItem = it.getItem(i)
+                                File(fileItem.path).deletes()
+                                it.notifyItemRemoved(i)
+                            }
+                        }
+                    }
+                    // Clear selected state
+                    mMultiSelector.clearSelections()
+
+                }
+            }
+            return true
+        }
+
+        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+            // Setting the menu items for the actionmode
+            menuInflater.inflate(R.menu.menu_file_action_mode, menu)
+            return true
+        }
+
+
+    }
 
     private fun initializeRecyclerView() {
         recycler_view.run {
             setHasFixedSize(true)
             adapter = mFileAdapter
+
             registerForContextMenu(this)
         }
     }
@@ -49,7 +86,7 @@ class FileActivity : AppCompatActivity() {
 
     override fun onCreateContextMenu(menu: ContextMenu, v: View?, menuInfo: ContextMenu.ContextMenuInfo) {
 
-        menu.add(0, MENU_DELELTE, 0, getString(R.string.menu_detelte));
+        menu.add(0, MENU_DELELTE, 0, getString(R.string.menu_delete));
         if (menuInfo is ContextMenuRecyclerView.ContextMenuInfo) {
             val fileItem = mFileAdapter!!.getItem(menuInfo.position)
             when {
@@ -132,11 +169,14 @@ class FileActivity : AppCompatActivity() {
     }
 
     private fun sortBy(sortOrder: Int) {
+        // Sort the file list in the specified way
         mSortOrder = sortOrder
+        // Refresh display after sorting
         refreshRecyclerView()
     }
 
     override fun onPause() {
+        // After entering the pause state, save the last accessed directory and the sorting method used
         config.recentDirectory = mRecentDirectory
         config.sortOrder = mSortOrder
         super.onPause()
@@ -149,11 +189,12 @@ class FileActivity : AppCompatActivity() {
     private fun refreshRecyclerView(path: String) {
         File(path).listFileItems(mSortOrder)?.let {
             if (mFileAdapter == null) {
-                mFileAdapter = FileAdapter(this, it) {
-                    if (it.isDirectory) {
+                // Initialize FileAdapter
+                mFileAdapter = FileAdapter(this, it, mMultiSelector, mActionMode) {
+                    if (it != null && it.isDirectory) {
                         refreshRecyclerView(it.path)
                         mRecentDirectory = it.path
-                    } else onClickFile(it.path)
+                    } else if (it != null) onClickFile(it.path)
                 }
                 recycler_view.adapter = mFileAdapter
             } else {

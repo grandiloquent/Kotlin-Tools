@@ -16,10 +16,10 @@ fun File.getDirectChildrenCount(countHiddenItems: Boolean) = listFiles()?.filter
 fun File.toFileDirItem(context: Context) = FileDirItem(absolutePath, name, context.getIsPathDirectory(absolutePath), 0, length())
 
 
-
 fun File.createDirectory() {
     if (!exists()) mkdirs()
 }
+
 fun File.deletes() {
     if (isFile) {
         delete()
@@ -30,6 +30,7 @@ fun File.deletes() {
         deleteRecursively()
     }
 }
+
 fun File.getFileCount(countHiddenItems: Boolean): Int {
     return if (isDirectory) {
         getDirectoryFileCount(this, countHiddenItems)
@@ -37,6 +38,7 @@ fun File.getFileCount(countHiddenItems: Boolean): Int {
         1
     }
 }
+
 fun File.getProperSize(countHiddenItems: Boolean): Long {
     return if (isDirectory) {
         getDirectorySize(this, countHiddenItems)
@@ -44,6 +46,7 @@ fun File.getProperSize(countHiddenItems: Boolean): Long {
         length()
     }
 }
+
 fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
     if (!isDirectory) return null
     val files = listFiles()
@@ -59,12 +62,13 @@ fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
                 file.absolutePath,
                 file.name,
                 if (file.isDirectory) 0L else file.length(),
-                if (file.isDirectory) file.listFiles().size else 0,
+                if (file.isDirectory) file.listFiles()?.size ?: 0 else 0,
                 file.isDirectory
         ))
     }
     return ls
 }
+
 private fun getDirectoryFileCount(dir: File, countHiddenItems: Boolean): Int {
     var count = 0
     if (dir.exists()) {
@@ -83,6 +87,7 @@ private fun getDirectoryFileCount(dir: File, countHiddenItems: Boolean): Int {
     }
     return count
 }
+
 private fun getDirectorySize(dir: File, countHiddenItems: Boolean): Long {
     var size = 0L
     if (dir.exists()) {
@@ -90,6 +95,7 @@ private fun getDirectorySize(dir: File, countHiddenItems: Boolean): Long {
         if (files != null) {
             for (i in files.indices) {
                 if (files[i].isDirectory) {
+                    // If it is a directory, recursively accumulate
                     size += getDirectorySize(files[i], countHiddenItems)
                 } else if (!files[i].isHidden && !dir.isHidden || countHiddenItems) {
                     size += files[i].length()

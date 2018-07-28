@@ -26,6 +26,7 @@ fun String.isPng() = endsWith(".png", true)
 fun String.isRawFast() = rawExtensions.any { endsWith(it, true) }
 fun String.isVideoFast() = videoExtensions.any { endsWith(it, true) }
 fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
+fun String.isArchiveFast() = archiveExtensions.any { endsWith(it, true) }
 fun String.getDuration() = getFileDurationSeconds()?.getFormattedDuration()
 fun String.getFilenameFromPath() = substring(lastIndexOf("/") + 1)
 
@@ -38,6 +39,7 @@ fun String.getExifCameraModel(exif: ExifInterface): String {
     }
     return ""
 }
+
 fun String.getParentPath(): String {
     var parent = removeSuffix("/${getFilenameFromPath()}")
     if (parent == "otg:") {
@@ -45,6 +47,7 @@ fun String.getParentPath(): String {
     }
     return parent
 }
+
 fun String.getExifDateTaken(exif: ExifInterface): String {
     exif.getAttribute(ExifInterface.TAG_DATETIME).let {
         if (it?.isNotEmpty() == true) {
@@ -714,6 +717,7 @@ fun String.getResolution(): Point? {
         null
     }
 }
+
 fun String.getFileAlbum(): String? {
     return try {
         val retriever = MediaMetadataRetriever()
@@ -723,6 +727,7 @@ fun String.getFileAlbum(): String? {
         null
     }
 }
+
 fun String.getFileArtist(): String? {
     return try {
         val retriever = MediaMetadataRetriever()
@@ -732,6 +737,7 @@ fun String.getFileArtist(): String? {
         null
     }
 }
+
 fun String.getFileDurationSeconds(): Int? {
     return try {
         val retriever = MediaMetadataRetriever()
@@ -759,6 +765,7 @@ fun String.getVideoResolution(): Point? {
 fun String.isValidURL(): Boolean {
     return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
 }
+
 fun String.getFileSongTitle(): String? {
     return try {
         val retriever = MediaMetadataRetriever()
@@ -768,6 +775,7 @@ fun String.getFileSongTitle(): String? {
         null
     }
 }
+
 fun String.triggerScanFile(context: Context = App.instance) {
     val file = File(this)
     if (!file.exists()) return
@@ -777,6 +785,7 @@ fun String.triggerScanFile(context: Context = App.instance) {
     mediaScanIntent.data = uri
     context.sendBroadcast(mediaScanIntent)
 }
+
 fun String.getGenericMimeType(): String {
     if (!contains("/"))
         return this
@@ -784,6 +793,7 @@ fun String.getGenericMimeType(): String {
     val type = substring(0, indexOf("/"))
     return "$type/*"
 }
+
 fun String.convertToSeconds(): Int {
 
     val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()

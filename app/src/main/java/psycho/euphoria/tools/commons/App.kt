@@ -17,6 +17,7 @@ class App : Application() {
             if (LeakCanary.isInAnalyzerProcess(this)) {
                 return
             }
+            // Monitor memory leaks in debug mode
             LeakCanary.install(this)
         }
     }
