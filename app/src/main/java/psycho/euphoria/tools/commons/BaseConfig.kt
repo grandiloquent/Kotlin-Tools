@@ -13,6 +13,10 @@ open class BaseConfig(val context: Context) {
         get() = prefs.getInt(KEY_BACKGROUND_COLOR, context.resources.getColor(R.color.default_background_color))
         set(backgroundColor) = prefs.edit().putInt(KEY_BACKGROUND_COLOR, backgroundColor).apply()
 
+    var keepLastModified: Boolean
+        get() = prefs.getBoolean(KEY_KEEP_LAST_MODIFIED, true)
+        set(keepLastModified) = prefs.edit().putBoolean(KEY_KEEP_LAST_MODIFIED, keepLastModified).apply()
+
     var OTGPartition: String
         get() = prefs.getString(KEY_OTG_PARTITION, "")
         set(OTGPartition) = prefs.edit().putString(KEY_OTG_PARTITION, OTGPartition).apply()

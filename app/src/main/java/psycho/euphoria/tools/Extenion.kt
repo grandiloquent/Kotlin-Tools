@@ -52,7 +52,6 @@ const val PERMISSION_READ_CALENDAR = 7
 const val PERMISSION_WRITE_CALENDAR = 8
 const val PERMISSION_CALL_PHONE = 9
 const val GENERIC_PERM_HANDLER = 100
-const val OTG_PATH = "otg:/"
 fun getInternalStoragePath() = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 
 fun isLollipopPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
@@ -62,17 +61,8 @@ private const val REGEX_FILE_IMAGE = "\\.(?:jpeg|jpg|bmp|png|gif|tiff)$"
 private const val TAG = "Extension"
 val Context.sdCardPath: String get() = getSDCardPath()
 
-fun Context.dp2px(dp: Float): Float {
-    return dp * resources.displayMetrics.density;
-}
 
-fun Context.getDrawableCompat(resId: Int): Drawable {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-        return resources.getDrawable(resId, theme);
-    } else {
-        return resources.getDrawable(resId);
-    }
-}
+
 
 fun Context.getSDCardPath(): String {
     val directories = getStorageDirectories().filter { it.trimEnd('/') != getInternalStoragePath() }
@@ -145,30 +135,8 @@ fun Context.getStorageDirectories(): Array<String> {
 
 
 
-fun Context.px2dp(px: Float): Float {
-    return px / resources.displayMetrics.density;
-}
 
 
-fun Context.px2sp(px: Float): Float {
-    return px / resources.displayMetrics.scaledDensity
-}
-
-fun Context.sp2px(sp: Float): Float {
-    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics);
-}
-
-fun File.isImage(): Boolean {
-    return isFile && Regex("\\.(?:jpeg|jpg|bmp|png|gif|tiff)$", RegexOption.IGNORE_CASE).containsMatchIn(name)
-}
-
-fun File.listAudio(): List<File> {
-    val audioRegex = Regex(REGEX_FILE_AUDIO, RegexOption.IGNORE_CASE)
-    val accept = fun(f: File): Boolean {
-        return f.isFile && audioRegex.containsMatchIn(f.name)
-    }
-    return listFiles().filter { accept(it) }
-}
 
 
 fun File.listImagesRecursively(): List<File> {
@@ -210,9 +178,7 @@ fun getFileName(filePath: String?): String? {
     } else return null
 }
 
-fun getPointerIndex(action: Int): Int {
-    return action and MotionEvent.ACTION_POINTER_INDEX_MASK shr MotionEvent.ACTION_POINTER_INDEX_SHIFT
-}
+
 
 fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String> {
     val files = ArrayList<String>()
@@ -259,21 +225,3 @@ fun String.e(t: String, messag: String) {
 }
 
 
-
-fun Context.getSharedPrefs() = getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
-//
-//open class BaseConfig(val context: Context) {
-//    protected val prefs = context.getSharedPrefs()
-//
-//    var accessedDirectory: String
-//        get() = prefs.getString(PREFS_ACCESSED_DIRECTORY, getInternalStoragePath())
-//        set(accessdDirectory) = prefs.edit().putString(PREFS_ACCESSED_DIRECTORY, accessdDirectory).apply()
-//
-//    companion object {
-//        fun newInstance(context: Context) = BaseConfig(context)
-//    }
-//}
-
-abstract class BaseActivity() : Activity() {
-
-}

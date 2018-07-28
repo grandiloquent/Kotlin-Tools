@@ -26,4 +26,5 @@
     <string name="sd_card_otg_same">SD card and OTG device paths cannot be the same</string>
     <string name="unknown_error_occurred">An unknown error occurred</string>
     <string name="wrong_root_selected">Wrong folder selected, please select the root folder of your SD card</string>
+    <string name="menu_rename_file">Rename File</string>
 </resources>

@@ -1,14 +1,15 @@
 package psycho.euphoria.tools.commons
 
-import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.ClipboardManager
+import android.content.ContentValues
 import android.content.Context
 import android.content.res.Configuration
 import android.database.Cursor
 import android.graphics.Color
 import android.graphics.Point
+import android.graphics.drawable.Drawable
 import android.media.AudioManager
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -19,13 +20,11 @@ import android.provider.MediaStore
 import android.support.v4.content.FileProvider
 import android.support.v4.provider.DocumentFile
 import android.text.TextUtils
+import android.util.TypedValue
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Toast
 import com.simplemobiletools.commons.extensions.getIntValue
-
-import psycho.euphoria.tools.Config
-import psycho.euphoria.tools.OTG_PATH
 import java.io.File
 import java.util.*
 import java.util.regex.Pattern
@@ -49,7 +48,9 @@ private val physicalPaths = arrayListOf(
 )
 
 fun Context.getAdjustedPrimaryColor() = if (isBlackAndWhiteTheme()) Color.WHITE else baseConfig.primaryColor
-fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists() ?: false else File(path).exists()
+fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists()
+        ?: false else File(path).exists()
+
 fun Context.getInternalStoragePath() = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 fun Context.getSharedPrefs() = getSharedPreferences(PREFS_KEY, Context.MODE_PRIVATE)
 fun Context.isBlackAndWhiteTheme() = baseConfig.textColor == Color.WHITE && baseConfig.primaryColor == Color.BLACK && baseConfig.backgroundColor == Color.BLACK
@@ -57,7 +58,6 @@ fun Context.isPathOnSD(path: String) = sdCardPath.isNotEmpty() && path.startsWit
 fun Context.needsStupidWritePermissions(path: String) = (isPathOnSD(path) || path.startsWith(OTG_PATH)) && isLollipopPlus()
 val Context.audioManager get() = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
-val Context.config: Config get() = Config.newInstance(applicationContext)
 val Context.navigationBarBottom: Boolean get() = usableScreenSize.y < realScreenSize.y
 val Context.navigationBarHeight: Int get() = if (navigationBarBottom) navigationBarSize.y else 0
 val Context.navigationBarRight: Boolean get() = usableScreenSize.x < realScreenSize.x
@@ -67,6 +67,10 @@ val Context.sdCardPath: String get() = baseConfig.sdCardPath
 val Context.version: Int get() = Build.VERSION.SDK_INT
 val Context.windowManager: WindowManager get() = getSystemService(Context.WINDOW_SERVICE) as WindowManager
 
+
+/*
+Properties
+ */
 val Context.alarmManager: AlarmManager
     get() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
@@ -108,6 +112,11 @@ val Context.usableScreenSize: Point
         return size
     }
 
+
+/*
+Functions
+ */
+
 fun Context.deleteFromMediaStore(path: String): Boolean {
     if (getDoesFilePathExist(path) || getIsPathDirectory(path)) {
         return false
@@ -120,6 +129,11 @@ fun Context.deleteFromMediaStore(path: String): Boolean {
         false
     }
 }
+
+fun Context.dp2px(dp: Float): Float {
+    return dp * resources.displayMetrics.density;
+}
+
 fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
     return if (path.startsWith(OTG_PATH)) {
         null
@@ -135,6 +149,7 @@ fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
         }
     }
 }
+
 fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
     return if (uri.scheme == "content") {
         uri
@@ -143,6 +158,7 @@ fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
         getFilePublicUri(file, applicationId)
     }
 }
+
 fun Context.getDocumentFile(path: String): DocumentFile? {
     if (!isLollipopPlus()) {
         return null
@@ -159,6 +175,7 @@ fun Context.getDocumentFile(path: String): DocumentFile? {
     }
     return document
 }
+
 fun Context.getFastDocumentFile(path: String): DocumentFile? {
     if (!isLollipopPlus()) {
         return null
@@ -176,6 +193,7 @@ fun Context.getFastDocumentFile(path: String): DocumentFile? {
     val fullUri = "${baseConfig.treeUri}/document/$externalPathPart%3A$relativePath"
     return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
 }
+
 fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
     // for images/videos/gifs try getting a media content uri first, like content://media/external/images/media/438
     // if media content uri is null, get our custom uri like content://com.simplemobiletools.gallery.provider/external_files/emulated/0/DCIM/IMG_20171104_233915.jpg
@@ -186,15 +204,18 @@ fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
         FileProvider.getUriForFile(this, "$applicationId.provider", file)
     }
 }
+
 fun Context.getFileUri(path: String) = when {
     path.isImageSlow() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     path.isVideoSlow() -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
     else -> MediaStore.Files.getContentUri("external")
 }
+
 fun Context.getHumanizedFilename(path: String): String {
     val humanized = humanizePath(path)
     return humanized.substring(humanized.lastIndexOf("/") + 1)
 }
+
 fun Context.getIsPathDirectory(path: String): Boolean {
     return if (path.startsWith(OTG_PATH)) {
         getOTGFastDocumentFile(path)?.isDirectory ?: false
@@ -202,6 +223,7 @@ fun Context.getIsPathDirectory(path: String): Boolean {
         File(path).isDirectory
     }
 }
+
 fun Context.getMediaContent(path: String, uri: Uri): Uri? {
     val projection = arrayOf(MediaStore.Images.Media._ID)
     val selection = MediaStore.Images.Media.DATA + "= ?"
@@ -219,6 +241,7 @@ fun Context.getMediaContent(path: String, uri: Uri): Uri? {
     }
     return null
 }
+
 fun Context.getMediaContentUri(path: String): Uri? {
     val uri = when {
         path.isImageFast() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
@@ -227,6 +250,7 @@ fun Context.getMediaContentUri(path: String): Uri? {
     }
     return getMediaContent(path, uri)
 }
+
 fun Context.getMimeTypeFromUri(uri: Uri): String {
     var mimetype = uri.path.getMimeType()
     if (mimetype.isEmpty()) {
@@ -237,6 +261,7 @@ fun Context.getMimeTypeFromUri(uri: Uri): String {
     }
     return mimetype
 }
+
 fun Context.getOTGFastDocumentFile(path: String): DocumentFile? {
     if (baseConfig.OTGTreeUri.isEmpty()) {
         return null
@@ -248,6 +273,7 @@ fun Context.getOTGFastDocumentFile(path: String): DocumentFile? {
     val fullUri = "${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A$relativePath"
     return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
 }
+
 // http://stackoverflow.com/a/40582634/1967672
 fun Context.getSDCardPath(): String {
     val directories = getStorageDirectories().filter { it.trimEnd('/') != getInternalStoragePath() }
@@ -275,6 +301,7 @@ fun Context.getSDCardPath(): String {
     val finalPath = sdCardPath.trimEnd('/')
     return finalPath
 }
+
 fun Context.getStorageDirectories(): Array<String> {
     val paths = HashSet<String>()
     val rawExternalStorage = System.getenv("EXTERNAL_STORAGE")
@@ -314,6 +341,7 @@ fun Context.getStorageDirectories(): Array<String> {
     }
     return paths.toTypedArray()
 }
+
 fun Context.getUriMimeType(path: String, newUri: Uri): String {
     var mimeType = path.getMimeType()
     if (mimeType.isEmpty()) {
@@ -321,6 +349,7 @@ fun Context.getUriMimeType(path: String, newUri: Uri): String {
     }
     return mimeType
 }
+
 fun Context.hasProperStoredTreeUri(): Boolean {
     val hasProperUri = contentResolver.persistedUriPermissions.any { it.uri.toString() == baseConfig.treeUri }
     if (!hasProperUri) {
@@ -328,9 +357,19 @@ fun Context.hasProperStoredTreeUri(): Boolean {
     }
     return hasProperUri
 }
+
 fun Context.humanizePath(path: String): String {
     return ""
 }
+
+fun Context.px2dp(px: Float): Float {
+    return px / resources.displayMetrics.density;
+}
+
+fun Context.px2sp(px: Float): Float {
+    return px / resources.displayMetrics.scaledDensity
+}
+
 fun Context.rescanDeletedPath(path: String, callback: (() -> Unit)? = null) {
     if (path.startsWith(filesDir.toString())) {
         callback?.invoke()
@@ -352,12 +391,48 @@ fun Context.rescanDeletedPath(path: String, callback: (() -> Unit)? = null) {
         }
     }
 }
+
+fun Context.rescanPaths(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
+    var cnt = paths.size
+    MediaScannerConnection.scanFile(applicationContext, paths.toTypedArray(), null, { s, uri ->
+        if (--cnt == 0) {
+            callback?.invoke()
+        }
+    })
+}
+
+fun Context.scanFilesRecursively(files: ArrayList<File>, callback: (() -> Unit)? = null) {
+    val allPaths = ArrayList<String>()
+    for (file in files) {
+        allPaths.addAll(getPaths(file))
+    }
+    rescanPaths(allPaths, callback)
+}
+
+fun Context.scanPathRecursively(path: String, callback: (() -> Unit)? = null) {
+    scanPathsRecursively(arrayListOf(path), callback)
+}
+
+fun Context.scanPathsRecursively(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
+    val allPaths = ArrayList<String>()
+    for (path in paths) {
+        allPaths.addAll(getPaths(File(path)))
+    }
+    rescanPaths(allPaths, callback)
+}
+
+fun Context.sp2px(sp: Float): Float {
+    return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics);
+}
+
 fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, message, duration).show()
 }
+
 fun Context.toast(id: Int, length: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, id, length).show()
 }
+
 fun Context.tryFastDocumentDelete(path: String, allowDeleteFolder: Boolean): Boolean {
     val document = getFastDocumentFile(path)
     return if (document?.isFile == true || allowDeleteFolder) {
@@ -370,6 +445,7 @@ fun Context.tryFastDocumentDelete(path: String, allowDeleteFolder: Boolean): Boo
         false
     }
 }
+
 fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     var fileDeleted = tryFastDocumentDelete(fileDirItem.path, allowDeleteFolder)
     if (!fileDeleted) {
@@ -387,5 +463,44 @@ fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolea
         }
     }
 }
+
+fun Context.updateInMediaStore(oldPath: String, newPath: String) {
+    Thread {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DATA, newPath)
+            put(MediaStore.MediaColumns.DISPLAY_NAME, newPath.getFilenameFromPath())
+            put(MediaStore.MediaColumns.TITLE, newPath.getFilenameFromPath())
+        }
+        val uri = getFileUri(oldPath)
+        val selection = "${MediaStore.MediaColumns.DATA} = ?"
+        val selectionArgs = arrayOf(oldPath)
+        try {
+            contentResolver.update(uri, values, selection, selectionArgs)
+        } catch (ignored: Exception) {
+        }
+    }.start()
+}
+
+fun Context.updateLastModified(path: String, lastModified: Long) {
+    val values = ContentValues().apply {
+        put(MediaStore.MediaColumns.DATE_MODIFIED, lastModified / 1000)
+    }
+    File(path).setLastModified(lastModified)
+    val uri = getFileUri(path)
+    val selection = "${MediaStore.MediaColumns.DATA} = ?"
+    val selectionArgs = arrayOf(path)
+    try {
+        contentResolver.update(uri, values, selection, selectionArgs)
+    } catch (ignored: Exception) {
+    }
+}
+
 fun Context.updateTextColors(viewGroup: ViewGroup, tmpTextColor: Int = 0, tmpAccentColor: Int = 0) {
+}
+fun Context.getDrawableCompat(resId: Int): Drawable {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        return resources.getDrawable(resId, theme);
+    } else {
+        return resources.getDrawable(resId);
+    }
 }

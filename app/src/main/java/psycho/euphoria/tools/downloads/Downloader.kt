@@ -149,7 +149,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
         }
         downloadInfo.etag = conn.eTag
         downloadInfo.writeToDatabase()
-        Tracker.e("parseOkHeaders", "totalBytes => ${downloadInfo.totalBytes}")
+        // Tracker.e("parseOkHeaders", "totalBytes => ${downloadInfo.totalBytes}")
 
         // Log.e(TAG, "$contentDisposition $contentLocation transferEncoding => ${transferEncoding} \nmimeType => ${downloadInfo.mimeType} \ntotalBytes => ${downloadInfo.totalBytes.formatSize()} \netag => ${downloadInfo.etag} \n")
     }
@@ -171,7 +171,7 @@ class Downloader(private val downloadInfo: DownloadInfo) : Runnable {
             if (e.finalStatus == STATUS_CANNOT_RESUME /*489*/ && downloadInfo.currentBytes == downloadInfo.totalBytes) {
                 downloadInfo.finish = true
             }
-            Logger.getInstance().e("Downloader.run.${e.message}")
+            Logger.getInstance().e("Downloader.run.${e.finalStatus} ${e.message}")
             notifyErrorOccurred?.invoke(mId, e.message)
         } finally {
             downloadInfo.writeToDatabase()

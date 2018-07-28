@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Intent
 import android.graphics.drawable.ColorDrawable
 import android.net.Uri
+import android.os.Looper
+import android.provider.DocumentsContract
 import android.support.v4.content.FileProvider
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
@@ -20,6 +22,10 @@ import java.io.File
 
 
 fun Activity.isActivityDestroyed() = isJellyBean1Plus() && isDestroyed
+
+
+
+
 
 fun <T> Activity.launchActivity(clazz: Class<T>) {
     val intent = Intent(this, clazz)
@@ -185,4 +191,106 @@ fun AppCompatActivity.showSystemUI(toggleActionBarVisibility: Boolean) {
     window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_LAYOUT_STABLE or
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+}
+fun CustomActivity.deleteFile(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        Thread {
+            deleteFileBg(fileDirItem, allowDeleteFolder, callback)
+        }.start()
+    } else {
+        deleteFileBg(fileDirItem, allowDeleteFolder, callback)
+    }
+}
+fun CustomActivity.deleteFileBg(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    val path = fileDirItem.path
+    val file = File(path)
+    var fileDeleted = !path.startsWith(OTG_PATH) && ((!file.exists() && file.length() == 0L) || file.delete())
+    if (fileDeleted) {
+        rescanDeletedPath(path) {
+            runOnUiThread {
+                callback?.invoke(true)
+            }
+        }
+    } else {
+        if (file.isDirectory && allowDeleteFolder) {
+            fileDeleted = deleteRecursively(file)
+        }
+        if (!fileDeleted) {
+            if (isPathOnSD(path)) {
+                handleSAFDialog(path) {
+                    trySAFFileDelete(fileDirItem, allowDeleteFolder, callback)
+                }
+            } else if (path.startsWith(OTG_PATH)) {
+                trySAFFileDelete(fileDirItem, allowDeleteFolder, callback)
+            }
+        }
+    }
+}
+fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((success: Boolean) -> Unit)? = null) {
+    if (needsStupidWritePermissions(newPath)) {
+        handleSAFDialog(newPath) {
+            val document = getDocumentFile(oldPath)
+            if (document == null || (File(oldPath).isDirectory != document.isDirectory)) {
+                runOnUiThread {
+                    callback?.invoke(false)
+                }
+                return@handleSAFDialog
+            }
+            try {
+                val uri = DocumentsContract.renameDocument(applicationContext.contentResolver, document.uri, newPath.getFilenameFromPath())
+                if (document.uri != uri) {
+                    updateInMediaStore(oldPath, newPath)
+                    rescanPaths(arrayListOf(oldPath, newPath)) {
+                        if (!baseConfig.keepLastModified) {
+                            updateLastModified(newPath, System.currentTimeMillis())
+                        }
+                        runOnUiThread {
+                            callback?.invoke(true)
+                        }
+                    }
+                } else {
+                    runOnUiThread {
+                        callback?.invoke(false)
+                    }
+                }
+            } catch (e: SecurityException) {
+                showErrorToast(e)
+                runOnUiThread {
+                    callback?.invoke(false)
+                }
+            }
+        }
+    } else if (File(oldPath).renameTo(File(newPath))) {
+        if (File(newPath).isDirectory) {
+            deleteFromMediaStore(oldPath)
+            rescanPaths(arrayListOf(newPath)) {
+                runOnUiThread {
+                    callback?.invoke(true)
+                }
+                scanPathRecursively(newPath)
+            }
+        } else {
+            if (!baseConfig.keepLastModified) {
+                File(newPath).setLastModified(System.currentTimeMillis())
+            }
+            scanPathsRecursively(arrayListOf(newPath)) {
+                runOnUiThread {
+                    callback?.invoke(true)
+                }
+            }
+        }
+    } else {
+        runOnUiThread {
+            callback?.invoke(false)
+        }
+    }
+}
+private fun deleteRecursively(file: File): Boolean {
+    if (file.isDirectory) {
+        val files = file.listFiles() ?: return file.delete()
+        for (child in files) {
+            deleteRecursively(child)
+        }
+    }
+    return file.delete()
 }

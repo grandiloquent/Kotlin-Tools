@@ -8,7 +8,6 @@ import android.graphics.Paint
 import android.graphics.Rect
 import android.os.Build
 import android.util.AttributeSet
-import android.util.Log
 import android.view.MotionEvent
 import android.view.VelocityTracker
 import android.view.View
@@ -16,6 +15,8 @@ import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
 import android.widget.Scroller
+import psycho.euphoria.tools.commons.dp2px
+import psycho.euphoria.tools.commons.sp2px
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.max

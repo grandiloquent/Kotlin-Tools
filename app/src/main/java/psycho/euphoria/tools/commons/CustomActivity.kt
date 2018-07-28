@@ -8,7 +8,7 @@ import android.support.v7.app.AppCompatActivity
 import psycho.euphoria.tools.OTG_PATH
 import psycho.euphoria.tools.R
 
-class CustomActivity : AppCompatActivity() {
+open class CustomActivity : AppCompatActivity() {
     private fun isProperSDFolder(uri: Uri) = isExternalStorageDocument(uri) && isRootUri(uri) && !isInternalStorage(uri)
     private fun isExternalStorageDocument(uri: Uri) = "com.android.externalstorage.documents" == uri.authority
     private fun isRootUri(uri: Uri) = DocumentsContract.getTreeDocumentId(uri).endsWith(":")

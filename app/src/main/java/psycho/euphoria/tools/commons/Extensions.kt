@@ -2,6 +2,7 @@ package psycho.euphoria.tools.commons
 
 import android.graphics.Point
 import android.text.format.DateFormat
+import java.io.File
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.util.*
@@ -47,4 +48,15 @@ fun Point.getMPx(): String {
     val px = x * y / 1000000.toFloat()
     val rounded = Math.round(px * 10) / 10.toFloat()
     return "(${rounded}MP)"
+}
+
+fun getPaths(file: File): ArrayList<String> {
+    val paths = arrayListOf<String>(file.absolutePath)
+    if (file.isDirectory) {
+        val files = file.listFiles() ?: return paths
+        for (curFile in files) {
+            paths.addAll(getPaths(curFile))
+        }
+    }
+    return paths
 }

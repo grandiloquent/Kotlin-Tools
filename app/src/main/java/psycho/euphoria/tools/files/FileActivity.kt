@@ -24,7 +24,7 @@ import psycho.euphoria.tools.videos.VideoActivity
 import java.io.File
 
 
-class FileActivity : AppCompatActivity() {
+class FileActivity : CustomActivity() {
 
 
     private lateinit var mRecentDirectory: String
@@ -52,13 +52,44 @@ class FileActivity : AppCompatActivity() {
                     mMultiSelector.clearSelections()
 
                 }
+                R.id.action_rename_file -> {
+
+                    mode.finish()
+                    mFileAdapter?.let {
+                        for (i in 0 until it.itemCount) {
+                            if (mMultiSelector.isSelected(i, 0)) {
+                                val fileItem = it.getItem(i)
+
+                                dialog(this@FileActivity, fileItem.name, getString(R.string.menu_rename_file)) {
+                                    if (!it.isNullOrBlank()) {
+                                        renameFile(fileItem.path, fileItem.path.getParentPath() + File.pathSeparator + it.toString()) {
+                                            refreshRecyclerView()
+                                        }
+                                    }
+                                }
+
+                                return true
+                            }
+                        }
+
+
+                        mMultiSelector.clearSelections()
+
+                    }
+                }
             }
             return true
         }
 
-        override fun onCreateActionMode(mode: ActionMode?, menu: Menu?): Boolean {
+
+        override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
             // Setting the menu items for the actionmode
             menuInflater.inflate(R.menu.menu_file_action_mode, menu)
+
+            if (mMultiSelector.selectedPositions.size > 1) {
+                menu.findItem(R.id.action_rename_file).isVisible = false
+                menu.findItem(R.id.action_split_video).isVisible = false
+            }
             return true
         }
 

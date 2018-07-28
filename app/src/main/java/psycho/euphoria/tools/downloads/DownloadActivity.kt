@@ -23,6 +23,8 @@ class DownloadActivity() : AppCompatActivity() {
 
     private lateinit var mOnPrimaryClipChangedListener: ClipboardManager.OnPrimaryClipChangedListener
 
+    private lateinit var mClipboardManager: ClipboardManager
+
     private lateinit var mItemTouchHelper: ItemTouchHelper
 
     private fun addDownloadTask() {
@@ -31,6 +33,10 @@ class DownloadActivity() : AppCompatActivity() {
                 insertDownloadTask(it.toString())
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
     }
 
     private fun initialize() {
@@ -64,7 +70,6 @@ class DownloadActivity() : AppCompatActivity() {
         }
 
 
-        clipboardManager.addPrimaryClipChangedListener(mOnPrimaryClipChangedListener)
 
 
         mItemTouchHelper = ItemTouchHelper(
@@ -108,6 +113,10 @@ class DownloadActivity() : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initialize()
+        // Ensure that the same object registers and releases the event listener for the clipboard change, otherwise the memory will leak
+        mClipboardManager = clipboardManager
+        mClipboardManager.addPrimaryClipChangedListener(mOnPrimaryClipChangedListener)
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -118,13 +127,9 @@ class DownloadActivity() : AppCompatActivity() {
         return super.onCreateOptionsMenu(menu)
     }
 
-    override fun onStop() {
-        super.onStop()
-
-    }
 
     override fun onDestroy() {
-
+        mClipboardManager.removePrimaryClipChangedListener(mOnPrimaryClipChangedListener)
         super.onDestroy()
     }
 
