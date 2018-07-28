@@ -1,4 +1,4 @@
-package com.simplemobiletools.commons.extensions
+package psycho.euphoria.tools.commons
 
 import android.database.Cursor
 

@@ -5,11 +5,12 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
 
-    <psycho.euphoria.tools.commons.ContextMenuRecyclerView
+    <include layout="@layout/toolbar" />
+
+    <android.support.v7.widget.RecyclerView
         android:id="@+id/recycler_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        app:layoutManager="android.support.v7.widget.LinearLayoutManager">
+        app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
 
-    </psycho.euphoria.tools.commons.ContextMenuRecyclerView>
 </LinearLayout>

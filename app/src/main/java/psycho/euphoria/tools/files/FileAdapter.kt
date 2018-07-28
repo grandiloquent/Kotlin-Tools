@@ -1,6 +1,7 @@
 package psycho.euphoria.tools.files
 
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.support.v7.app.AppCompatActivity
 import android.support.v7.view.ActionMode
@@ -12,20 +13,18 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.load.engine.DiskCacheStrategy
 import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
 import com.bumptech.glide.request.RequestOptions
+import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_file.*
+import kotlinx.android.synthetic.main.item_file.view.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
-import psycho.euphoria.tools.commons.ui.MultiSelector
-import psycho.euphoria.tools.commons.ui.SwappingHolder
 
 class FileAdapter(private val activity: AppCompatActivity,
                   private val files: ArrayList<FileItem>,
-                  private val multiSelector: MultiSelector,
-                  private val actionMode: ActionMode.Callback,
                   private val itemClick: (FileItem?) -> Unit
 ) :
-        RecyclerView.Adapter<FileAdapter.ViewHolder>() {
+        MultiChoiceAdapter<FileAdapter.ViewHolder>() {
     private val mFileDrawble: Drawable = activity.resources.getDrawable(R.drawable.ic_insert_drive_file_48px)
     private val mFolderDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_folder_48px)
     private val mPdfDrawble: Drawable = activity.resources.getDrawable(R.drawable.ic_file_pdf)
@@ -53,12 +52,28 @@ class FileAdapter(private val activity: AppCompatActivity,
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
 
         val view = LayoutInflater.from(activity).inflate(R.layout.item_file, parent, false)
-        return ViewHolder(view, multiSelector, activity, itemClick, actionMode)
+        return ViewHolder(view)
     }
 
     override fun getItemCount(): Int = files.size
 
+    override fun setActive(view: View, state: Boolean) {
+        if (state) {
+            view.item_holder.setBackgroundColor(activity.getColorCompat(R.color.color_primary))
+        } else {
+            view.item_holder.setBackgroundColor(Color.WHITE)
+        }
+    }
+
+    override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
+        return View.OnClickListener {
+            itemClick(getItem(position))
+        }
+    }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+        // Dont forget super this method
+        super.onBindViewHolder(holder, position)
 
         holder.bindFileItem(files[position])
     }
@@ -71,34 +86,18 @@ class FileAdapter(private val activity: AppCompatActivity,
         private const val TEXT_COLOR = 0XFF333333
     }
 
-    inner class ViewHolder(override val containerView: View,
-                           val multiSelector: MultiSelector,
-                           val activity: AppCompatActivity,
-                           val selectFileItem: (FileItem?) -> Unit,
-                           val actionMode: ActionMode.Callback) : SwappingHolder(containerView, multiSelector),
-            View.OnClickListener,
-            View.OnLongClickListener,
+    inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
+
             LayoutContainer {
 
         private var mFileItem: FileItem? = null
-        override fun onLongClick(p0: View?): Boolean {
-            activity.startSupportActionMode(actionMode)
-            multiSelector.setSelected(this, true)
-            return true
-        }
 
-        override fun onClick(view: View?) {
-            mFileItem?.let {
-                if (!multiSelector.tapSelection(this)) {
-                    selectFileItem(mFileItem)
-                }
-            }
-        }
+
 
         init {
-            itemView.isLongClickable = true
-            itemView.setOnClickListener(this)
-            itemView.setOnLongClickListener(this)
+            //itemView.isLongClickable = true
+            //itemView.setOnClickListener(this)
+            //itemView.setOnLongClickListener(this)
         }
 
         fun bindFileItem(fileItem: FileItem) {

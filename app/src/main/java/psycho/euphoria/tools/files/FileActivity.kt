@@ -3,18 +3,15 @@ package psycho.euphoria.tools.files
 import android.content.Intent
 import android.os.Bundle
 import android.os.Environment
-import android.support.v7.app.AppCompatActivity
-import android.support.v7.view.ActionMode
-import android.view.ContextMenu
 import android.view.Menu
 import android.view.MenuItem
-import android.view.View
-import kotlinx.android.synthetic.main.activity_download.*
+import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
+import com.davidecirillo.multichoicerecyclerview.MultiChoiceToolbar
+import kotlinx.android.synthetic.main.activity_file.*
+import kotlinx.android.synthetic.main.toolbar.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
 import psycho.euphoria.tools.commons.*
-import psycho.euphoria.tools.commons.ui.ModalMultiSelectorCallback
-import psycho.euphoria.tools.commons.ui.MultiSelector
 import psycho.euphoria.tools.config
 import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.music.MediaPlaybackService
@@ -30,71 +27,108 @@ class FileActivity : CustomActivity() {
     private lateinit var mRecentDirectory: String
     private var mFileAdapter: FileAdapter? = null
     private var mSortOrder = SORT_BY_NAME // Sort by file name by default
-    private val mMultiSelector = MultiSelector()
-    private val mActionMode = object : ModalMultiSelectorCallback(mMultiSelector) {
-        // Set the menu for pops up when selecting the item
-        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-            when (item.itemId) {
-                R.id.action_delete -> {
 
-                    // Close the opened top toolbar
-                    mode.finish()
-                    mFileAdapter?.let {
-                        for (i in 0 until it.itemCount) {
-                            if (mMultiSelector.isSelected(i, 0)) {
-                                val fileItem = it.getItem(i)
-                                File(fileItem.path).deletes()
-                            }
-                        }
-                        refreshRecyclerView()
-                    }
-                    // Clear selected state
-                    mMultiSelector.clearSelections()
-
-                }
-                R.id.action_rename_file -> {
-
-                    mode.finish()
-                    mFileAdapter?.let {
-                        for (i in 0 until it.itemCount) {
-                            if (mMultiSelector.isSelected(i, 0)) {
-                                val fileItem = it.getItem(i)
-
-                                dialog(this@FileActivity, fileItem.name, getString(R.string.menu_rename_file)) {
-                                    if (!it.isNullOrBlank()) {
-                                        renameFile(fileItem.path, fileItem.path.getParentPath() + File.pathSeparator + it.toString()) {
-                                            refreshRecyclerView()
-                                        }
-                                    }
-                                }
-
-                                return true
-                            }
-                        }
-
-
-                        mMultiSelector.clearSelections()
-
-                    }
-                }
-            }
-            return true
-        }
-
-
-        override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
-            // Setting the menu items for the actionmode
-            menuInflater.inflate(R.menu.menu_file_action_mode, menu)
-
-            if (mMultiSelector.selectedPositions.size > 1) {
-                menu.findItem(R.id.action_rename_file).isVisible = false
-                menu.findItem(R.id.action_split_video).isVisible = false
-            }
-            return true
-        }
-
-
-    }
+    private lateinit var mOptionMenu: Menu
+//
+//    private val mActionMode = object : ModalMultiSelectorCallback(mMultiSelector) {
+//        // Set the menu for pops up when selecting the item
+//        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
+//            when (item.itemId) {
+//                R.id.action_delete -> {
+//
+//                    // Close the opened top toolbar
+//                    mode.finish()
+//                    mFileAdapter?.let {
+//                        for (i in 0 until it.itemCount) {
+//                            if (mMultiSelector.isSelected(i, 0)) {
+//                                val fileItem = it.getItem(i)
+//                                File(fileItem.path).deletes()
+//                            }
+//                        }
+//                        refreshRecyclerView()
+//                    }
+//                    // Clear selected state
+//                    mMultiSelector.clearSelections()
+//
+//                }
+//                R.id.action_rename_file -> {
+//
+//                    mode.finish()
+//                    mFileAdapter?.let {
+//                        for (i in 0 until it.itemCount) {
+//                            if (mMultiSelector.isSelected(i, 0)) {
+//                                val fileItem = it.getItem(i)
+//
+//                                dialog(this@FileActivity, fileItem.name, getString(R.string.menu_rename_file), true) {
+//                                    if (!it.isNullOrBlank()) {
+//                                        renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
+//                                            refreshRecyclerView()
+//                                        }
+//                                    }
+//                                }
+//
+//                                return true
+//                            }
+//                        }
+//
+//
+//                        mMultiSelector.clearSelections()
+//
+//                    }
+//                }
+//                R.id.action_split_video -> {
+//                    mode.finish()
+//                    mFileAdapter?.let {
+//                        for (i in 0 until it.itemCount) {
+//                            if (mMultiSelector.isSelected(i, 0)) {
+//                                val fileItem = it.getItem(i)
+//                                splitVideo(fileItem.path)
+//                                return true
+//                            }
+//                        }
+//
+//
+//                        mMultiSelector.clearSelections()
+//
+//                    }
+//                }
+//                R.id.action_scan_file -> {
+//                    mode.finish()
+//                    mFileAdapter?.let {
+//                        for (i in 0 until it.itemCount) {
+//                            if (mMultiSelector.isSelected(i, 0)) {
+//                                val fileItem = it.getItem(i)
+//                                scanFileRecursively(File(fileItem.path)) {
+//                                    toast("Recursive scan file end")
+//                                }
+//                                return true
+//                            }
+//                        }
+//
+//
+//                        mMultiSelector.clearSelections()
+//
+//                    }
+//
+//                }
+//            }
+//            return true
+//        }
+//
+//
+//        override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
+//            // Setting the menu items for the actionmode
+//            menuInflater.inflate(R.menu.menu_file_action_mode, menu)
+//
+//            if (mMultiSelector.selectedPositions.size > 1) {
+//                menu.findItem(R.id.action_rename_file).isVisible = false
+//                menu.findItem(R.id.action_split_video).isVisible = false
+//            }
+//            return true
+//        }
+//
+//
+//    }
 
     private fun initializeRecyclerView() {
         recycler_view.run {
@@ -103,6 +137,40 @@ class FileActivity : CustomActivity() {
 
             registerForContextMenu(this)
         }
+
+        val builder = MultiChoiceToolbar.Builder(this, toolbar)
+                .setMultiChoiceColours(R.color.colorPrimaryMulti, R.color.colorPrimaryMulti)
+                .setDefaultIcon(R.drawable.ic_arrow_back_white_24px) { onBackPressed() }
+                .setTitles(getString(R.string.toolbar_controls), "item selected")
+
+
+        mFileAdapter?.apply {
+            setMultiChoiceToolbar(builder.build())
+            setMultiChoiceSelectionListener(object : MultiChoiceAdapter.Listener {
+                override fun OnItemSelected(selectedPosition: Int, itemSelectedCount: Int, allItemCount: Int) {
+
+                    if (itemSelectedCount > 1) {
+
+                    }
+                    mOptionMenu.findItem(R.id.action_select_all).isVisible = true;
+                    invalidateOptionsMenu()
+                }
+
+                override fun OnItemDeselected(deselectedPosition: Int, itemSelectedCount: Int, allItemCount: Int) {
+
+                }
+
+                override fun OnSelectAll(itemSelectedCount: Int, allItemCount: Int) {
+
+                }
+
+                override fun OnDeselectAll(itemSelectedCount: Int, allItemCount: Int) {
+
+                }
+
+            })
+        }
+
     }
 
     override fun onBackPressed() {
@@ -115,60 +183,41 @@ class FileActivity : CustomActivity() {
         }
     }
 
-    override fun onCreateContextMenu(menu: ContextMenu, v: View?, menuInfo: ContextMenu.ContextMenuInfo) {
 
-        menu.add(0, MENU_DELELTE, 0, getString(R.string.menu_delete));
-        if (menuInfo is ContextMenuRecyclerView.ContextMenuInfo) {
-            val fileItem = mFileAdapter!!.getItem(menuInfo.position)
-            when {
-                fileItem.path.isVideoFast() -> {
-                    menu.add(0, MENU_SPLIT_VIDEO, 0, getString(R.string.menu_split_video))
-                }
-            }
-        }
-
-        super.onCreateContextMenu(menu, v, menuInfo)
-    }
-
-    override fun onContextItemSelected(item: MenuItem): Boolean {
-        val menuInfo = item.menuInfo
-        if (menuInfo is ContextMenuRecyclerView.ContextMenuInfo) {
-            mFileAdapter?.let {
-
-                when (item.itemId) {
-                    MENU_DELELTE -> {
-                        val fileItem = it.getItem(menuInfo.position)
-                        File(fileItem.path).deletes()
-                        refreshRecyclerView()
-                    }
-                    MENU_SPLIT_VIDEO -> {
-                        val fileItem = it.getItem(menuInfo.position)
-                        splitVideo(fileItem.path)
-
-                    }
-                }
-            }
-
-        }
-        return true
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_file)
+
+        setSupportActionBar(toolbar)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+            // setShowHideAnimationEnabled(true)
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24px)
+
+        }
+        toolbar.setNavigationOnClickListener { onBackPressed() }
+
         mSortOrder = config.sortOrder
         initializeRecyclerView()
         mRecentDirectory = config.recentDirectory
         refreshRecyclerView(mRecentDirectory)
+
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
 
+        mOptionMenu = menu
         menuInflater.inflate(R.menu.menu_file, menu)
         with(menu) {
 
             add(0, KEY_SDCARD, 0, getString(R.string.menu_sd_card))
+
+            findItem(R.id.action_select_all).isVisible = false
         }
+
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -221,7 +270,7 @@ class FileActivity : CustomActivity() {
         File(path).listFileItems(mSortOrder)?.let {
             if (mFileAdapter == null) {
                 // Initialize FileAdapter
-                mFileAdapter = FileAdapter(this, it, mMultiSelector, mActionMode) {
+                mFileAdapter = FileAdapter(this, it) {
                     if (it != null && it.isDirectory) {
                         refreshRecyclerView(it.path)
                         mRecentDirectory = it.path

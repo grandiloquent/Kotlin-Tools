@@ -16,4 +16,7 @@
         android:id="@+id/action_split_video"
         android:title="@string/menu_split_video"
         app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_scan_file"
+        android:title="@string/menu_scan_file" />
 </menu>

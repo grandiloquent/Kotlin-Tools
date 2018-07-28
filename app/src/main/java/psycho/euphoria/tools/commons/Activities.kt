@@ -1,36 +1,48 @@
 package psycho.euphoria.tools.commons
 
 import android.app.Activity
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.media.RingtoneManager
 import android.net.Uri
+import android.os.Build
 import android.os.Looper
 import android.provider.DocumentsContract
 import android.support.v4.content.FileProvider
+import android.support.v4.provider.DocumentFile
 import android.support.v7.app.AlertDialog
 import android.support.v7.app.AppCompatActivity
 import android.view.View
 import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
+import android.view.inputmethod.InputMethodManager
+import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.dialog_title.view.*
 import psycho.euphoria.tools.BuildConfig
 import psycho.euphoria.tools.R
-import java.io.File
+import java.io.*
 
 
 fun Activity.isActivityDestroyed() = isJellyBean1Plus() && isDestroyed
-
-
-
 
 
 fun <T> Activity.launchActivity(clazz: Class<T>) {
     val intent = Intent(this, clazz)
     startActivity(intent)
 }
+
+fun Activity.copyToClipboard(text: String) {
+    val clip = ClipData.newPlainText(getString(R.string.simple_commons), text)
+    (getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager).primaryClip = clip
+}
+
 fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
     val uri = try {
         ensurePublicUri(path, applicationId)
@@ -44,6 +56,19 @@ fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
     }
     return uri
 }
+
+fun Activity.hideKeyboard() {
+    val inputMethodManager = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+    inputMethodManager.hideSoftInputFromWindow((currentFocus ?: View(this)).windowToken, 0)
+    window!!.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN)
+    currentFocus?.clearFocus()
+}
+
+fun Activity.hideKeyboard(view: View) {
+    val inputMethodManager = getSystemService(Activity.INPUT_METHOD_SERVICE) as InputMethodManager
+    inputMethodManager.hideSoftInputFromWindow(view.windowToken, 0)
+}
+
 fun Activity.isShowingSAFDialog(path: String, treeUri: String, requestCode: Int): Boolean {
     return if (needsStupidWritePermissions(path) && (treeUri.isEmpty() || !hasProperStoredTreeUri())) {
         runOnUiThread {
@@ -66,10 +91,12 @@ fun Activity.isShowingSAFDialog(path: String, treeUri: String, requestCode: Int)
         false
     }
 }
+
 fun Activity.openPath(path: String, forceChooser: Boolean, openAsText: Boolean = false) {
     val mimeType = if (openAsText) "text/plain" else ""
     openPathIntent(path, forceChooser, BuildConfig.APPLICATION_ID, mimeType)
 }
+
 fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: String, forceMimeType: String = "") {
     Thread {
         val newUri = getFinalUriFromPath(path, applicationId) ?: return@Thread
@@ -94,14 +121,37 @@ fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: 
         }
     }.start()
 }
+
 fun Activity.requestFullScreen() {
     requestWindowFeature(Window.FEATURE_NO_TITLE);
     window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN,
             WindowManager.LayoutParams.FLAG_FULLSCREEN);
 }
+
 fun Activity.requestKeepScreenOn() {
     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 }
+
+fun Activity.rescanPaths(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
+    applicationContext.rescanPaths(paths, callback)
+}
+
+fun Activity.scanFileRecursively(file: File, callback: (() -> Unit)? = null) {
+    applicationContext.scanFileRecursively(file, callback)
+}
+
+fun Activity.scanFilesRecursively(files: ArrayList<File>, callback: (() -> Unit)? = null) {
+    applicationContext.scanFilesRecursively(files, callback)
+}
+
+fun Activity.scanPathRecursively(path: String, callback: (() -> Unit)? = null) {
+    applicationContext.scanPathRecursively(path, callback)
+}
+
+fun Activity.scanPathsRecursively(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
+    applicationContext.scanPathsRecursively(paths, callback)
+}
+
 fun Activity.setupDialogStuff(view: View, dialog: AlertDialog, titleId: Int = 0, callback: (() -> Unit)? = null) {
     if (isActivityDestroyed()) {
         return
@@ -132,12 +182,22 @@ fun Activity.setupDialogStuff(view: View, dialog: AlertDialog, titleId: Int = 0,
     }
     callback?.invoke()
 }
+
 fun Activity.showErrorToast(msg: String, length: Int = Toast.LENGTH_LONG) {
     toast(String.format(getString(R.string.an_error_occurred), msg), length)
 }
+
 fun Activity.showErrorToast(exception: Exception, length: Int = Toast.LENGTH_LONG) {
     showErrorToast(exception.toString(), length)
 }
+
+fun Activity.getColorCompat(resId: Int): Int {
+    return if (Build.VERSION.SDK_INT >= 23)
+        getColor(resId)
+    else
+        resources.getColor(resId)
+}
+
 fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boolean {
     var genericMimeType = mimeType.getGenericMimeType()
     if (genericMimeType.isEmpty()) {
@@ -151,6 +211,7 @@ fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boo
         false
     }
 }
+
 fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: Boolean = false) {
     if (!forceChooser && path.endsWith(".apk", true)) {
         val uri = if (isNougatPlus()) {
@@ -172,6 +233,7 @@ fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: 
         openPath(path, forceChooser, openAsText)
     }
 }
+
 fun AppCompatActivity.hideSystemUI(toggleActionBarVisibility: Boolean) {
     if (toggleActionBarVisibility) {
         supportActionBar?.hide()
@@ -184,6 +246,7 @@ fun AppCompatActivity.hideSystemUI(toggleActionBarVisibility: Boolean) {
             View.SYSTEM_UI_FLAG_FULLSCREEN or
             View.SYSTEM_UI_FLAG_IMMERSIVE
 }
+
 fun AppCompatActivity.showSystemUI(toggleActionBarVisibility: Boolean) {
     if (toggleActionBarVisibility) {
         supportActionBar?.show()
@@ -192,6 +255,19 @@ fun AppCompatActivity.showSystemUI(toggleActionBarVisibility: Boolean) {
             View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
             View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
 }
+
+fun CustomActivity.createDirectorySync(directory: String): Boolean {
+    if (getDoesFilePathExist(directory)) {
+        return true
+    }
+    if (needsStupidWritePermissions(directory)) {
+        val documentFile = getDocumentFile(directory.getParentPath()) ?: return false
+        val newDir = documentFile.createDirectory(directory.getFilenameFromPath())
+        return newDir != null
+    }
+    return File(directory).mkdirs()
+}
+
 fun CustomActivity.deleteFile(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     if (Looper.myLooper() == Looper.getMainLooper()) {
         Thread {
@@ -201,6 +277,7 @@ fun CustomActivity.deleteFile(fileDirItem: FileDirItem, allowDeleteFolder: Boole
         deleteFileBg(fileDirItem, allowDeleteFolder, callback)
     }
 }
+
 fun CustomActivity.deleteFileBg(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     val path = fileDirItem.path
     val file = File(path)
@@ -226,6 +303,146 @@ fun CustomActivity.deleteFileBg(fileDirItem: FileDirItem, allowDeleteFolder: Boo
         }
     }
 }
+
+fun CustomActivity.deleteFiles(files: ArrayList<FileDirItem>, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        Thread {
+            deleteFilesBg(files, allowDeleteFolder, callback)
+        }.start()
+    } else {
+        deleteFilesBg(files, allowDeleteFolder, callback)
+    }
+}
+
+fun CustomActivity.deleteFilesBg(files: ArrayList<FileDirItem>, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    if (files.isEmpty()) {
+        runOnUiThread {
+            callback?.invoke(true)
+        }
+        return
+    }
+    var wasSuccess = false
+    handleSAFDialog(files[0].path) {
+        files.forEachIndexed { index, file ->
+            deleteFileBg(file, allowDeleteFolder) {
+                if (it) {
+                    wasSuccess = true
+                }
+                if (index == files.size - 1) {
+                    runOnUiThread {
+                        callback?.invoke(wasSuccess)
+                    }
+                }
+            }
+        }
+    }
+}
+
+fun CustomActivity.deleteFolder(folder: FileDirItem, deleteMediaOnly: Boolean = true, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    if (Looper.myLooper() == Looper.getMainLooper()) {
+        Thread {
+            deleteFolderBg(folder, deleteMediaOnly, callback)
+        }.start()
+    } else {
+        deleteFolderBg(folder, deleteMediaOnly, callback)
+    }
+}
+
+fun CustomActivity.deleteFolderBg(fileDirItem: FileDirItem, deleteMediaOnly: Boolean = true, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
+    val folder = File(fileDirItem.path)
+    if (folder.exists()) {
+        val filesArr = folder.listFiles()
+        if (filesArr == null) {
+            runOnUiThread {
+                callback?.invoke(true)
+            }
+            return
+        }
+        val files = filesArr.toMutableList().filter { !deleteMediaOnly || it.isImageVideoGif() }
+        for (file in files) {
+            deleteFileBg(file.toFileDirItem(applicationContext), false) { }
+        }
+        if (folder.listFiles()?.isEmpty() == true) {
+            deleteFileBg(fileDirItem, true) { }
+        }
+    }
+    runOnUiThread {
+        callback?.invoke(true)
+    }
+}
+
+fun CustomActivity.getFileInputStreamSync(path: String): InputStream? {
+    return if (path.startsWith(OTG_PATH)) {
+        val fileDocument = getSomeDocumentFile(path)
+        applicationContext.contentResolver.openInputStream(fileDocument?.uri)
+    } else {
+        FileInputStream(File(path))
+    }
+}
+
+fun CustomActivity.getFileOutputStream(fileDirItem: FileDirItem, allowCreatingNewFile: Boolean = false, callback: (outputStream: OutputStream?) -> Unit) {
+    if (needsStupidWritePermissions(fileDirItem.path)) {
+        handleSAFDialog(fileDirItem.path) {
+            var document = getDocumentFile(fileDirItem.path)
+            if (document == null && allowCreatingNewFile) {
+                document = getDocumentFile(fileDirItem.getParentPath())
+            }
+            if (document == null) {
+                val error = String.format(getString(R.string.could_not_create_file), fileDirItem.path)
+                showErrorToast(error)
+                callback(null)
+                return@handleSAFDialog
+            }
+            if (!File(fileDirItem.path).exists()) {
+                document = document.createFile("", fileDirItem.name)
+            }
+            if (document?.exists() == true) {
+                try {
+                    callback(applicationContext.contentResolver.openOutputStream(document.uri))
+                } catch (e: FileNotFoundException) {
+                    showErrorToast(e)
+                    callback(null)
+                }
+            } else {
+                val error = String.format(getString(R.string.could_not_create_file), fileDirItem.path)
+                showErrorToast(error)
+                callback(null)
+            }
+        }
+    } else {
+        val file = File(fileDirItem.path)
+        if (!file.parentFile.exists()) {
+            file.parentFile.mkdirs()
+        }
+        try {
+            callback(FileOutputStream(file))
+        } catch (e: Exception) {
+            callback(null)
+        }
+    }
+}
+
+fun CustomActivity.getFileOutputStreamSync(path: String, mimeType: String, parentDocumentFile: DocumentFile? = null): OutputStream? {
+    val targetFile = File(path)
+    return if (needsStupidWritePermissions(path)) {
+        val documentFile = parentDocumentFile ?: getDocumentFile(path.getParentPath())
+        if (documentFile == null) {
+            val error = String.format(getString(R.string.could_not_create_file), targetFile.parent)
+            showErrorToast(error)
+            return null
+        }
+        val newDocument = documentFile.createFile(mimeType, path.getFilenameFromPath())
+        applicationContext.contentResolver.openOutputStream(newDocument!!.uri)
+    } else {
+        try {
+            FileOutputStream(targetFile)
+        } catch (e: Exception) {
+            showErrorToast(e)
+            null
+        }
+    }
+}
+
 fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((success: Boolean) -> Unit)? = null) {
     if (needsStupidWritePermissions(newPath)) {
         handleSAFDialog(newPath) {
@@ -285,6 +502,7 @@ fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((succ
         }
     }
 }
+
 private fun deleteRecursively(file: File): Boolean {
     if (file.isDirectory) {
         val files = file.listFiles() ?: return file.delete()

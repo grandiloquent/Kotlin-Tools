@@ -27,4 +27,10 @@
     <string name="unknown_error_occurred">An unknown error occurred</string>
     <string name="wrong_root_selected">Wrong folder selected, please select the root folder of your SD card</string>
     <string name="menu_rename_file">Rename File</string>
+    <string name="simple_commons">Simple Commons</string>
+    <string name="could_not_create_file">Could not create file %s</string>
+    <string name="menu_scan_file">Scan File</string>
+    <string name="cd_main_toolbar">main_toolbar</string>
+    <string name="toolbar_controls">Toolbar + Controls</string>
+    <string name="menu_select_all">Select All</string>
 </resources>

@@ -10,10 +10,10 @@ import java.text.SimpleDateFormat
 import java.util.*
 import android.content.Intent
 import android.net.Uri
-import psycho.euphoria.tools.OTG_PATH
 import java.io.File
 
 
+fun String.areDigitsOnly() = matches(Regex("[0-9]+"))
 fun String.getFilenameExtension() = substring(lastIndexOf(".") + 1)
 fun String.isAudioFast() = audioExtensions.any { endsWith(it, true) }
 fun String.isAudioSlow() = isAudioFast() || getMimeType().startsWith("audio")
@@ -29,6 +29,10 @@ fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
 fun String.isArchiveFast() = archiveExtensions.any { endsWith(it, true) }
 fun String.getDuration() = getFileDurationSeconds()?.getFormattedDuration()
 fun String.getFilenameFromPath() = substring(lastIndexOf("/") + 1)
+
+/*
+Functions
+ */
 
 fun String.getExifCameraModel(exif: ExifInterface): String {
     exif.getAttribute(ExifInterface.TAG_MAKE).let {

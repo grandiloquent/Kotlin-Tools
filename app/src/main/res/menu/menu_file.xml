@@ -3,13 +3,17 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/action_select_all"
+        android:icon="@drawable/ic_select_all_white_24px"
+        android:title="@string/menu_select_all" />
+    <item
         android:id="@+id/action_refresh"
-        android:icon="@drawable/ic_refresh_24px"
+        android:icon="@drawable/ic_refresh_white_24px"
         android:title="@string/menu_refresh"
         app:showAsAction="always"></item>
     <item
         android:id="@+id/action_storage"
-        android:icon="@drawable/ic_storage_24px"
+        android:icon="@drawable/ic_storage_white_24px"
         android:title="@string/menu_storage"
         app:showAsAction="ifRoom" />
     <item

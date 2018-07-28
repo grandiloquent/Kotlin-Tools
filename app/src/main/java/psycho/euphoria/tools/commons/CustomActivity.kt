@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.provider.DocumentsContract
 import android.support.v7.app.AppCompatActivity
-import psycho.euphoria.tools.OTG_PATH
 import psycho.euphoria.tools.R
 
 open class CustomActivity : AppCompatActivity() {

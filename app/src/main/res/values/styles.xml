@@ -37,5 +37,8 @@
     <style name="MyBorderlessBackgroundStyle">
         <item name="android:background">?attr/selectableItemBackground</item>
     </style>
-
+    <style name="ThemeToolbar" parent="Theme.AppCompat.Light">
+        <item name="colorControlNormal">@android:color/white</item>
+        <item name="android:textColorSecondary">@android:color/white</item>
+    </style>
 </resources>

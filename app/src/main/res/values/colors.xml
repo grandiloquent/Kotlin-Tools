@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <color name="colorPrimaryMulti">#689F38</color>
     <color name="color_primary">#FFF57C00</color>
     <color name="gradient_grey_start">#CC000000</color>
     <color name="theme_dark_text_color">@color/md_grey_200</color>
