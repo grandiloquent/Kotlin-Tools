@@ -33,4 +33,5 @@
     <string name="cd_main_toolbar">main_toolbar</string>
     <string name="toolbar_controls">Toolbar + Controls</string>
     <string name="menu_select_all">Select All</string>
+    <string name="menu_sorting">Sorting</string>
 </resources>

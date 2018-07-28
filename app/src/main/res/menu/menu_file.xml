@@ -5,7 +5,8 @@
     <item
         android:id="@+id/action_select_all"
         android:icon="@drawable/ic_select_all_white_24px"
-        android:title="@string/menu_select_all" />
+        android:title="@string/menu_select_all"
+        app:showAsAction="ifRoom" />
     <item
         android:id="@+id/action_refresh"
         android:icon="@drawable/ic_refresh_white_24px"
@@ -17,28 +18,42 @@
         android:title="@string/menu_storage"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_sort_alpha"
-        android:icon="@drawable/ic_sort_by_alpha_24px"
-        android:title="@string/menu_sort_by_name"
+        android:id="@+id/action_sdcard"
+        android:icon="@drawable/ic_sd_storage_white_24px"
+        android:title="@string/menu_sd_card" />
+    <item
+        android:id="@+id/action_sorting"
+        android:icon="@drawable/ic_sort_white_24px"
+        android:title="@string/menu_sorting"
+        app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@drawable/ic_delete_forever_white_24px"
+        android:title="@string/menu_delete"
         app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_sort_last_modified"
-        android:title="@string/menu_sort_by_last_modified"
-        app:showAsAction="never" />
+        android:id="@+id/action_rename_file"
+        android:icon="@drawable/ic_white_edit"
+        android:title="@string/menu_rename_file"
+        app:showAsAction="ifRoom" />
     <item
-        android:id="@+id/action_sort_size"
-        android:title="@string/menu_sort_by_size"
-        app:showAsAction="never" />
+        android:id="@+id/action_split_video"
+        android:title="@string/menu_split_video"
+        app:showAsAction="ifRoom" />
+    <item
+        android:id="@+id/action_scan_file"
+        android:title="@string/menu_scan_file" />
+
     <item
         android:id="@+id/action_download"
         android:icon="@drawable/ic_file_download_24px"
         android:title="@string/menu_downlaod"
-        app:showAsAction="never"></item>
+        app:showAsAction="never" />
+
     <item
         android:id="@+id/action_translator"
         android:icon="@drawable/ic_g_translate_24px"
         android:title="@string/menu_translator"
-        app:showAsAction="never">
-
-    </item>
+        app:showAsAction="never" />
 </menu>
