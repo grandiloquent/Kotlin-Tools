@@ -5,6 +5,7 @@ import android.app.Notification
 import android.app.NotificationManager
 import android.content.Context
 import android.os.Build
+import android.provider.DocumentsContract
 import android.support.annotation.RequiresApi
 import android.text.Editable
 import android.util.Log
@@ -12,6 +13,7 @@ import android.view.WindowManager
 import android.widget.EditText
 import java.io.File
 import java.io.FileDescriptor
+import java.io.FileFilter
 import java.util.*
 import java.util.concurrent.*
 
@@ -103,7 +105,39 @@ fun dialog(context: Context, content: String?, title: String?, isForFileName: Bo
 
 }
 
-fun ensureAvailableSpace(context: Context, fd: FileDescriptor, bytes: Long) {
+fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
+    val dir = File(path)
+    if (!dir.isDirectory) return
+    val files = dir.listFiles(FileFilter {
+        it.isFile
+    })
+    val chinese = Regex("[\\u4E00-\\u9FA5]+")
+    val map = HashMap<String, Int>()
+    for (file in files) {
+        val matchValue = chinese.find(file.name)
+        if (matchValue != null && !map.containsKey(matchValue.value)) {
+            map.put(matchValue.value, startValue)
+        }
+    }
+    if (map.isNotEmpty()) {
+        for (file in files) {
+            val matchValue = chinese.find(file.name)
+            if (matchValue != null && map.containsKey(matchValue.value)) {
+
+                val ext = if (file.extension.isBlank()) "mp4" else file.extension
+                val targetFile = File(file.parentFile, matchValue.value + map[matchValue.value] + "." + ext)
+                if (context.needsStupidWritePermissions(targetFile.absolutePath)) {
+                    val document = context.getDocumentFile(file.absolutePath)
+                    if (document != null)
+                        DocumentsContract.renameDocument(context.applicationContext.contentResolver, document.uri, targetFile.absolutePath.getFilenameFromPath())
+                } else {
+                    file.renameTo(targetFile)
+                }
+
+                map.set(matchValue.value, map[matchValue.value]?.plus(1) ?: 1)
+            }
+        }
+    }
 }
 
 fun getExecutor(): ExecutorService {

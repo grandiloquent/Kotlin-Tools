@@ -1,14 +1,14 @@
 package psycho.euphoria.tools.files
 
+import android.Manifest
 import android.app.AlertDialog
-import android.content.DialogInterface
 import android.content.Intent
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
-import android.widget.ListView
 import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import com.davidecirillo.multichoicerecyclerview.MultiChoiceToolbar
 import kotlinx.android.synthetic.main.activity_file.*
@@ -33,107 +33,37 @@ class FileActivity : CustomActivity() {
     private var mSortOrder = SORT_BY_NAME // Sort by file name by default
 
     private lateinit var mOptionMenu: Menu
-//
-//    private val mActionMode = object : ModalMultiSelectorCallback(mMultiSelector) {
-//        // Set the menu for pops up when selecting the item
-//        override fun onActionItemClicked(mode: ActionMode, item: MenuItem): Boolean {
-//            when (item.itemId) {
-//                R.id.action_delete -> {
-//
-//                    // Close the opened top toolbar
-//                    mode.finish()
-//                    mFileAdapter?.let {
-//                        for (i in 0 until it.itemCount) {
-//                            if (mMultiSelector.isSelected(i, 0)) {
-//                                val fileItem = it.getItem(i)
-//                                File(fileItem.path).deletes()
-//                            }
-//                        }
-//                        refreshRecyclerView()
-//                    }
-//                    // Clear selected state
-//                    mMultiSelector.clearSelections()
-//
-//                }
-//                R.id.action_rename_file -> {
-//
-//                    mode.finish()
-//                    mFileAdapter?.let {
-//                        for (i in 0 until it.itemCount) {
-//                            if (mMultiSelector.isSelected(i, 0)) {
-//                                val fileItem = it.getItem(i)
-//
-//                                dialog(this@FileActivity, fileItem.name, getString(R.string.menu_rename_file), true) {
-//                                    if (!it.isNullOrBlank()) {
-//                                        renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
-//                                            refreshRecyclerView()
-//                                        }
-//                                    }
-//                                }
-//
-//                                return true
-//                            }
-//                        }
-//
-//
-//                        mMultiSelector.clearSelections()
-//
-//                    }
-//                }
-//                R.id.action_split_video -> {
-//                    mode.finish()
-//                    mFileAdapter?.let {
-//                        for (i in 0 until it.itemCount) {
-//                            if (mMultiSelector.isSelected(i, 0)) {
-//                                val fileItem = it.getItem(i)
-//                                splitVideo(fileItem.path)
-//                                return true
-//                            }
-//                        }
-//
-//
-//                        mMultiSelector.clearSelections()
-//
-//                    }
-//                }
-//                R.id.action_scan_file -> {
-//                    mode.finish()
-//                    mFileAdapter?.let {
-//                        for (i in 0 until it.itemCount) {
-//                            if (mMultiSelector.isSelected(i, 0)) {
-//                                val fileItem = it.getItem(i)
-//                                scanFileRecursively(File(fileItem.path)) {
-//                                    toast("Recursive scan file end")
-//                                }
-//                                return true
-//                            }
-//                        }
-//
-//
-//                        mMultiSelector.clearSelections()
-//
-//                    }
-//
-//                }
-//            }
-//            return true
-//        }
-//
-//
-//        override fun onCreateActionMode(mode: ActionMode?, menu: Menu): Boolean {
-//            // Setting the menu items for the actionmode
-//            menuInflater.inflate(R.menu.menu_file_action_mode, menu)
-//
-//            if (mMultiSelector.selectedPositions.size > 1) {
-//                menu.findItem(R.id.action_rename_file).isVisible = false
-//                menu.findItem(R.id.action_split_video).isVisible = false
-//            }
-//            return true
-//        }
-//
-//
-//    }
 
+
+    private fun deleteFiles() {
+        mFileAdapter?.let {
+            if (it.selectedItemCount < 1) return
+            for (i in it.selectedItemList) {
+                deleteFile(File(it.getItem(i).path).toFileDirItem(this), true) {
+                    if (it) {
+                        refreshRecyclerView()
+                        mFileAdapter?.deselect(i)
+                    }
+                }
+            }
+        }
+    }
+
+    private fun initialize() {
+        setContentView(R.layout.activity_file)
+        setSupportActionBar(toolbar)
+        supportActionBar?.apply {
+            setDisplayHomeAsUpEnabled(true)
+            setHomeButtonEnabled(true)
+            // setShowHideAnimationEnabled(true)
+            setDisplayHomeAsUpEnabled(true)
+            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24px)
+        }
+        toolbar.setNavigationOnClickListener { onBackPressed() }
+        mSortOrder = config.sortOrder
+        initializeRecyclerView()
+        refreshRecyclerView(mRecentDirectory)
+    }
 
     private fun initializeRecyclerView() {
         recycler_view.run {
@@ -141,7 +71,6 @@ class FileActivity : CustomActivity() {
             adapter = mFileAdapter
             registerForContextMenu(this)
         }
-
     }
 
     override fun onBackPressed() {
@@ -184,20 +113,16 @@ class FileActivity : CustomActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_file)
-        setSupportActionBar(toolbar)
-        supportActionBar?.apply {
-            setDisplayHomeAsUpEnabled(true)
-            setHomeButtonEnabled(true)
-            // setShowHideAnimationEnabled(true)
-            setDisplayHomeAsUpEnabled(true)
-            setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24px)
-        }
-        toolbar.setNavigationOnClickListener { onBackPressed() }
-        mSortOrder = config.sortOrder
-        initializeRecyclerView()
         mRecentDirectory = config.recentDirectory
-        refreshRecyclerView(mRecentDirectory)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            requestPermissions(arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.INTERNET,
+                    Manifest.permission.ACCESS_NETWORK_STATE,
+                    Manifest.permission.WAKE_LOCK
+            ), REQUEST_PERMISSION_CODE)
+        } else
+            initialize()
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -240,52 +165,15 @@ class FileActivity : CustomActivity() {
                     renameFile(it.getItem(it.selectedItemList[0]))
                 }
             }
+            R.id.action_scan_file -> scanFile()
+            R.id.action_serialize_file_name -> {
+                serializeFileName(mRecentDirectory, this)
+            }
+            R.id.action_serialize_file_name100 -> {
+                serializeFileName(mRecentDirectory, this,100)
+            }
         }
         return super.onOptionsItemSelected(item)
-    }
-
-    private fun selectAll() {
-        mFileAdapter?.apply {
-            selectAll()
-        }
-    }
-
-    private fun deleteFiles() {
-        mFileAdapter?.let {
-            if (it.selectedItemCount < 1) return
-            for (i in it.selectedItemList) {
-                toast(it.getItem(i).path)
-            }
-        }
-    }
-
-    private fun renameFile(fileItem: FileItem) {
-        dialog(this, fileItem.name, getString(R.string.menu_rename_file), true) {
-            if (!it.isNullOrBlank()) {
-                renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
-                    refreshRecyclerView()
-                }
-            }
-        }
-    }
-
-    private fun showSortingDialog() {
-
-        val adapter = ArrayAdapter<String>(this, R.layout.item_sorting, R.id.text_view)
-
-        adapter.add(getString(R.string.menu_sort_by_name))
-        adapter.add(getString(R.string.menu_sort_by_last_modified))
-        adapter.add(getString(R.string.menu_sort_by_size))
-
-        val dialog = AlertDialog.Builder(this)
-                .setAdapter(adapter) { dialog, position ->
-                    when (position) {
-                        0 -> sortBy(0)
-                        1 -> sortBy(SORT_BY_DATE_MODIFIED)
-                        2 -> sortBy(SORT_BY_SIZE)
-                    }
-                }.create()
-        dialog.show()
     }
 
     override fun onPause() {
@@ -295,54 +183,13 @@ class FileActivity : CustomActivity() {
         super.onPause()
     }
 
-    private fun refreshRecyclerView() {
-        refreshRecyclerView(mRecentDirectory)
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        initialize()
     }
 
-
-    private fun updateOptionMenuVisible() {
-        val count = mFileAdapter?.selectedItemCount ?: 0
-        if (count > 1) {
-            mOptionMenu.apply {
-                // When the number of selected items is greater than 1.
-                // Just hide the menu items that only support single item
-                // The status of other menu items is the same as when it is equal to 1.
-                findItem(R.id.action_rename_file).isVisible = false
-                findItem(R.id.action_split_video).isVisible = false
-
-
-            }
-        } else if (count == 1) {
-            mOptionMenu.apply {
-                findItem(R.id.action_delete).isVisible = true
-                findItem(R.id.action_download).isVisible = false
-                findItem(R.id.action_refresh).isVisible = false
-                findItem(R.id.action_rename_file).isVisible = true
-                findItem(R.id.action_scan_file).isVisible = true
-                findItem(R.id.action_sdcard).isVisible = false
-                findItem(R.id.action_select_all).isVisible = true
-                findItem(R.id.action_sorting).isVisible = false
-                findItem(R.id.action_split_video).isVisible = true
-                findItem(R.id.action_storage).isVisible = false
-                findItem(R.id.action_translator).isVisible = true
-            }
-
-        } else if (count == 0) {
-            mOptionMenu.apply {
-                findItem(R.id.action_delete).isVisible = false
-                findItem(R.id.action_download).isVisible = true
-                findItem(R.id.action_refresh).isVisible = true
-                findItem(R.id.action_rename_file).isVisible = false
-                findItem(R.id.action_scan_file).isVisible = false
-                findItem(R.id.action_sdcard).isVisible = true
-                findItem(R.id.action_select_all).isVisible = false
-                findItem(R.id.action_sorting).isVisible = true
-                findItem(R.id.action_split_video).isVisible = false
-                findItem(R.id.action_storage).isVisible = true
-                findItem(R.id.action_translator).isVisible = true
-            }
-        }
-        toolbar.postInvalidate()
+    private fun refreshRecyclerView() {
+        refreshRecyclerView(mRecentDirectory)
     }
 
     private fun refreshRecyclerView(path: String) {
@@ -360,13 +207,11 @@ class FileActivity : CustomActivity() {
                         .setMultiChoiceColours(R.color.colorPrimaryMulti, R.color.colorPrimaryMulti)
                         .setDefaultIcon(R.drawable.ic_arrow_back_white_24px) { onBackPressed() }
                         .setTitles(getString(R.string.app_name), "item selected")
-                        .setDefaultColours(R.color.color_primary, R.color.color_primary)
-
+                        .setDefaultColours(getColor(R.color.color_primary), getColor(R.color.color_primary))
                 mFileAdapter?.apply {
                     setMultiChoiceToolbar(builder.build())
                     setMultiChoiceSelectionListener(object : MultiChoiceAdapter.Listener {
                         override fun OnItemSelected(selectedPosition: Int, itemSelectedCount: Int, allItemCount: Int) {
-
                             updateOptionMenuVisible()
                         }
 
@@ -387,6 +232,52 @@ class FileActivity : CustomActivity() {
                 mFileAdapter?.switchData(it)
             }
         }
+    }
+
+    private fun renameFile(fileItem: FileItem) {
+        dialog(this, fileItem.name, getString(R.string.menu_rename_file), true) {
+            if (!it.isNullOrBlank()) {
+                renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
+
+                    if (it) {
+                        refreshRecyclerView()
+                        mFileAdapter?.deselectAll()
+                    }
+
+                }
+            }
+        }
+    }
+
+    private fun scanFile() {
+        mFileAdapter?.let {
+            if (it.selectedItemCount < 1) return
+            for (i in it.selectedItemList) {
+                scanFileRecursively(File(it.getItem(i).path))
+            }
+        }
+    }
+
+    private fun selectAll() {
+        mFileAdapter?.apply {
+            selectAll()
+        }
+    }
+
+    private fun showSortingDialog() {
+        val adapter = ArrayAdapter<String>(this, R.layout.item_sorting, R.id.text_view)
+        adapter.add(getString(R.string.menu_sort_by_name))
+        adapter.add(getString(R.string.menu_sort_by_last_modified))
+        adapter.add(getString(R.string.menu_sort_by_size))
+        val dialog = AlertDialog.Builder(this)
+                .setAdapter(adapter) { dialog, position ->
+                    when (position) {
+                        0 -> sortBy(0)
+                        1 -> sortBy(SORT_BY_DATE_MODIFIED)
+                        2 -> sortBy(SORT_BY_SIZE)
+                    }
+                }.create()
+        dialog.show()
     }
 
     private fun sortBy(sortOrder: Int) {
@@ -414,8 +305,51 @@ class FileActivity : CustomActivity() {
         }
     }
 
-    companion object {
+    private fun updateOptionMenuVisible() {
+        val count = mFileAdapter?.selectedItemCount ?: 0
+        if (count > 1) {
+            mOptionMenu.apply {
+                // When the number of selected items is greater than 1.
+                // Just hide the menu items that only support single item
+                // The status of other menu items is the same as when it is equal to 1.
+                findItem(R.id.action_rename_file).isVisible = false
+                findItem(R.id.action_split_video).isVisible = false
+            }
+        } else if (count == 1) {
+            mOptionMenu.apply {
+                findItem(R.id.action_delete).isVisible = true
+                findItem(R.id.action_download).isVisible = false
+                findItem(R.id.action_refresh).isVisible = false
+                findItem(R.id.action_rename_file).isVisible = true
+                findItem(R.id.action_scan_file).isVisible = true
+                findItem(R.id.action_sdcard).isVisible = false
+                findItem(R.id.action_select_all).isVisible = true
+                findItem(R.id.action_sorting).isVisible = false
+                findItem(R.id.action_split_video).isVisible = true
+                findItem(R.id.action_storage).isVisible = false
+                findItem(R.id.action_translator).isVisible = true
+            }
+        } else if (count == 0) {
+            mOptionMenu.apply {
+                findItem(R.id.action_delete).isVisible = false
+                findItem(R.id.action_download).isVisible = true
+                findItem(R.id.action_refresh).isVisible = true
+                findItem(R.id.action_rename_file).isVisible = false
+                findItem(R.id.action_scan_file).isVisible = false
+                findItem(R.id.action_sdcard).isVisible = true
+                findItem(R.id.action_select_all).isVisible = false
+                findItem(R.id.action_sorting).isVisible = true
+                findItem(R.id.action_split_video).isVisible = false
+                findItem(R.id.action_storage).isVisible = true
+                findItem(R.id.action_translator).isVisible = true
+            }
+        }
+        toolbar.postInvalidate()
+    }
 
+
+    companion object {
+        private const val REQUEST_PERMISSION_CODE = 100
     }
 
 }

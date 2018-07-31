@@ -56,4 +56,10 @@
         android:icon="@drawable/ic_g_translate_24px"
         android:title="@string/menu_translator"
         app:showAsAction="never" />
+    <item
+        android:id="@+id/action_serialize_file_name"
+        android:title="Serialize FileName"/>
+    <item
+        android:id="@+id/action_serialize_file_name100"
+        android:title="Serialize FileName 100"/>
 </menu>
