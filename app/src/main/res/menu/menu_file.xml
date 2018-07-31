@@ -13,6 +13,11 @@
         android:title="@string/menu_refresh"
         app:showAsAction="always"></item>
     <item
+        android:id="@+id/action_sorting"
+        android:icon="@drawable/ic_sort_white_24px"
+        android:title="@string/menu_sorting"
+        app:showAsAction="ifRoom" />
+    <item
         android:id="@+id/action_storage"
         android:icon="@drawable/ic_storage_white_24px"
         android:title="@string/menu_storage"
@@ -21,11 +26,7 @@
         android:id="@+id/action_sdcard"
         android:icon="@drawable/ic_sd_storage_white_24px"
         android:title="@string/menu_sd_card" />
-    <item
-        android:id="@+id/action_sorting"
-        android:icon="@drawable/ic_sort_white_24px"
-        android:title="@string/menu_sorting"
-        app:showAsAction="ifRoom" />
+
 
     <item
         android:id="@+id/action_delete"
@@ -57,9 +58,12 @@
         android:title="@string/menu_translator"
         app:showAsAction="never" />
     <item
+        android:id="@+id/action_copy_filename"
+        android:title="@string/menu_copy_filename" />
+    <item
         android:id="@+id/action_serialize_file_name"
-        android:title="Serialize FileName"/>
+        android:title="Serialize FileName" />
     <item
         android:id="@+id/action_serialize_file_name100"
-        android:title="Serialize FileName 100"/>
+        android:title="Serialize FileName 100" />
 </menu>

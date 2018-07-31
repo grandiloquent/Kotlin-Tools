@@ -34,4 +34,5 @@
     <string name="toolbar_controls">Toolbar + Controls</string>
     <string name="menu_select_all">Select All</string>
     <string name="menu_sorting">Sorting</string>
+    <string name="menu_copy_filename">Copy FileName</string>
 </resources>

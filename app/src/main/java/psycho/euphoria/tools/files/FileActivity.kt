@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.PersistableBundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
@@ -28,10 +29,9 @@ import java.io.File
 class FileActivity : CustomActivity() {
 
 
-    private lateinit var mRecentDirectory: String
     private var mFileAdapter: FileAdapter? = null
-    private var mSortOrder = SORT_BY_NAME // Sort by file name by default
-
+    private var mRecentDirectory = Environment.getExternalStorageDirectory().absolutePath
+    private var mSortOrder = SORT_BY_NAME
     private lateinit var mOptionMenu: Menu
 
 
@@ -60,7 +60,6 @@ class FileActivity : CustomActivity() {
             setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24px)
         }
         toolbar.setNavigationOnClickListener { onBackPressed() }
-        mSortOrder = config.sortOrder
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
     }
@@ -113,7 +112,10 @@ class FileActivity : CustomActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        mRecentDirectory = config.recentDirectory
+        savedInstanceState?.apply {
+            mSortOrder = getInt(STATE_SORT_ORDER)
+            mRecentDirectory = getString(STATE_RECENT_DIRECTORY)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -170,22 +172,27 @@ class FileActivity : CustomActivity() {
                 serializeFileName(mRecentDirectory, this)
             }
             R.id.action_serialize_file_name100 -> {
-                serializeFileName(mRecentDirectory, this,100)
+                serializeFileName(mRecentDirectory, this, 100)
+            }
+            R.id.action_copy_filename -> {
+                mFileAdapter?.let {
+                    copyToClipboard(it.getItem(it.selectedItemList[0]).name)
+                }
             }
         }
         return super.onOptionsItemSelected(item)
     }
 
-    override fun onPause() {
-        // After entering the pause state, save the last accessed directory and the sorting method used
-        config.recentDirectory = mRecentDirectory
-        config.sortOrder = mSortOrder
-        super.onPause()
-    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         initialize()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt(STATE_SORT_ORDER, mSortOrder)
+        outState.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
     }
 
     private fun refreshRecyclerView() {
@@ -238,17 +245,15 @@ class FileActivity : CustomActivity() {
         dialog(this, fileItem.name, getString(R.string.menu_rename_file), true) {
             if (!it.isNullOrBlank()) {
                 renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
-
                     if (it) {
                         refreshRecyclerView()
                         mFileAdapter?.deselectAll()
                     }
-
                 }
             }
         }
     }
-
+    
     private fun scanFile() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
@@ -282,7 +287,7 @@ class FileActivity : CustomActivity() {
 
     private fun sortBy(sortOrder: Int) {
         // Sort the file list in the specified way
-        mSortOrder = sortOrder
+        this.mSortOrder = sortOrder
         // Refresh display after sorting
         refreshRecyclerView()
     }
@@ -314,6 +319,7 @@ class FileActivity : CustomActivity() {
                 // The status of other menu items is the same as when it is equal to 1.
                 findItem(R.id.action_rename_file).isVisible = false
                 findItem(R.id.action_split_video).isVisible = false
+                findItem(R.id.action_copy_filename).isVisible = false
             }
         } else if (count == 1) {
             mOptionMenu.apply {
@@ -328,6 +334,7 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_split_video).isVisible = true
                 findItem(R.id.action_storage).isVisible = false
                 findItem(R.id.action_translator).isVisible = true
+                findItem(R.id.action_copy_filename).isVisible = true
             }
         } else if (count == 0) {
             mOptionMenu.apply {
@@ -347,9 +354,10 @@ class FileActivity : CustomActivity() {
         toolbar.postInvalidate()
     }
 
-
     companion object {
         private const val REQUEST_PERMISSION_CODE = 100
+        private const val STATE_SORT_ORDER = "sort_order"
+        private const val STATE_RECENT_DIRECTORY = "recent_directory"
     }
 
 }
