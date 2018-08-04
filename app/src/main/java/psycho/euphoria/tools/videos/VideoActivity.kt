@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.support.v7.app.AppCompatActivity
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.*
 import android.widget.SeekBar
 import com.google.android.exoplayer2.*
@@ -19,9 +20,8 @@ import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
-import com.google.android.exoplayer2.upstream.DataSource
-import com.google.android.exoplayer2.upstream.DataSpec
-import com.google.android.exoplayer2.upstream.FileDataSource
+import com.google.android.exoplayer2.upstream.*
+import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.video.VideoListener
 import kotlinx.android.synthetic.main.activity_video.*
 import psycho.euphoria.tools.R
@@ -29,8 +29,6 @@ import psycho.euphoria.tools.commons.*
 import java.io.File
 
 class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, SeekBar.OnSeekBarChangeListener {
-
-
     private val mHidePauseHandler: Handler = Handler()
     private val mTimeHandler: Handler = Handler()
     private var mCurrTime = 0
@@ -42,8 +40,10 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     private var mIsPlaying = false
     private var mVideoSize: Point? = null
     private lateinit var mGestureDetector: GestureDetector
-
+    private var mBookmarker: Bookmarker? = null
+    private var mCurrentURI: Uri? = null
     private fun cleanup() {
+        // Log.e(TAG, "cleanup")
         pauseVideo()
         video_curr_time.text = 0.getFormattedDuration()
         releaseExoPlayer()
@@ -53,6 +53,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun hasNavBar(): Boolean {
+        // Log.e(TAG, "hasNavBar")
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
             val display = windowManager.defaultDisplay
             val realDisplayMetrics = DisplayMetrics()
@@ -72,22 +73,23 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun initialize() {
+        // Log.e(TAG, "initialize")
+        mBookmarker = Bookmarker(this)
         mExoPlayer = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector())
         setupPlayer()
         initializeExoPlayer()
         mGestureDetector = GestureDetector(this, object : GestureDetector.OnGestureListener {
-
             override fun onShowPress(p0: MotionEvent?) {
-// Tracker.e("onShowPress", "p0 => ${p0} \n")
+                // Log.e(TAG, "onShowPress")
             }
 
             override fun onSingleTapUp(p0: MotionEvent?): Boolean {
-// Tracker.e("onSingleTapUp", "p0 => ${p0} \n")
+                // Log.e(TAG, "onSingleTapUp")
                 return true
             }
 
             override fun onDown(p0: MotionEvent?): Boolean {
-// Tracker.e("onDown", "p0 => ${p0} \n")
+                // Log.e(TAG, "onDown")
                 return true
             }
 
@@ -105,9 +107,9 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
              * @return true if the event is consumed, else false
              */
             override fun onFling(e1: MotionEvent?, e2: MotionEvent?, velocityX: Float, velocityY: Float): Boolean {
-
+                // Log.e(TAG, "onFling")
                 val speed = Math.abs(velocityX * 0.0075f).toInt()
-                // Tracker.e("onFling", "speed => ${speed}")
+
                 if (velocityX > 0) {
                     if (mCurrTime + speed < mDuration) {
                         mCurrTime += speed
@@ -123,65 +125,81 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
             }
 
             override fun onScroll(p0: MotionEvent?, p1: MotionEvent?, p2: Float, p3: Float): Boolean {
-// Tracker.e("onScroll", "p0 => ${p0} \np1 => ${p1} \np2 => ${p2} \np3 => ${p3} \n")
+                // Log.e(TAG, "onScroll")
                 return true
             }
 
             override fun onLongPress(p0: MotionEvent?) {
-// Tracker.e("onLongPress", "p0 => ${p0} \n")
+                // Log.e(TAG, "onLongPress")
             }
         })
         video_holder.setOnTouchListener { view, motionEvent ->
             mGestureDetector.onTouchEvent(motionEvent)
         }
         toggleFullScreen()
+        var uri = mCurrentURI ?: return
+        val bookmark = mBookmarker?.getBookmark(uri)
+        if (bookmark ?: 0 > 0) {
+            setVideoProgress(bookmark ?: 0)
+        }
     }
 
     private fun initializeExoPlayer() {
+        // Log.e(TAG, "initializeExoPlayer")
         val filePath = intent.getStringExtra(KEY_PATH)
-        Tracker.e("initializeExoPlayer", filePath)
-        val dataSpec = DataSpec(Uri.fromFile(File(filePath)))
-        val fileDataSource = FileDataSource()
-        try {
-            fileDataSource.open(dataSpec)
-        } catch (e: Exception) {
-            Tracker.e("initializeExoPlayer", "${e.message}")
-        }
-        val factory = DataSource.Factory { fileDataSource }
-        val audioSource = ExtractorMediaSource(fileDataSource.uri, factory,
-                DefaultExtractorsFactory(), null, null)
+        mCurrentURI = Uri.fromFile(File(filePath))
+//        val dataSpec = DataSpec(mCurrentURI)
+//        val fileDataSource = FileDataSource()
+//        try {
+//            fileDataSource.open(dataSpec)
+//        } catch (e: Exception) {
+//
+//        }
+//        val factory = DataSource.Factory { fileDataSource }
+//        val audioSource = ExtractorMediaSource(fileDataSource.uri, factory,
+//                DefaultExtractorsFactory(), null, null)
+        val audioSource=ExtractorMediaSource.Factory(FileDataSourceFactory()).createMediaSource(mCurrentURI)
         mExoPlayer?.run {
             addListener(object : Player.EventListener {
                 override fun onPlaybackParametersChanged(playbackParameters: PlaybackParameters?) {
+                    // Log.e(TAG, "onPlaybackParametersChanged")
                 }
 
                 override fun onSeekProcessed() {
+                    // Log.e(TAG, "onSeekProcessed")
                 }
 
                 override fun onTracksChanged(trackGroups: TrackGroupArray?, trackSelections: TrackSelectionArray?) {
+                    // Log.e(TAG, "onTracksChanged")
                 }
 
                 override fun onPlayerError(error: ExoPlaybackException?) {
+                    // Log.e(TAG, "onPlayerError")
                     mIsExoPlayerInitialized = false
                 }
 
                 override fun onLoadingChanged(isLoading: Boolean) {
+                    // Log.e(TAG, "onLoadingChanged")
                 }
 
                 override fun onPositionDiscontinuity(reason: Int) {
+                    // Log.e(TAG, "onPositionDiscontinuity")
                 }
 
                 override fun onRepeatModeChanged(repeatMode: Int) {
+                    // Log.e(TAG, "onRepeatModeChanged")
                 }
 
                 override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                    // Log.e(TAG, "onShuffleModeEnabledChanged")
                 }
 
                 override fun onTimelineChanged(timeline: Timeline?, manifest: Any?, reason: Int) {
+                    // Log.e(TAG, "onTimelineChanged")
                 }
 
                 override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-
+                    // Log.e(TAG, "onPlayerStateChanged")
                     mIsExoPlayerInitialized = playbackState == Player.STATE_READY || playbackState == Player.STATE_ENDED
                     when (playbackState) {
                         Player.STATE_READY -> videoPrepared()
@@ -191,6 +209,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
             })
             addVideoListener(object : VideoListener {
                 override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+                    // Log.e(TAG, "onVideoSizeChanged")
                     mVideoSize?.run {
                         x = width
                         y = height
@@ -199,21 +218,23 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
                 }
 
                 override fun onRenderedFirstFrame() {
+                    // Log.e(TAG, "onRenderedFirstFrame")
                 }
             })
             audioStreamType = AudioManager.STREAM_MUSIC
             prepare(audioSource)
         }
         mVideoSize = filePath.getVideoResolution()
-        Tracker.e("initializeExoPlayer", "${mVideoSize?.x} ${mVideoSize?.y}")
+
         setVideoSize()
-        setupVideoDuration(filePath)
-        video_surface.onGlobalLayout {
-            playVideo()
-        }
+        //setupVideoDuration(filePath)
+//        video_surface.onGlobalLayout {
+//            playVideo()
+//        }
     }
 
     private fun initializeTimeHolder() {
+        // Log.e(TAG, "initializeTimeHolder")
         val left = 0
         val top = 0
         var right = 0
@@ -232,12 +253,14 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
+        // Log.e(TAG, "onConfigurationChanged")
         super.onConfigurationChanged(newConfig)
         setVideoSize()
         initializeTimeHolder()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Log.e(TAG, "onCreate")
         requestFullScreen()
         savedInstanceState?.let {
             mCurrTime = it.getInt(KEY_PROGRESS)
@@ -248,13 +271,19 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     override fun onDestroy() {
+        // Log.e(TAG, "onDestroy")
         super.onDestroy()
         if (!isChangingConfigurations) cleanup()
     }
 
     override fun onPause() {
+        // Log.e(TAG, "onPause")
         super.onPause()
         pauseVideo()
+        var uri = mCurrentURI ?: return
+        var currentPosition = mExoPlayer?.currentPosition ?: return
+        var duration = mExoPlayer?.duration ?: return
+        mBookmarker?.setBookmark(uri, currentPosition.toInt() / 1000, duration.toInt())
     }
 
     override fun onProgressChanged(seekBar: SeekBar, progress: Int, fromUser: Boolean) {
@@ -262,15 +291,18 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     override fun onResume() {
+        // Log.e(TAG, "onResume")
         super.onResume()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
+        // Log.e(TAG, "onSaveInstanceState")
         super.onSaveInstanceState(outState)
         outState.putInt(KEY_PROGRESS, mCurrTime)
     }
 
     override fun onStartTrackingTouch(seekBar: SeekBar) {
+        // Log.e(TAG, "onStartTrackingTouch")
         mExoPlayer?.run {
             playWhenReady = false
         }
@@ -278,6 +310,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     override fun onStopTrackingTouch(seekBar: SeekBar) {
+        // Log.e(TAG, "onStopTrackingTouch")
         if (mExoPlayer == null) return
         if (!mIsPlaying) togglePlayPause()
         else {
@@ -287,10 +320,12 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     override fun onSurfaceTextureAvailable(surface: SurfaceTexture?, p1: Int, p2: Int) {
+        // Log.e(TAG, "onSurfaceTextureAvailable")
         mExoPlayer?.setVideoSurface(Surface(video_surface.surfaceTexture))
     }
 
     override fun onSurfaceTextureDestroyed(surface: SurfaceTexture?): Boolean {
+        // Log.e(TAG, "onSurfaceTextureDestroyed")
         releaseExoPlayer()
         return false
     }
@@ -298,6 +333,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {}
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
     private fun pauseVideo() {
+        // Log.e(TAG, "pauseVideo")
         if (mExoPlayer == null) return
         mIsPlaying = false
         if (!videoEnded()) mExoPlayer?.playWhenReady = false
@@ -309,14 +345,13 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun playVideo() {
+        // Log.e(TAG, "playVideo")
 
-        Tracker.e("playVideo")
         if (mExoPlayer == null) return
-        if (video_preview.isVisible()) {
-            video_preview.beGone()
-            initializeExoPlayer()
-        }
-
+//        if (video_preview.isVisible()) {
+//            video_preview.beGone()
+//            initializeExoPlayer()
+//        }
         if (videoEnded()) {
             setVideoProgress(0)
         }
@@ -330,6 +365,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun releaseExoPlayer() {
+        // Log.e(TAG, "releaseExoPlayer")
         mExoPlayer?.stop()
         Thread {
             mExoPlayer?.release()
@@ -338,8 +374,9 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun setupPlayer() {
+        // Log.e(TAG, "setupPlayer")
         video_play_outline.setOnClickListener {
-            Tracker.e("setupPlayer", "video_play_outline.setOnClickListener")
+
             togglePlayPause()
         }
         video_surface.setOnClickListener { toggleFullScreen() }
@@ -349,48 +386,52 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun setupTimeHolder() {
+        // Log.e(TAG, "setupTimeHolder")
         video_seekbar.max = mDuration
         video_duration.text = mDuration.getFormattedDuration()
-        Tracker.e("setupTimeHolder", "max => ${mDuration} ")
+
         setupTimer()
     }
 
     private fun setupTimer() {
+        // Log.e(TAG, "setupTimer")
         runOnUiThread(object : Runnable {
             override fun run() {
+
                 if (mExoPlayer != null && !mIsDragged && mIsPlaying) {
                     mCurrTime = ((mExoPlayer?.currentPosition ?: 0) / 1000).toInt()
                     video_seekbar.progress = mCurrTime
                     video_curr_time.text = mCurrTime.getFormattedDuration()
                 }
-                //Tracker.e("setupTimer","mCurrTime => ${mCurrTime} \n")
+                //
                 mTimeHandler.postDelayed(this, 1000)
             }
         })
     }
 
     private fun setupVideoDuration(filePath: String) {
-
+        // Log.e(TAG, "setupVideoDuration")
         try {
             val retriever = MediaMetadataRetriever()
             retriever.setDataSource(filePath)
             mDuration = Math.round(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION).toInt() / 1000f)
-            Tracker.e("setupVideoDuration", "mDuration => ${mDuration} \n")
 
         } catch (ignored: Exception) {
-            Tracker.e("setupVideoDuration", "ignored => ${ignored.message} \n")
+
         }
         setupTimeHolder()
         setVideoProgress(0)
     }
 
     private fun setVideoProgress(seconds: Int) {
+        // Log.e(TAG, "setVideoProgress")
         mExoPlayer?.seekTo(seconds * 1000L)
         video_seekbar.progress = seconds
         video_curr_time.text = seconds.getFormattedDuration()
     }
 
     private fun setVideoSize() {
+        // Log.e(TAG, "setVideoSize")
         mVideoSize?.let {
             val videoProportion = it.x.toFloat() / it.y.toFloat()
             val display = windowManager.defaultDisplay
@@ -419,6 +460,7 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun toggleFullScreen() {
+        // Log.e(TAG, "toggleFullScreen")
         mIsFullScreen = !mIsFullScreen
         if (mIsFullScreen) {
             video_time_holder.beGone()
@@ -430,32 +472,34 @@ class VideoActivity : AppCompatActivity(), TextureView.SurfaceTextureListener, S
     }
 
     private fun togglePlayPause() {
+        // Log.e(TAG, "togglePlayPause")
         mIsPlaying = !mIsPlaying
-        Tracker.e("togglePlayPause", "mIsPlaying $mIsPlaying")
+
         mHidePauseHandler.removeCallbacksAndMessages(null)
         if (mIsPlaying) playVideo() else pauseVideo()
     }
 
     private fun videoCompleted() {
+        // Log.e(TAG, "videoCompleted")
         mCurrTime = ((mExoPlayer?.duration ?: 0) / 1000).toInt()
         video_seekbar.progress = video_seekbar.max
         video_curr_time.text = mDuration.getFormattedDuration()
-        Tracker.e("", "mCurrTime => ${mCurrTime} \n")
 
         pauseVideo()
     }
 
     private fun videoEnded(): Boolean {
-        return false
+        // Log.e(TAG, "videoEnded")
+        return mExoPlayer?.playbackState==Player.STATE_ENDED
     }
 
     private fun videoPrepared() {
-
+        // Log.e(TAG, "videoPrepared")
         if (mDuration == 0) {
             mDuration = ((mExoPlayer?.duration ?: 0) / 1000).toInt()
-            Tracker.e("videoPrepared", "mDuration => ${mDuration} \n")
+
             setupTimeHolder()
-            setVideoProgress(mCurrTime)
+            //setVideoProgress(mCurrTime)
             playVideo()
         }
     }

@@ -73,6 +73,13 @@ class FileActivity : CustomActivity() {
     }
 
     override fun onBackPressed() {
+        mFileAdapter?.let {
+            if (it.selectedItemCount > 0) {
+                it.deselectAll()
+                return
+            }
+        }
+
         val parent = File(mRecentDirectory).parentFile
         if (parent == null)
             super.onBackPressed()
@@ -253,7 +260,7 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-    
+
     private fun scanFile() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
