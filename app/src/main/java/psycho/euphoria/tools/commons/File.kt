@@ -2,6 +2,12 @@ package psycho.euphoria.tools.commons
 
 import android.content.Context
 import java.io.File
+import java.io.FileNotFoundException
+import android.text.TextUtils
+import android.webkit.MimeTypeMap
+import android.provider.DocumentsContract.Document.MIME_TYPE_DIR
+import java.util.*
+
 
 data class FileItem(val path: String,
                     val name: String,
@@ -14,7 +20,98 @@ fun File.getDirectChildrenCount(countHiddenItems: Boolean) = listFiles()?.filter
         ?: 0
 
 fun File.toFileDirItem(context: Context) = FileDirItem(absolutePath, name, context.getIsPathDirectory(absolutePath), 0, length())
+fun File.buildUniqueFile(): File {
+    val parent = parentFile
+    val ext = "." + extension
+    val name = nameWithoutExtension
+    return buildUniqueFileWithExtension(parent, name, ext)
+}
 
+private fun buildUniqueFileWithExtension(parent: File, name: String, ext: String): File {
+    var file = buildFile(parent, name, ext)
+
+    // If conflicting file, try adding counter suffix
+    var n = 0
+    while (file.exists()) {
+        if (n++ >= 32) {
+            throw FileNotFoundException("Failed to create unique file")
+        }
+        file = buildFile(parent, "$name ($n)", ext)
+    }
+
+    return file
+}
+
+fun splitFileName(mimeType: String, displayName: String): Array<String> {
+    var name: String
+    var ext: String?
+
+    if (android.provider.DocumentsContract.Document.MIME_TYPE_DIR.equals(mimeType)) {
+        name = displayName
+        ext = null
+    } else {
+        var mimeTypeFromExt: String?
+
+        // Extract requested extension from display name
+        val lastDot = displayName.lastIndexOf('.')
+        if (lastDot >= 0) {
+            name = displayName.substring(0, lastDot)
+            ext = displayName.substring(lastDot + 1)
+            mimeTypeFromExt = MimeTypeMap.getSingleton().getMimeTypeFromExtension(
+                    ext.toLowerCase())
+        } else {
+            name = displayName
+            ext = null
+            mimeTypeFromExt = null
+        }
+
+        if (mimeTypeFromExt == null) {
+            mimeTypeFromExt = "application/octet-stream"
+        }
+
+        val extFromMimeType = MimeTypeMap.getSingleton().getExtensionFromMimeType(
+                mimeType)
+        if (Objects.equals(mimeType, mimeTypeFromExt) || Objects.equals(ext, extFromMimeType)) {
+            // Extension maps back to requested MIME type; allow it
+        } else {
+            // No match; insist that create file matches requested MIME
+            name = displayName
+            ext = extFromMimeType
+        }
+    }
+
+    if (ext == null) {
+        ext = ""
+    }
+
+    return arrayOf(name, ext)
+}
+
+fun buildUniqueFile(parent: File, mimeType: String, displayName: String): File {
+    val parts = splitFileName(mimeType, displayName)
+    return buildUniqueFileWithExtension(parent, parts[0], parts[1])
+}
+
+fun roundStorageSize(size: Long): Long {
+    var `val`: Long = 1
+    var pow: Long = 1
+    while (`val` * pow < size) {
+        `val` = `val` shl 1
+        if (`val` > 512) {
+            `val` = 1
+            pow *= 1000
+        }
+    }
+    return `val` * pow
+}
+
+private fun buildFile(parent: File, name: String, ext: String): File {
+    return if (TextUtils.isEmpty(ext)) {
+        File(parent, name)
+    } else {
+        File(parent, "$name.$ext")
+    }
+}
 
 fun File.createDirectory() {
     if (!exists()) mkdirs()

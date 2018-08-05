@@ -5,9 +5,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
-import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
-import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
 import android.os.Looper
@@ -21,7 +19,6 @@ import android.view.ViewGroup
 import android.view.Window
 import android.view.WindowManager
 import android.view.inputmethod.InputMethodManager
-import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import kotlinx.android.synthetic.main.dialog_title.view.*
@@ -454,6 +451,20 @@ fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((succ
                 return@handleSAFDialog
             }
             try {
+                /**
+                 * Change the display name of an existing document.
+                 * <p>
+                 * If the underlying provider needs to create a new
+                 * {@link Document#COLUMN_DOCUMENT_ID} to represent the updated display
+                 * name, that new document is returned and the original document is no
+                 * longer valid. Otherwise, the original document is returned.
+                 *
+                 * @param documentUri document with {@link Document#FLAG_SUPPORTS_RENAME}
+                 * @param displayName updated name for document
+                 * @return the existing or new document after the rename, or {@code null} if
+                 *         failed.
+                 */
+                // com.android.internal.content.FileSystemProvider
                 val uri = DocumentsContract.renameDocument(applicationContext.contentResolver, document.uri, newPath.getFilenameFromPath())
                 if (document.uri != uri) {
                     updateInMediaStore(oldPath, newPath)
@@ -477,7 +488,7 @@ fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((succ
                 }
             }
         }
-    } else if (File(oldPath).renameTo(File(newPath))) {
+    } else if (File(oldPath).renameTo(File(newPath).buildUniqueFile())) {
         if (File(newPath).isDirectory) {
             deleteFromMediaStore(oldPath)
             rescanPaths(arrayListOf(newPath)) {

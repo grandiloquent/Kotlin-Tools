@@ -105,8 +105,22 @@ val Context.notificationManager: NotificationManager
 val Context.realScreenSize: Point
     get() {
         val size = Point()
+        /**
+         * Gets the real size of the display without subtracting any window decor or
+         * applying any compatibility scale factors.
+         * <p>
+         * The size is adjusted based on the current rotation of the display.
+         * </p><p>
+         * The real size may be smaller than the physical size of the screen when the
+         * window manager is emulating a smaller display (using adb shell wm size).
+         * </p>
+         *
+         * @param outSize Set to the real size of the display.
+         */
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
             windowManager.defaultDisplay.getRealSize(size)
+
+
         return size
     }
 val Context.usableScreenSize: Point
@@ -115,8 +129,10 @@ val Context.usableScreenSize: Point
         windowManager.defaultDisplay.getSize(size)
         return size
     }
-
-
+val Context.widthPixels: Int
+    get() {
+        return resources.displayMetrics.widthPixels
+    }
 /*
 Functions
  */
@@ -134,9 +150,11 @@ fun Context.deleteFromMediaStore(path: String): Boolean {
         false
     }
 }
+
 fun Context.dp2px(dp: Float): Float {
     return dp * resources.displayMetrics.density;
 }
+
 fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
     return if (path.startsWith(OTG_PATH)) {
         null
@@ -152,6 +170,7 @@ fun Context.ensurePublicUri(path: String, applicationId: String): Uri? {
         }
     }
 }
+
 fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
     return if (uri.scheme == "content") {
         uri
@@ -160,6 +179,7 @@ fun Context.ensurePublicUri(uri: Uri, applicationId: String): Uri {
         getFilePublicUri(file, applicationId)
     }
 }
+
 fun Context.getDataColumn(uri: Uri, selection: String? = null, selectionArgs: Array<String>? = null): String? {
     var cursor: Cursor? = null
     try {
@@ -174,6 +194,7 @@ fun Context.getDataColumn(uri: Uri, selection: String? = null, selectionArgs: Ar
     }
     return null
 }
+
 fun Context.getDocumentFile(path: String): DocumentFile? {
     if (!isLollipopPlus()) {
         return null
@@ -190,6 +211,7 @@ fun Context.getDocumentFile(path: String): DocumentFile? {
     }
     return document
 }
+
 fun Context.getDrawableCompat(resId: Int): Drawable {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
         return resources.getDrawable(resId, theme);
@@ -197,6 +219,7 @@ fun Context.getDrawableCompat(resId: Int): Drawable {
         return resources.getDrawable(resId);
     }
 }
+
 fun Context.getFastDocumentFile(path: String): DocumentFile? {
     if (!isLollipopPlus()) {
         return null
@@ -214,6 +237,7 @@ fun Context.getFastDocumentFile(path: String): DocumentFile? {
     val fullUri = "${baseConfig.treeUri}/document/$externalPathPart%3A$relativePath"
     return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
 }
+
 fun Context.getFilenameFromContentUri(uri: Uri): String? {
     var cursor: Cursor? = null
     try {
@@ -227,6 +251,7 @@ fun Context.getFilenameFromContentUri(uri: Uri): String? {
     }
     return ""
 }
+
 fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
     // for images/videos/gifs try getting a media content uri first, like content://media/external/images/media/438
     // if media content uri is null, get our custom uri like content://com.simplemobiletools.gallery.provider/external_files/emulated/0/DCIM/IMG_20171104_233915.jpg
@@ -237,15 +262,18 @@ fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
         FileProvider.getUriForFile(this, "$applicationId.provider", file)
     }
 }
+
 fun Context.getFileUri(path: String) = when {
     path.isImageSlow() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
     path.isVideoSlow() -> MediaStore.Video.Media.EXTERNAL_CONTENT_URI
     else -> MediaStore.Files.getContentUri("external")
 }
+
 fun Context.getHumanizedFilename(path: String): String {
     val humanized = humanizePath(path)
     return humanized.substring(humanized.lastIndexOf("/") + 1)
 }
+
 fun Context.getIsPathDirectory(path: String): Boolean {
     return if (path.startsWith(OTG_PATH)) {
         getOTGFastDocumentFile(path)?.isDirectory ?: false
@@ -253,6 +281,7 @@ fun Context.getIsPathDirectory(path: String): Boolean {
         File(path).isDirectory
     }
 }
+
 fun Context.getMediaContent(path: String, uri: Uri): Uri? {
     val projection = arrayOf(MediaStore.Images.Media._ID)
     val selection = MediaStore.Images.Media.DATA + "= ?"
@@ -270,6 +299,7 @@ fun Context.getMediaContent(path: String, uri: Uri): Uri? {
     }
     return null
 }
+
 fun Context.getMediaContentUri(path: String): Uri? {
     val uri = when {
         path.isImageFast() -> MediaStore.Images.Media.EXTERNAL_CONTENT_URI
@@ -278,6 +308,7 @@ fun Context.getMediaContentUri(path: String): Uri? {
     }
     return getMediaContent(path, uri)
 }
+
 fun Context.getMimeTypeFromUri(uri: Uri): String {
     var mimetype = uri.path.getMimeType()
     if (mimetype.isEmpty()) {
@@ -288,6 +319,7 @@ fun Context.getMimeTypeFromUri(uri: Uri): String {
     }
     return mimetype
 }
+
 fun Context.getOTGFastDocumentFile(path: String): DocumentFile? {
     if (baseConfig.OTGTreeUri.isEmpty()) {
         return null
@@ -299,6 +331,7 @@ fun Context.getOTGFastDocumentFile(path: String): DocumentFile? {
     val fullUri = "${baseConfig.OTGTreeUri}/document/${baseConfig.OTGPartition}%3A$relativePath"
     return DocumentFile.fromSingleUri(this, Uri.parse(fullUri))
 }
+
 fun Context.getRealPathFromURI(uri: Uri): String? {
     if (uri.scheme == "file") {
         return uri.path
@@ -338,6 +371,7 @@ fun Context.getRealPathFromURI(uri: Uri): String? {
     }
     return getDataColumn(uri)
 }
+
 // http://stackoverflow.com/a/40582634/1967672
 fun Context.getSDCardPath(): String {
     val directories = getStorageDirectories().filter { it.trimEnd('/') != getInternalStoragePath() }
@@ -365,6 +399,7 @@ fun Context.getSDCardPath(): String {
     val finalPath = sdCardPath.trimEnd('/')
     return finalPath
 }
+
 fun Context.getStorageDirectories(): Array<String> {
     val paths = HashSet<String>()
     val rawExternalStorage = System.getenv("EXTERNAL_STORAGE")
@@ -404,6 +439,7 @@ fun Context.getStorageDirectories(): Array<String> {
     }
     return paths.toTypedArray()
 }
+
 fun Context.getUriMimeType(path: String, newUri: Uri): String {
     var mimeType = path.getMimeType()
     if (mimeType.isEmpty()) {
@@ -411,6 +447,7 @@ fun Context.getUriMimeType(path: String, newUri: Uri): String {
     }
     return mimeType
 }
+
 fun Context.hasProperStoredTreeUri(): Boolean {
     val hasProperUri = contentResolver.persistedUriPermissions.any { it.uri.toString() == baseConfig.treeUri }
     if (!hasProperUri) {
@@ -418,15 +455,19 @@ fun Context.hasProperStoredTreeUri(): Boolean {
     }
     return hasProperUri
 }
+
 fun Context.humanizePath(path: String): String {
     return ""
 }
+
 fun Context.px2dp(px: Float): Float {
     return px / resources.displayMetrics.density;
 }
+
 fun Context.px2sp(px: Float): Float {
     return px / resources.displayMetrics.scaledDensity
 }
+
 fun Context.rescanDeletedPath(path: String, callback: (() -> Unit)? = null) {
     if (path.startsWith(filesDir.toString())) {
         callback?.invoke()
@@ -448,6 +489,7 @@ fun Context.rescanDeletedPath(path: String, callback: (() -> Unit)? = null) {
         }
     }
 }
+
 fun Context.rescanPaths(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
     var cnt = paths.size
     MediaScannerConnection.scanFile(applicationContext, paths.toTypedArray(), null, { s, uri ->
@@ -456,9 +498,11 @@ fun Context.rescanPaths(paths: ArrayList<String>, callback: (() -> Unit)? = null
         }
     })
 }
+
 fun Context.scanFileRecursively(file: File, callback: (() -> Unit)? = null) {
     scanFilesRecursively(arrayListOf(file), callback)
 }
+
 fun Context.scanFilesRecursively(files: ArrayList<File>, callback: (() -> Unit)? = null) {
     val allPaths = ArrayList<String>()
     for (file in files) {
@@ -466,9 +510,11 @@ fun Context.scanFilesRecursively(files: ArrayList<File>, callback: (() -> Unit)?
     }
     rescanPaths(allPaths, callback)
 }
+
 fun Context.scanPathRecursively(path: String, callback: (() -> Unit)? = null) {
     scanPathsRecursively(arrayListOf(path), callback)
 }
+
 fun Context.scanPathsRecursively(paths: ArrayList<String>, callback: (() -> Unit)? = null) {
     val allPaths = ArrayList<String>()
     for (path in paths) {
@@ -476,15 +522,19 @@ fun Context.scanPathsRecursively(paths: ArrayList<String>, callback: (() -> Unit
     }
     rescanPaths(allPaths, callback)
 }
+
 fun Context.sp2px(sp: Float): Float {
     return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_SP, sp, resources.displayMetrics);
 }
+
 fun Context.toast(message: String, duration: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, message, duration).show()
 }
+
 fun Context.toast(id: Int, length: Int = Toast.LENGTH_SHORT) {
     Toast.makeText(this, id, length).show()
 }
+
 fun Context.tryFastDocumentDelete(path: String, allowDeleteFolder: Boolean): Boolean {
     val document = getFastDocumentFile(path)
     return if (document?.isFile == true || allowDeleteFolder) {
@@ -497,6 +547,7 @@ fun Context.tryFastDocumentDelete(path: String, allowDeleteFolder: Boolean): Boo
         false
     }
 }
+
 fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     var fileDeleted = tryFastDocumentDelete(fileDirItem.path, allowDeleteFolder)
     if (!fileDeleted) {
@@ -514,6 +565,7 @@ fun Context.trySAFFileDelete(fileDirItem: FileDirItem, allowDeleteFolder: Boolea
         }
     }
 }
+
 fun Context.updateInMediaStore(oldPath: String, newPath: String) {
     Thread {
         val values = ContentValues().apply {
@@ -530,6 +582,7 @@ fun Context.updateInMediaStore(oldPath: String, newPath: String) {
         }
     }.start()
 }
+
 fun Context.updateLastModified(path: String, lastModified: Long) {
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DATE_MODIFIED, lastModified / 1000)
@@ -543,8 +596,10 @@ fun Context.updateLastModified(path: String, lastModified: Long) {
     } catch (ignored: Exception) {
     }
 }
+
 fun Context.updateTextColors(viewGroup: ViewGroup, tmpTextColor: Int = 0, tmpAccentColor: Int = 0) {
 }
+
 fun Context.showKeyboard(et: EditText) {
     val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
     imm.showSoftInput(et, InputMethodManager.SHOW_IMPLICIT)
