@@ -1,12 +1,12 @@
 package psycho.euphoria.tools.files
 
 import android.Manifest
+import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
-import android.os.PersistableBundle
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
@@ -94,7 +94,7 @@ class FileActivity : CustomActivity() {
             path.isVideoFast() -> {
                 val intent = Intent(this, VideoActivity::class.java)
                 intent.putExtra(KEY_PATH, path)
-                startActivity(intent)
+                startActivityForResult(intent, REQUEST_VIDEO_CODE)
             }
             path.isImageFast() -> {
                 val intent = Intent(this, PictureActivity::class.java)
@@ -261,6 +261,13 @@ class FileActivity : CustomActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+        super.onActivityResult(requestCode, resultCode, resultData)
+        if (requestCode == REQUEST_VIDEO_CODE && resultCode == Activity.RESULT_OK) {
+            refreshRecyclerView()
+        }
+    }
+
     private fun scanFile() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
@@ -363,6 +370,8 @@ class FileActivity : CustomActivity() {
 
     companion object {
         private const val REQUEST_PERMISSION_CODE = 100
+        private const val REQUEST_VIDEO_CODE = 1
+
         private const val STATE_SORT_ORDER = "sort_order"
         private const val STATE_RECENT_DIRECTORY = "recent_directory"
     }

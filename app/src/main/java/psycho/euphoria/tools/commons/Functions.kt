@@ -12,7 +12,6 @@ import android.util.Log
 import android.view.WindowManager
 import android.widget.EditText
 import java.io.File
-import java.io.FileDescriptor
 import java.io.FileFilter
 import java.util.*
 import java.util.concurrent.*

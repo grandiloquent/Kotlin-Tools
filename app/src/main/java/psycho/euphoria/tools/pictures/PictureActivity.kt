@@ -12,10 +12,9 @@ import android.view.View
 import android.view.ViewGroup
 import com.github.chrisbanes.photoview.PhotoView
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.commons.*
+import psycho.euphoria.tools.commons.KEY_PATH
 import psycho.euphoria.tools.listImagesRecursively
 import psycho.euphoria.tools.share
-
 import java.io.File
 
 class PictureActivity : AppCompatActivity() {

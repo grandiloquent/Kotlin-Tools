@@ -2,8 +2,10 @@ package psycho.euphoria.tools.commons
 
 import android.app.AlarmManager
 import android.app.NotificationManager
-import android.content.*
-import android.content.pm.PackageManager
+import android.content.ClipboardManager
+import android.content.ContentUris
+import android.content.ContentValues
+import android.content.Context
 import android.content.res.Configuration
 import android.database.Cursor
 import android.graphics.Color

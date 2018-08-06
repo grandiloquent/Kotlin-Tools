@@ -14,11 +14,11 @@ class App : Application() {
         super.onCreate()
         instance = this
         if (BuildConfig.DEBUG) {
-            if (LeakCanary.isInAnalyzerProcess(this)) {
-                return
-            }
-            // Monitor memory leaks in debug mode
-            LeakCanary.install(this)
+//            if (LeakCanary.isInAnalyzerProcess(this)) {
+//                return
+//            }
+//            // Monitor memory leaks in debug mode
+//            LeakCanary.install(this)
         }
     }
 }

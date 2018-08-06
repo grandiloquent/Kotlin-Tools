@@ -9,7 +9,6 @@ import kotlinx.android.synthetic.main.activity_translator.*
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
-import psycho.euphoria.tools.commons.toast
 import java.util.concurrent.TimeUnit
 
 class TranslatorActivity : AppCompatActivity() {

@@ -13,7 +13,6 @@ import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_download.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
-import android.support.v7.widget.helper.ItemTouchHelper.Callback.makeMovementFlags
 
 
 class DownloadActivity() : AppCompatActivity() {
@@ -45,7 +44,7 @@ class DownloadActivity() : AppCompatActivity() {
 
 
 
-        mAdapter = DownloadListAdapter(DownloadDatabase.getInstance(this).list(), fun(v) {
+        mAdapter = DownloadListAdapter(DownloadTaskProvider.getInstance().listTasks(), fun(v) {
             Tracker.e("DownloadListAdapter", "downloadInfo => ${v.id}")
         }, fun(v) {
             //mItemTouchHelper.startDrag(v)
@@ -89,7 +88,7 @@ class DownloadActivity() : AppCompatActivity() {
                         viewHolder?.let {
                             val downloadInfo = mAdapter.getItem(it.adapterPosition)
                             downloadInfo.finish = true
-                            DownloadDatabase.getInstance(App.instance).update(downloadInfo)
+                            DownloadTaskProvider.getInstance().update(downloadInfo.id)
                             mAdapter.removeAt(it)
                         }
                     }
@@ -101,11 +100,8 @@ class DownloadActivity() : AppCompatActivity() {
 
     private fun insertDownloadTask(url: String) {
         if (!url.isNullOrBlank() && url.isValidURL()) {
-            DownloadDatabase.getInstance(this).insert(DownloadInfo(
-                    -1,
-                    url.toString(),
-                    generateFileNameFromURL(url, Environment.getExternalStorageDirectory())
-            ))
+            DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, Environment.getExternalStorageDirectory())
+                    ?: "")
             refreshRecyclerView()
         }
     }
@@ -143,7 +139,7 @@ class DownloadActivity() : AppCompatActivity() {
     }
 
     private fun refreshRecyclerView() {
-        mAdapter.switchData(DownloadDatabase.getInstance(this).list())
+        mAdapter.switchData(DownloadTaskProvider.getInstance().listTasks())
     }
 
     private fun startDownload() {

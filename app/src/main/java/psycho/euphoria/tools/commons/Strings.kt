@@ -1,16 +1,16 @@
 package psycho.euphoria.tools.commons
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Point
 import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.util.Patterns
+import java.io.File
 import java.text.SimpleDateFormat
 import java.util.*
-import android.content.Intent
-import android.net.Uri
-import java.io.File
 
 
 fun String.areDigitsOnly() = matches(Regex("[0-9]+"))

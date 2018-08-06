@@ -1,8 +1,10 @@
 package psycho.euphoria.tools
 
 import android.content.Context
-import android.os.Environment
-import psycho.euphoria.tools.commons.*
+import psycho.euphoria.tools.commons.BaseConfig
+import psycho.euphoria.tools.commons.EXT_EXIF_PROPERTIES
+import psycho.euphoria.tools.commons.EXT_LAST_MODIFIED
+import psycho.euphoria.tools.commons.EXT_RESOLUTION
 
 const val KEY_SHOW_EXTENDED_DETAILS = "show_extended_details"
 const val KEY_EXTENDED_DETAILS = "extended_details"

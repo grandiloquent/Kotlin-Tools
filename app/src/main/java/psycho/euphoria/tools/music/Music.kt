@@ -16,7 +16,6 @@ import android.support.v4.app.NotificationCompat
 import android.util.Log
 import android.widget.RemoteViews
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.downloads.DownloadService
 import psycho.euphoria.tools.getFileName
 import psycho.euphoria.tools.listAudioFiles
 import java.io.File

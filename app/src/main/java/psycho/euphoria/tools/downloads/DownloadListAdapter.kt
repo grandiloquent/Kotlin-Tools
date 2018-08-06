@@ -1,16 +1,15 @@
 package psycho.euphoria.tools.downloads
 
-import android.support.v4.view.MotionEventCompat
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
-import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_download.*
 import psycho.euphoria.tools.R
+import  psycho.euphoria.tools.downloads.Downloader.DownloadInfo
 
-class DownloadListAdapter(private val downloads: ArrayList<DownloadInfo>,
+class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
                           private val itemClick: (DownloadInfo) -> Unit,
                           private val itemDrag: (ViewHolder) -> Unit) :
         RecyclerView.Adapter<DownloadListAdapter.ViewHolder>() {
@@ -20,7 +19,7 @@ class DownloadListAdapter(private val downloads: ArrayList<DownloadInfo>,
         return ViewHolder(view, itemClick)
     }
 
-    fun switchData(downloadList: List<DownloadInfo>) {
+    fun switchData(downloadList: List<Downloader.DownloadInfo>) {
         downloads.clear()
         downloads.addAll(downloadList)
         notifyDataSetChanged()

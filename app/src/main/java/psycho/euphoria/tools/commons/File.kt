@@ -1,11 +1,10 @@
 package psycho.euphoria.tools.commons
 
 import android.content.Context
-import java.io.File
-import java.io.FileNotFoundException
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
-import android.provider.DocumentsContract.Document.MIME_TYPE_DIR
+import java.io.File
+import java.io.FileNotFoundException
 import java.util.*
 
 
@@ -22,7 +21,7 @@ fun File.getDirectChildrenCount(countHiddenItems: Boolean) = listFiles()?.filter
 fun File.toFileDirItem(context: Context) = FileDirItem(absolutePath, name, context.getIsPathDirectory(absolutePath), 0, length())
 fun File.buildUniqueFile(): File {
     val parent = parentFile
-    val ext = "." + extension
+    val ext = extension
     val name = nameWithoutExtension
     return buildUniqueFileWithExtension(parent, name, ext)
 }

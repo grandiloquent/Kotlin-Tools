@@ -1,18 +1,12 @@
 package psycho.euphoria.tools
 
-import android.Manifest
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
 import android.text.TextUtils
 import android.util.Log
-import android.util.TypedValue
-import android.view.MotionEvent
-import android.view.View
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileFilter

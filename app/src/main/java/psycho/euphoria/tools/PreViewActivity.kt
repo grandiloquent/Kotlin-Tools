@@ -2,14 +2,8 @@ package psycho.euphoria.tools
 
 import android.Manifest
 import android.app.Activity
-import android.app.AlertDialog
 import android.os.Build
 import android.os.Bundle
-import android.os.Environment
-import android.widget.NumberPicker
-import android.widget.Toast
-import psycho.euphoria.tools.downloads.*
-import java.io.File
 
 class PreViewActivity : Activity() {
 
