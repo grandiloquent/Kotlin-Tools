@@ -8,16 +8,18 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
+import android.provider.Contacts
 import android.support.v4.app.NotificationCompat
 import android.util.ArrayMap
+import android.util.Log
+import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.launch
-import kotlinx.coroutines.experimental.newFixedThreadPoolContext
+import kotlinx.coroutines.experimental.channels.actor
 import psycho.euphoria.tools.commons.notificationManager
 
 class DownloadService : Service() {
     private val mChannel = Channel<TaskState>()
-    private val mDispatcher = newFixedThreadPoolContext(3, "DownloadService")
+    private val mDispatcher = newFixedThreadPoolContext(2, "DownloadService")
     private lateinit var mNotificationManager: NotificationManager
     private val mActivityNotifies = ArrayMap<String, Long>()
 
@@ -32,7 +34,11 @@ class DownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startDownload()
+        Log.e("onStartCommand", "intent => ${intent} \nflags => ${flags} \nstartId => ${startId} \n")
+        // startDownload()
+        runBlocking {
+           launch {  download() }
+        }
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -55,6 +61,7 @@ class DownloadService : Service() {
                            total: Long) {
 
 
+        Log.e("makeNotify", "id => ${id} \nspeed => ${speed} \ncurrent => ${current} \ntotal => ${total} \n")
         val tag = "$id"
 
         var builder = NotificationCompat.Builder(this, CHANNEL_ACTIVE)
@@ -85,35 +92,57 @@ class DownloadService : Service() {
     }
 
     private fun startDownload() {
+        runBlocking {
 
-        val downTasks = DownloadTaskProvider.getInstance().listTasks()
+            val downTasks = DownloadTaskProvider.getInstance().listTasks()
 
-        launch(mDispatcher) {
-            for (task in downTasks) {
-                Downloader { taskState ->
-                    launch {
-                        mChannel.send(taskState)
+            launch {
+                for (task in downTasks) {
+                    Downloader { taskState ->
+                        launch {
+                            mChannel.send(taskState)
 //                        if (speed != 0L) {
 //                            val message = "${speed.formatSize()} ${totalBytes.formatSize()} ${(Downloader.getRemainingMillis(totalBytes, currentBytes, speed) / 1000).toInt().getFormattedDuration()}"
 //                            mChannel.send(1L to message)
 //                        }
-                    }
-                }.execute(task)
-            }
-        }
+                        }
+                    }.execute(task)
+                }
+            }.join()
 
-        var receive = suspend {
-            while (!mChannel.isClosedForReceive) {
-                val taskState = mChannel.receive()
-                launch {
-                    makeNotify(taskState.id, taskState.speed, taskState.current, taskState.total)
+            var receive = suspend {
+                while (!mChannel.isClosedForReceive) {
+                    val taskState = mChannel.receive()
+                    launch {
+                        makeNotify(taskState.id, taskState.speed, taskState.current, taskState.total)
+                    }
                 }
             }
-        }
 
-        launch {
-            receive()
+            launch {
+                receive()
+            }
         }
+    }
+
+    suspend fun download() {
+        Log.e(TAG, "download")
+        val downTasks = DownloadTaskProvider.getInstance().listTasks()
+
+        val tasks = mutableListOf<Deferred<Unit>>()
+        for (i in downTasks) {
+            val task = async(mDispatcher) {
+                Downloader { taskState ->
+                    launch {
+                        makeNotify(taskState.id, taskState.speed, taskState.current, taskState.total)
+                    }
+                }.execute(i)
+                mNotificationManager.cancel("${i.id}",0)
+
+            }
+            tasks.add(task)
+        }
+        for (t in tasks) t.await()
     }
 
     companion object {

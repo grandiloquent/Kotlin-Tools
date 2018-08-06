@@ -65,7 +65,8 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
 
     fun listTasks(): MutableList<DownloadInfo> {
         val list = mutableListOf<DownloadInfo>()
-        val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where finished = 0 and failed <= 5", null);
+        // finished = 0 and
+        val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where failed <= 5", null);
         try {
             while (cursor.moveToNext()) {
                 val downloadInfo = DownloadInfo(
@@ -73,8 +74,8 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
                         cursor.getString(1),
                         cursor.getString(2),
                         cursor.getString(3),
-                        cursor.getLong(4),
-                        cursor.getLong(5),
+                        0L,//  cursor.getLong(4),
+                        0L,// cursor.getLong(5),
                         cursor.getInt(6),
                         0
 
@@ -115,7 +116,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         contentValues.put(COLUMN_FINISHED, downloadInfo.finish)
         contentValues.put(COLUMN_TOTAL_BYTES, downloadInfo.totalBytes)
         contentValues.put(COLUMN_URI, downloadInfo.uri)
-        writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$downloadInfo.id"), SQLiteDatabase.CONFLICT_IGNORE)
+        writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("${downloadInfo.id}"), SQLiteDatabase.CONFLICT_IGNORE)
 
     }
 

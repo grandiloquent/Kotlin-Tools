@@ -1,21 +1,18 @@
 package psycho.euphoria.tools.downloads
 
+import android.util.Log
 import java.io.File
 import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
 
-
 class Downloader(private val notifySpeed: (TaskState) -> Unit) {
-
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
     private var mSpeed = 0L
     private var mLastUpdateBytes = 0L
     private var mLastUpdateTime = 0L
-
-
     private fun addRequest(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
         httpURLConnection?.let {
             val file = File(downloadInfo.fileName)
@@ -33,10 +30,11 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
     }
 
     private fun dispatchErrorMessage(e: Exception, message: String? = null) {
-        println("${e.message} $message")
+        Log.e(TAG, "dispatchErrorMessage $e $message")
     }
 
     fun execute(downloadInfo: DownloadInfo) {
+        Log.e(TAG, "execute ${downloadInfo.id}")
         var url = URL(downloadInfo.uri)
         var httpURLConnection: HttpURLConnection? = null
         try {
@@ -53,6 +51,7 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                     transferData(httpURLConnection, downloadInfo)
                     // Download task has been completed, update the database
                     downloadInfo.finish = 1
+                    Log.e(TAG, "writeDatabase")
                     downloadInfo.writeDatabase()
                 }
                 HTTP_PARTIAL -> {
@@ -61,6 +60,7 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                     transferData(httpURLConnection, downloadInfo)
                     // Download task has been completed, update the database
                     downloadInfo.finish = 1
+                    Log.e(TAG, "writeDatabase")
                     downloadInfo.writeDatabase()
                 }
                 HTTP_MOVED_PERM,
@@ -77,11 +77,15 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                 else -> throw Exception("Response code $responseCode")
             }
         } catch (malformedURLException: MalformedURLException) {
-            dispatchErrorMessage(malformedURLException)
+            dispatchErrorMessage(malformedURLException, "${downloadInfo.id}")
             // The resource address is incorrect, the task cannot be restarted, so it is marked as completed
             downloadInfo.finish = 1
+
+            Log.e(TAG, "writeDatabase", malformedURLException)
             downloadInfo.writeDatabase()
         } catch (ignored: Exception) {
+            Log.e(TAG, "writeDatabase", ignored)
+
             dispatchErrorMessage(ignored)
             downloadInfo.failedCount += 1
             downloadInfo.writeDatabase()
@@ -104,6 +108,11 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
     }
 
     private fun transferData(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
+        Log.e(TAG, "transferData ${downloadInfo.id}")
+        if (downloadInfo.currentBytes >= downloadInfo.totalBytes) {
+            Log.e(TAG, "[ERROR]: downloadInfo => ${downloadInfo} \n")
+            return
+        }
         val inputStream = httpURLConnection?.inputStream
         val outputStream = RandomAccessFile(downloadInfo.fileName, "rwd")
         if (downloadInfo.currentBytes > 0L)
@@ -117,9 +126,14 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                     downloadInfo.currentBytes += bytes
                     updateProgress(downloadInfo)
                     bytes = input.read(buffer)
+                    if (downloadInfo.currentBytes > downloadInfo.totalBytes) {
+                        Log.e(TAG, "[ERROR]: currentBytes>totalBytes")
+                    }
                 }
             }
         }
+        Log.e(TAG, "transferData ${downloadInfo.currentBytes}")
+
     }
 
     private fun updateProgress(downloadInfo: DownloadInfo) {
@@ -140,10 +154,12 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
             mSpeedSampleBytes = currentBytes
         }
         val bytesDelta = currentBytes - mLastUpdateBytes
-        val timeDelta = mLastUpdateTime
+        val timeDelta = now - mLastUpdateTime
         if (bytesDelta > MIN_PROGRESS_STEP && timeDelta > MIN_PROGRESS_TIME) {
             mLastUpdateBytes = currentBytes
             mLastUpdateTime = now
+            Log.e(TAG, "updateProgress ${downloadInfo.id}")
+            downloadInfo.writeDatabase()
 
         }
     }
@@ -152,12 +168,9 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
         private const val DEFAULT_TIME_OUT = 2000 * 1000
         private const val MIN_PROGRESS_STEP = 65536
         private const val MIN_PROGRESS_TIME = 2000L
-
+        private const val TAG = "Downloader"
         fun getRemainingMillis(total: Long, current: Long, speed: Long): Long {
             return ((total - current) * 1000) / speed;
         }
-
     }
-
-
 }

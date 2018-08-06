@@ -17,6 +17,7 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
 import android.widget.SeekBar
+import android.widget.Toast
 import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.TrackGroupArray
@@ -29,6 +30,7 @@ import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File
 import kotlin.math.abs
+import kotlin.math.max
 import kotlin.math.min
 
 class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, SeekBar.OnSeekBarChangeListener, View.OnTouchListener {
@@ -50,12 +52,12 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     private var mIsChangingPosition = false
     private var mDownX = 0
     private var mDownY = 0
-    private var THRESHOLD = 0
+    private var THRESHOLD = 80
     private var mState = 0
     private var mCurrentPosition = 0L
     private var mSeekPosition = 0L
     private var mScreenWidth = 0
-    private lateinit var mAudioManager:AudioManager
+    private lateinit var mAudioManager: AudioManager
     private var mScreenHeight = 0
 
 //    private val mOnAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
@@ -334,7 +336,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
         // Log.e(TAG, "onCreate")
         mScreenWidth = widthPixels
         mScreenHeight = heightPixels
-        mAudioManager=audioManager
+        mAudioManager = audioManager
         //requestFullScreen()
         savedInstanceState?.let {
             mCurrTime = it.getInt(KEY_PROGRESS)
@@ -475,6 +477,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     private var mVolume = 0
 
     override fun onTouch(view: View?, event: MotionEvent): Boolean {
+
         val x = event.x.toInt()
         val y = event.y.toInt()
         when (event.action) {
@@ -492,15 +495,15 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                 val absDeltaY = abs(deltaY)
                 if (!mIsChangingPosition && !mIsChangeRate && !mIsChangeVolume) {
                     if (absDeltaX > THRESHOLD || absDeltaY > THRESHOLD) {
+                        // Log.e(TAG, "$x $y $absDeltaX $absDeltaY $THRESHOLD")
+
                         if (absDeltaX >= THRESHOLD) {
                             if (mState != STATE_ERROR) {
                                 mIsChangingPosition = true
                                 mCurrentPosition = getPlayingPosition() ?: 0L
                             }
                         } else {
-                            if (mDownX < mScreenWidth * 0.5f) {
-                                mIsChangeRate = true
-                            } else {
+                            if (mDownX > mScreenWidth * 0.5f) {
                                 mIsChangeVolume = true
                                 mVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
                             }
@@ -512,7 +515,6 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                     val delta = deltaX * totalDuration / mScreenWidth;
                     // Limit the maximum value to 30 seconds
                     mSeekPosition = mCurrentPosition + min(delta, 30000L)
-                    Log.e(TAG, "onTouch $mSeekPosition $mCurrentPosition $totalDuration $mScreenWidth")
                     if (mSeekPosition > totalDuration) {
                         mSeekPosition = totalDuration
                     }
@@ -523,24 +525,26 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                     val deltaVolume = max * deltaY * 3 / mScreenHeight
                     mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume + deltaVolume, 0)
                 }
-                if (mIsChangeRate) {
-                    if (deltaY > 0) {
-                        mRate = (mRate + mRate % 5.0f) * 5.0f
-                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
-                    } else {
-                        mRate = (mRate - mRate % 5.0f) * 5.0f
-                        if (mRate < 1f) {
-                            mRate = 1f
-                        }
-                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
-                    }
-                    toast("Current playback rate：${mRate} times")
 
-                }
             }
             MotionEvent.ACTION_UP -> {
                 if (mIsChangingPosition) {
                     setProgress(mSeekPosition)
+                }
+                if (!mIsChangingPosition && !mIsChangeVolume && mDownX < mScreenWidth * 0.5f) {
+                    if (mDownY < mScreenHeight * 0.3f) {
+                        mRate = (mRate.toInt() / 5 + 1) * 5.0f
+                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
+                        toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
+                    } else if (mDownY > mScreenHeight * 0.6f) {
+                        mRate = (mRate.toInt() / 5 - 1) * 5.0f
+                        if (mRate < 1f) {
+                            mRate = 1f
+                        }
+                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
+                        toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
+
+                    }
                 }
             }
         }
