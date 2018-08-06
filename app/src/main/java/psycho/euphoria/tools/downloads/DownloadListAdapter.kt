@@ -7,7 +7,6 @@ import android.view.ViewGroup
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_download.*
 import psycho.euphoria.tools.R
-import  psycho.euphoria.tools.downloads.Downloader.DownloadInfo
 
 class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
                           private val itemClick: (DownloadInfo) -> Unit,
@@ -19,7 +18,7 @@ class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
         return ViewHolder(view, itemClick)
     }
 
-    fun switchData(downloadList: List<Downloader.DownloadInfo>) {
+    fun switchData(downloadList: List<DownloadInfo>) {
         downloads.clear()
         downloads.addAll(downloadList)
         notifyDataSetChanged()

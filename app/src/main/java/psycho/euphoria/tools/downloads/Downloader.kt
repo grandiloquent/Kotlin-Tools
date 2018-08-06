@@ -9,12 +9,32 @@ import java.net.URL
 
 class Downloader(private val notifySpeed: (TaskState) -> Unit) {
 
-    //private val mDispatcher = newFixedThreadPoolContext(3, "Downloader")
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
     private var mSpeed = 0L
     private var mLastUpdateBytes = 0L
     private var mLastUpdateTime = 0L
+
+
+    private fun addRequest(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
+        httpURLConnection?.let {
+            val file = File(downloadInfo.fileName)
+            if (file.exists()) {
+                downloadInfo.currentBytes = file.length()
+                downloadInfo.totalBytes += downloadInfo.currentBytes
+                downloadInfo.etag?.apply {
+                    it.ifMatch = this
+                }
+                it.range = "bytes=" + downloadInfo.currentBytes + "-";
+            }
+            it.acceptEncoding = "identity"
+            it.connection = "close"
+        }
+    }
+
+    private fun dispatchErrorMessage(e: Exception, message: String? = null) {
+        println("${e.message} $message")
+    }
 
     fun execute(downloadInfo: DownloadInfo) {
         var url = URL(downloadInfo.uri)
@@ -31,10 +51,17 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                 HTTP_OK -> {
                     parseHeaders(httpURLConnection, downloadInfo)
                     transferData(httpURLConnection, downloadInfo)
+                    // Download task has been completed, update the database
+                    downloadInfo.finish = 1
+                    downloadInfo.writeDatabase()
                 }
                 HTTP_PARTIAL -> {
-                    parseHeaders(httpURLConnection, downloadInfo)
+                    if (downloadInfo.totalBytes <= 0L)// The cached information may be lost and re-parsed
+                        parseHeaders(httpURLConnection, downloadInfo)
                     transferData(httpURLConnection, downloadInfo)
+                    // Download task has been completed, update the database
+                    downloadInfo.finish = 1
+                    downloadInfo.writeDatabase()
                 }
                 HTTP_MOVED_PERM,
                 HTTP_MOVED_TEMP,
@@ -48,87 +75,18 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                     return@branch
                 }
                 else -> throw Exception("Response code $responseCode")
-
             }
         } catch (malformedURLException: MalformedURLException) {
             dispatchErrorMessage(malformedURLException)
+            // The resource address is incorrect, the task cannot be restarted, so it is marked as completed
+            downloadInfo.finish = 1
+            downloadInfo.writeDatabase()
         } catch (ignored: Exception) {
-            println("Exception $ignored")
+            dispatchErrorMessage(ignored)
+            downloadInfo.failedCount += 1
+            downloadInfo.writeDatabase()
         } finally {
             httpURLConnection?.disconnect()
-        }
-    }
-
-    private fun dispatchErrorMessage(e: Exception, message: String? = null) {
-        println("${e.message} $message")
-    }
-
-    private fun transferData(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
-        val inputStream = httpURLConnection?.inputStream
-        val outputStream = RandomAccessFile(downloadInfo.fileName, "rwd")
-        if (downloadInfo.currentBytes > 0L)
-            outputStream.seek(downloadInfo.currentBytes)
-
-        inputStream?.use { input ->
-            outputStream.use { output ->
-                val buffer = ByteArray(8 * 1024)
-                var bytes = input.read(buffer)
-                while (bytes >= 0) {
-                    output.write(buffer, 0, bytes)
-                    downloadInfo.currentBytes += bytes
-                    updateProgress(downloadInfo)
-                    bytes = input.read(buffer)
-                }
-            }
-        }
-
-    }
-
-
-    private fun updateProgress(downloadInfo: DownloadInfo) {
-        val now = System.currentTimeMillis()
-        val currentBytes = downloadInfo.currentBytes
-        val sampleDelta = now - mSpeedSampleStart
-        if (sampleDelta > 500L) {
-            val sampleSpeed = ((currentBytes - mSpeedSampleBytes) * 1000) / sampleDelta
-            if (mSpeed == 0L) {
-                mSpeed = sampleSpeed
-            } else {
-                mSpeed = ((mSpeed * 3) + sampleSpeed) / 4
-
-            }
-            if (mSpeedSampleStart != 0L) {
-                notifySpeed(TaskState(downloadInfo.id, mSpeed, currentBytes, downloadInfo.totalBytes))
-            }
-            mSpeedSampleStart = now
-            mSpeedSampleBytes = currentBytes
-        }
-
-        val bytesDelta = currentBytes - mLastUpdateBytes
-        val timeDelta = mLastUpdateTime
-        if (bytesDelta > MIN_PROGRESS_STEP && timeDelta > MIN_PROGRESS_TIME) {
-            mLastUpdateBytes = currentBytes
-            mLastUpdateTime = now
-
-            println("$mLastUpdateBytes $mLastUpdateTime")
-        }
-
-    }
-
-    private fun addRequest(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
-        httpURLConnection?.let {
-            val file = File(downloadInfo.fileName)
-            if (file.exists()) {
-                downloadInfo.currentBytes = file.length()
-                downloadInfo.totalBytes += downloadInfo.currentBytes
-
-                downloadInfo.etag?.apply {
-                    it.ifMatch = this
-                }
-                it.range = "bytes=" + downloadInfo.currentBytes + "-";
-            }
-            it.acceptEncoding = "identity"
-            it.connection = "close"
         }
     }
 
@@ -141,9 +99,51 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
             if (it.transferEncoding == null) {
                 downloadInfo.totalBytes += (httpURLConnection.contentLength_.toLongOrNull() ?: 0L)
             }
-
             println(downloadInfo.toString())
+        }
+    }
 
+    private fun transferData(httpURLConnection: HttpURLConnection?, downloadInfo: DownloadInfo) {
+        val inputStream = httpURLConnection?.inputStream
+        val outputStream = RandomAccessFile(downloadInfo.fileName, "rwd")
+        if (downloadInfo.currentBytes > 0L)
+            outputStream.seek(downloadInfo.currentBytes)
+        inputStream?.use { input ->
+            outputStream.use { output ->
+                val buffer = ByteArray(8 * 1024)
+                var bytes = input.read(buffer)
+                while (bytes >= 0) {
+                    output.write(buffer, 0, bytes)
+                    downloadInfo.currentBytes += bytes
+                    updateProgress(downloadInfo)
+                    bytes = input.read(buffer)
+                }
+            }
+        }
+    }
+
+    private fun updateProgress(downloadInfo: DownloadInfo) {
+        val now = System.currentTimeMillis()
+        val currentBytes = downloadInfo.currentBytes
+        val sampleDelta = now - mSpeedSampleStart
+        if (sampleDelta > 500L) {
+            val sampleSpeed = ((currentBytes - mSpeedSampleBytes) * 1000) / sampleDelta
+            if (mSpeed == 0L) {
+                mSpeed = sampleSpeed
+            } else {
+                mSpeed = ((mSpeed * 3) + sampleSpeed) / 4
+            }
+            if (mSpeedSampleStart != 0L) {
+                notifySpeed(TaskState(downloadInfo.id, mSpeed, currentBytes, downloadInfo.totalBytes))
+            }
+            mSpeedSampleStart = now
+            mSpeedSampleBytes = currentBytes
+        }
+        val bytesDelta = currentBytes - mLastUpdateBytes
+        val timeDelta = mLastUpdateTime
+        if (bytesDelta > MIN_PROGRESS_STEP && timeDelta > MIN_PROGRESS_TIME) {
+            mLastUpdateBytes = currentBytes
+            mLastUpdateTime = now
 
         }
     }
@@ -159,17 +159,5 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
 
     }
 
-    data class DownloadInfo(
-            val id: Long,
-            var uri: String,
-            val fileName: String,
-            var etag: String?,
-            var currentBytes: Long,
-            var totalBytes: Long,
-            var failedCount: Int,
-            var finish: Boolean) {
-        override fun toString(): String {
-            return "uri => ${uri} \nfileName => ${fileName} \netag => ${etag} \ncurrentBytes => ${currentBytes} \ntotalBytes => ${totalBytes} \nfailedCount => ${failedCount} \nfinish => ${finish} \n"
-        }
-    }
+
 }

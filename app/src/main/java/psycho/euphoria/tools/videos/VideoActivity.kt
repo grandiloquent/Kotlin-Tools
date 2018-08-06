@@ -4,12 +4,15 @@ import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Point
 import android.graphics.SurfaceTexture
+import android.media.AudioAttributes
+import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
+import android.provider.MediaStore
 import android.util.DisplayMetrics
 import android.util.Log
 import android.view.*
@@ -41,7 +44,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     private var mIsFullScreen = false
     private var mIsPlaying = false
     private var mVideoSize: Point? = null
-    private lateinit var mGestureDetector: GestureDetector
+    // private lateinit var mGestureDetector: GestureDetector
     private var mBookmarker: Bookmarker? = null
     private var mCurrentURI: Uri? = null
     private var mIsChangingPosition = false
@@ -52,7 +55,24 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     private var mCurrentPosition = 0L
     private var mSeekPosition = 0L
     private var mScreenWidth = 0
+    private lateinit var mAudioManager:AudioManager
+    private var mScreenHeight = 0
 
+//    private val mOnAudioFocusChangeListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+//        when (focusChange) {
+//            AudioManager.AUDIOFOCUS_GAIN -> {
+//            }
+//            AudioManager.AUDIOFOCUS_LOSS -> {
+//
+//            }
+//            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+//
+//            }
+//            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+//
+//            }
+//        }
+//    }
 
     private fun cleanup() {
         // Log.e(TAG, "cleanup")
@@ -166,7 +186,23 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     }
 
     private fun initializeExoPlayer() {
-        // Log.e(TAG, "initializeExoPlayer")
+
+//        val audioManager = audioManager
+//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+//            val playbackAttributes = AudioAttributes.Builder()
+//                    .setUsage(AudioAttributes.USAGE_VOICE_COMMUNICATION)
+//                    .setContentType(AudioAttributes.CONTENT_TYPE_SPEECH)
+//                    .build()
+//            audioManager.requestAudioFocus(AudioFocusRequest
+//                    .Builder(AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+//                    .setAudioAttributes(playbackAttributes)
+//                    .setAcceptsDelayedFocusGain(true)
+//                    .setOnAudioFocusChangeListener(mOnAudioFocusChangeListener)
+//                    .build())
+//        } else {
+//            audioManager.requestAudioFocus(mOnAudioFocusChangeListener, AudioManager.STREAM_MUSIC, AudioManager.AUDIOFOCUS_GAIN_TRANSIENT)
+//        }
+
         val filePath = intent.getStringExtra(KEY_PATH)
         mCurrentURI = Uri.fromFile(File(filePath))
 //        val dataSpec = DataSpec(mCurrentURI)
@@ -297,6 +333,8 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     override fun onCreate(savedInstanceState: Bundle?) {
         // Log.e(TAG, "onCreate")
         mScreenWidth = widthPixels
+        mScreenHeight = heightPixels
+        mAudioManager=audioManager
         //requestFullScreen()
         savedInstanceState?.let {
             mCurrTime = it.getInt(KEY_PROGRESS)
@@ -430,6 +468,12 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
 
     override fun onSurfaceTextureSizeChanged(surface: SurfaceTexture?, width: Int, height: Int) {}
     override fun onSurfaceTextureUpdated(surface: SurfaceTexture?) {}
+
+    private var mIsChangeVolume = false
+    private var mIsChangeRate = false
+    private var mRate = 1f
+    private var mVolume = 0
+
     override fun onTouch(view: View?, event: MotionEvent): Boolean {
         val x = event.x.toInt()
         val y = event.y.toInt()
@@ -438,32 +482,60 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                 mDownX = x
                 mDownY = y
                 mIsChangingPosition = false
+                mIsChangeRate = false
+                mIsChangeVolume = false
             }
             MotionEvent.ACTION_MOVE -> {
                 val deltaX = x - mDownX
-                val deltaY = y - mDownY
+                var deltaY = y - mDownY
                 var absDeltaX = abs(deltaX)
                 val absDeltaY = abs(deltaY)
-                if (!mIsChangingPosition) {
+                if (!mIsChangingPosition && !mIsChangeRate && !mIsChangeVolume) {
                     if (absDeltaX > THRESHOLD || absDeltaY > THRESHOLD) {
                         if (absDeltaX >= THRESHOLD) {
                             if (mState != STATE_ERROR) {
                                 mIsChangingPosition = true
                                 mCurrentPosition = getPlayingPosition() ?: 0L
                             }
+                        } else {
+                            if (mDownX < mScreenWidth * 0.5f) {
+                                mIsChangeRate = true
+                            } else {
+                                mIsChangeVolume = true
+                                mVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                            }
                         }
                     }
                 }
                 if (mIsChangingPosition) {
                     val totalDuration = getDuration() ?: 0L
-                    mSeekPosition = mCurrentPosition + deltaX * totalDuration / mScreenWidth
+                    val delta = deltaX * totalDuration / mScreenWidth;
+                    // Limit the maximum value to 30 seconds
+                    mSeekPosition = mCurrentPosition + min(delta, 30000L)
                     Log.e(TAG, "onTouch $mSeekPosition $mCurrentPosition $totalDuration $mScreenWidth")
-                    if(mSeekPosition>30000L){
-                        mSeekPosition=min(totalDuration,30000L)
+                    if (mSeekPosition > totalDuration) {
+                        mSeekPosition = totalDuration
                     }
-//                    if (mSeekPosition > totalDuration ) {
-//                        mSeekPosition = totalDuration
-//                    }
+                }
+                if (mIsChangeVolume) {
+                    deltaY = -deltaY
+                    val max = mAudioManager.getStreamMaxVolume(AudioManager.STREAM_MUSIC)
+                    val deltaVolume = max * deltaY * 3 / mScreenHeight
+                    mAudioManager.setStreamVolume(AudioManager.STREAM_MUSIC, mVolume + deltaVolume, 0)
+                }
+                if (mIsChangeRate) {
+                    if (deltaY > 0) {
+                        mRate = (mRate + mRate % 5.0f) * 5.0f
+                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
+                    } else {
+                        mRate = (mRate - mRate % 5.0f) * 5.0f
+                        if (mRate < 1f) {
+                            mRate = 1f
+                        }
+                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
+                    }
+                    toast("Current playback rate：${mRate} times")
+
                 }
             }
             MotionEvent.ACTION_UP -> {

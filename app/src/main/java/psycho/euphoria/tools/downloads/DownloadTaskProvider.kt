@@ -63,12 +63,12 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         writableDatabase.insertWithOnConflict(TABLE_NAME_TASKS, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE)
     }
 
-    fun listTasks(): MutableList<Downloader.DownloadInfo> {
-        val list = mutableListOf<Downloader.DownloadInfo>()
+    fun listTasks(): MutableList<DownloadInfo> {
+        val list = mutableListOf<DownloadInfo>()
         val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where finished = 0 and failed <= 5", null);
         try {
             while (cursor.moveToNext()) {
-                val downloadInfo = Downloader.DownloadInfo(
+                val downloadInfo = DownloadInfo(
                         cursor.getLong(0),
                         cursor.getString(1),
                         cursor.getString(2),
@@ -76,7 +76,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
                         cursor.getLong(4),
                         cursor.getLong(5),
                         cursor.getInt(6),
-                        false
+                        0
 
                 )
                 list.add(downloadInfo)
@@ -105,6 +105,18 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         if (uri != null)
             contentValues.put(COLUMN_URI, uri)
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$_id"), SQLiteDatabase.CONFLICT_IGNORE)
+    }
+
+    fun update(downloadInfo: DownloadInfo) {
+        var contentValues = ContentValues()
+        contentValues.put(COLUMN_CURRENT_BYTES, downloadInfo.currentBytes)
+        contentValues.put(COLUMN_FAILED, downloadInfo.failedCount)
+        contentValues.put(COLUMN_FILENAME, downloadInfo.fileName)
+        contentValues.put(COLUMN_FINISHED, downloadInfo.finish)
+        contentValues.put(COLUMN_TOTAL_BYTES, downloadInfo.totalBytes)
+        contentValues.put(COLUMN_URI, downloadInfo.uri)
+        writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$downloadInfo.id"), SQLiteDatabase.CONFLICT_IGNORE)
+
     }
 
     override fun onUpgrade(p0: SQLiteDatabase?, p1: Int, p2: Int) {

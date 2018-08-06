@@ -2,8 +2,12 @@ package psycho.euphoria.tools.commons
 
 import android.app.Activity
 import android.content.Intent
+import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.DocumentsContract
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
 import psycho.euphoria.tools.R
 
@@ -12,6 +16,8 @@ open class CustomActivity : AppCompatActivity() {
     private fun isExternalStorageDocument(uri: Uri) = "com.android.externalstorage.documents" == uri.authority
     private fun isRootUri(uri: Uri) = DocumentsContract.getTreeDocumentId(uri).endsWith(":")
     private fun isInternalStorage(uri: Uri) = isExternalStorageDocument(uri) && DocumentsContract.getTreeDocumentId(uri).contains("primary")
+
+    protected lateinit var mPrefer: SharedPreferences
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
@@ -31,6 +37,7 @@ open class CustomActivity : AppCompatActivity() {
             }
         }
     }
+
     fun handleSAFDialog(path: String, callback: () -> Unit): Boolean {
         return if (!path.startsWith(OTG_PATH) && isShowingSAFDialog(path, baseConfig.treeUri, REQUEST_OPEN_DOCUMENT_TREE)) {
             funAfterSAFPermission = callback
@@ -46,13 +53,39 @@ open class CustomActivity : AppCompatActivity() {
         super.onDestroy()
         funAfterSAFPermission = null
     }
+
     private fun saveTreeUri(resultData: Intent) {
         val treeUri = resultData.data
         baseConfig.treeUri = treeUri.toString()
         val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         applicationContext.contentResolver.takePersistableUriPermission(treeUri, takeFlags)
     }
+
+    /*
+     if (requestCode == MIC_PERMISSION_REQUEST_CODE && permissions.length > 0) {
+                if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+                    Snackbar.make(coordinatorLayout,
+                            "Microphone permissions needed. Please allow in your application settings.",
+                            SNACKBAR_DURATION).show();
+                } else {
+                    retrieveAccessToken();
+                }
+            }
+     */
     companion object {
         var funAfterSAFPermission: (() -> Unit)? = null
+
+        fun checkPermission(activity: Activity, permission: String): Boolean {
+            return ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
+        }
+
+        fun requestPermisson(activity: Activity, permission: String, shouldManual: () -> Unit?, requestPermissionCode: Int) {
+            if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
+                // Require users to set up on the phone Manual
+                shouldManual?.invoke()
+            } else {
+                ActivityCompat.requestPermissions(activity, arrayOf(permission), requestPermissionCode)
+            }
+        }
     }
 }

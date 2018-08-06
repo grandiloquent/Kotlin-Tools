@@ -87,7 +87,7 @@ class DownloadActivity() : AppCompatActivity() {
                         Tracker.e("onSwiped", "direction => $direction")
                         viewHolder?.let {
                             val downloadInfo = mAdapter.getItem(it.adapterPosition)
-                            downloadInfo.finish = true
+                            downloadInfo.finish = 1
                             DownloadTaskProvider.getInstance().update(downloadInfo.id)
                             mAdapter.removeAt(it)
                         }

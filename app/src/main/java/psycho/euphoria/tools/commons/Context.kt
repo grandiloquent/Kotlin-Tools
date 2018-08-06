@@ -135,6 +135,10 @@ val Context.widthPixels: Int
     get() {
         return resources.displayMetrics.widthPixels
     }
+val Context.heightPixels: Int
+    get() {
+        return resources.displayMetrics.heightPixels
+    }
 /*
 Functions
  */

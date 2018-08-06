@@ -28,6 +28,7 @@ class DownloadService : Service() {
     override fun onCreate() {
         super.onCreate()
         mNotificationManager = notificationManager
+        createNotificationChannel()
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -79,7 +80,7 @@ class DownloadService : Service() {
         } else {
             builder.setProgress(100, 0, true)
         }
-
+        builder.setContentText("${(Downloader.getRemainingMillis(total, current, speed) / 1000).toInt().getFormattedDuration()} (${current.formatSize()}/${total.formatSize()})")
         mNotificationManager.notify(tag, 0, builder.build())
     }
 
@@ -87,7 +88,7 @@ class DownloadService : Service() {
 
         val downTasks = DownloadTaskProvider.getInstance().listTasks()
 
-        var tasks = launch(mDispatcher) {
+        launch(mDispatcher) {
             for (task in downTasks) {
                 Downloader { taskState ->
                     launch {
