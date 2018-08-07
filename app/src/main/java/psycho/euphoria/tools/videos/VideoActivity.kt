@@ -509,21 +509,21 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                 if (mIsChangingPosition) {
                     setProgress(mSeekPosition)
                 }
-                if (!mIsChangingPosition && !mIsChangeVolume && mDownX < mScreenWidth * 0.5f) {
-                    if (mDownY < mScreenHeight * 0.3f) {
-                        mRate = (mRate.toInt() / 5 + 1) * 5.0f
-                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
-                        toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
-                    } else if (mDownY > mScreenHeight * 0.6f) {
+                if (!mIsChangingPosition && !mIsChangeVolume ) {
+                    if ( mDownX < mScreenWidth * 0.3f) {
                         mRate = (mRate.toInt() / 5 - 1) * 5.0f
                         if (mRate < 1f) {
                             mRate = 1f
                         }
                         mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
                         toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
+                    } else if ( mDownX  > mScreenWidth * 0.7f) {
 
+                        mRate = (mRate.toInt() / 5 + 1) * 5.0f
+                        mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate);
+                        toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
                     }
-                    mPrefer.edit().putFloat(PREFER_SPEED_RATE, mRate).apply()
+                   // mPrefer.edit().putFloat(PREFER_SPEED_RATE, mRate).apply()
                 }
             }
         }
