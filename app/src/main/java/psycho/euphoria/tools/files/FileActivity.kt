@@ -17,7 +17,6 @@ import kotlinx.android.synthetic.main.toolbar.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
 import psycho.euphoria.tools.commons.*
-import psycho.euphoria.tools.config
 import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
@@ -150,10 +149,10 @@ class FileActivity : CustomActivity() {
                 }
             }
             R.id.action_sdcard -> {
-                var sdCardPath = config.sdCardPath
+                var sdCardPath = mPrefer.getString(PREFER_SD_CARD_PATH,"")
                 if (sdCardPath.isBlank()) {
                     sdCardPath = getSDCardPath()
-                    config.sdCardPath = sdCardPath
+                    mPrefer.edit().putString(PREFER_SD_CARD_PATH, sdCardPath).apply()
                 }
                 refreshRecyclerView(sdCardPath)
                 mRecentDirectory = sdCardPath
@@ -374,6 +373,8 @@ class FileActivity : CustomActivity() {
 
         private const val STATE_SORT_ORDER = "sort_order"
         private const val STATE_RECENT_DIRECTORY = "recent_directory"
+
+        const val PREFER_SD_CARD_PATH = "sd_card_path"
     }
 
 }

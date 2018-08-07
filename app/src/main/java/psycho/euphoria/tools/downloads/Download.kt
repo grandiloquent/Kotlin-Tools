@@ -8,18 +8,16 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Build
 import android.os.IBinder
-import android.provider.Contacts
 import android.support.v4.app.NotificationCompat
 import android.util.ArrayMap
 import android.util.Log
 import kotlinx.coroutines.experimental.*
 import kotlinx.coroutines.experimental.channels.Channel
-import kotlinx.coroutines.experimental.channels.actor
 import psycho.euphoria.tools.commons.notificationManager
 
 class DownloadService : Service() {
     private val mChannel = Channel<TaskState>()
-    private val mDispatcher = newFixedThreadPoolContext(2, "DownloadService")
+    private val mDispatcher = newFixedThreadPoolContext(3, "DownloadService")
     private lateinit var mNotificationManager: NotificationManager
     private val mActivityNotifies = ArrayMap<String, Long>()
 

@@ -55,8 +55,8 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                     downloadInfo.writeDatabase()
                 }
                 HTTP_PARTIAL -> {
-                    if (downloadInfo.totalBytes <= 0L)// The cached information may be lost and re-parsed
-                        parseHeaders(httpURLConnection, downloadInfo)
+//                    if (downloadInfo.totalBytes <= 0L)// The cached information may be lost and re-parsed
+                    parseHeaders(httpURLConnection, downloadInfo)
                     transferData(httpURLConnection, downloadInfo)
                     // Download task has been completed, update the database
                     downloadInfo.finish = 1
@@ -73,6 +73,11 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
                         downloadInfo.uri = url.toString()
                     }
                     return@branch
+                }
+                HTTP_REQUESTED_RANGE_NOT_SATISFIABLE->{
+                    downloadInfo.finish = 1
+                    Log.e(TAG, "${downloadInfo.id} range not satisfiable")
+                    downloadInfo.writeDatabase()
                 }
                 else -> throw Exception("Response code $responseCode")
             }
@@ -158,7 +163,7 @@ class Downloader(private val notifySpeed: (TaskState) -> Unit) {
         if (bytesDelta > MIN_PROGRESS_STEP && timeDelta > MIN_PROGRESS_TIME) {
             mLastUpdateBytes = currentBytes
             mLastUpdateTime = now
-            Log.e(TAG, "updateProgress ${downloadInfo.id}")
+            //Log.e(TAG, "updateProgress ${downloadInfo.id}")
             downloadInfo.writeDatabase()
 
         }

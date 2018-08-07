@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Bundle
+import android.preference.PreferenceManager
 import android.provider.DocumentsContract
 import android.support.v4.app.ActivityCompat
 import android.support.v4.content.ContextCompat
@@ -19,11 +21,16 @@ open class CustomActivity : AppCompatActivity() {
 
     protected lateinit var mPrefer: SharedPreferences
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        mPrefer = PreferenceManager.getDefaultSharedPreferences(this)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         if (requestCode == REQUEST_OPEN_DOCUMENT_TREE && resultCode == Activity.RESULT_OK && resultData != null) {
             if (isProperSDFolder(resultData.data)) {
-                if (resultData.dataString == baseConfig.OTGTreeUri) {
+                if (resultData.dataString == mPrefer.getString(PREFER_OTG_TREE_URI, "")) {
                     toast(R.string.sd_card_otg_same)
                     return
                 }
@@ -39,7 +46,8 @@ open class CustomActivity : AppCompatActivity() {
     }
 
     fun handleSAFDialog(path: String, callback: () -> Unit): Boolean {
-        return if (!path.startsWith(OTG_PATH) && isShowingSAFDialog(path, baseConfig.treeUri, REQUEST_OPEN_DOCUMENT_TREE)) {
+
+        return if (!path.startsWith(OTG_PATH) && isShowingSAFDialog(path, mPrefer.getString(PREFER_TREE_URI, ""), REQUEST_OPEN_DOCUMENT_TREE)) {
             funAfterSAFPermission = callback
             true
         } else {
@@ -56,7 +64,7 @@ open class CustomActivity : AppCompatActivity() {
 
     private fun saveTreeUri(resultData: Intent) {
         val treeUri = resultData.data
-        baseConfig.treeUri = treeUri.toString()
+        mPrefer.edit().putString(PREFER_TREE_URI, treeUri.toString()).apply()
         val takeFlags = Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION
         applicationContext.contentResolver.takePersistableUriPermission(treeUri, takeFlags)
     }
@@ -73,6 +81,8 @@ open class CustomActivity : AppCompatActivity() {
             }
      */
     companion object {
+        const val PREFER_TREE_URI = "tree_uri"
+        const val PREFER_OTG_TREE_URI = "otg_tree_uri"
         var funAfterSAFPermission: (() -> Unit)? = null
 
         fun checkPermission(activity: Activity, permission: String): Boolean {

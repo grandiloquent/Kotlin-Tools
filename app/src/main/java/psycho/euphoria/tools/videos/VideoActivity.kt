@@ -4,17 +4,13 @@ import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Point
 import android.graphics.SurfaceTexture
-import android.media.AudioAttributes
-import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.os.Handler
-import android.provider.MediaStore
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.*
 import android.widget.SeekBar
 import android.widget.Toast
@@ -30,7 +26,6 @@ import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File
 import kotlin.math.abs
-import kotlin.math.max
 import kotlin.math.min
 
 class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, SeekBar.OnSeekBarChangeListener, View.OnTouchListener {
@@ -298,6 +293,11 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
             audioStreamType = AudioManager.STREAM_MUSIC
             prepare(audioSource)
         }
+
+        val speedRate = mPrefer.getFloat(PREFER_SPEED_RATE, 0f)
+        if (speedRate != 0f) {
+            mExoPlayer?.playbackParameters = PlaybackParameters(mRate, mRate)
+        }
         mVideoSize = filePath.getVideoResolution()
         setVideoSize()
         //setupVideoDuration(filePath)
@@ -349,12 +349,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         menu.run {
             menuInflater.inflate(R.menu.menu_video, this)
-            add(0, MENU_SPEED_0_2_5X, 0, "0.25x")
-            add(0, MENU_SPEED_0_5X, 0, "0.5x")
-            add(0, MENU_SPEED_1X, 0, "1x")
-            add(0, MENU_SPEED_2X, 0, "2x")
-            add(0, MENU_SPEED_5X, 0, "5x")
-            add(0, MENU_SPEED_10X, 0, "10x")
+
         }
         return super.onCreateOptionsMenu(menu)
     }
@@ -369,24 +364,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
         when (item.itemId) {
             R.id.action_delete -> deleteVideo()
             R.id.action_rename -> renameVideo()
-            MENU_SPEED_0_2_5X -> {
-                setPlaySpeedRate(.25f)
-            }
-            MENU_SPEED_2X -> {
-                setPlaySpeedRate(2f)
-            }
-            MENU_SPEED_0_5X -> {
-                setPlaySpeedRate(.5f)
-            }
-            MENU_SPEED_1X -> {
-                setPlaySpeedRate(1f)
-            }
-            MENU_SPEED_5X -> {
-                setPlaySpeedRate(5f)
-            }
-            MENU_SPEED_10X -> {
-                setPlaySpeedRate(10f)
-            }
+
         }
         return super.onOptionsItemSelected(item)
     }
@@ -545,6 +523,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
                         toast("当前播放倍速：$mRate", Toast.LENGTH_SHORT)
 
                     }
+                    mPrefer.edit().putFloat(PREFER_SPEED_RATE, mRate).apply()
                 }
             }
         }
@@ -746,7 +725,7 @@ class VideoActivity : CustomActivity(), TextureView.SurfaceTextureListener, Seek
         private const val MENU_SPEED_2X = 3
         private const val MENU_SPEED_5X = 5
         private const val MENU_SPEED_10X = 7
-
-
+        private const val PREFER_SPEED_RATE = "speed_rate"
     }
 }
+

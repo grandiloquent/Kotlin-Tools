@@ -8,6 +8,7 @@ import android.os.Build
 import android.provider.DocumentsContract
 import android.support.annotation.RequiresApi
 import android.text.Editable
+import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import android.widget.EditText
@@ -16,6 +17,9 @@ import java.io.FileFilter
 import java.util.*
 import java.util.concurrent.*
 
+fun DisplayMetrics.dpToPx(dp: Int): Int {
+    return (dp * density + 0.5f).toInt()
+}
 
 fun append(array: LongArray, currentSize: Int, element: Long): LongArray {
     var array = array

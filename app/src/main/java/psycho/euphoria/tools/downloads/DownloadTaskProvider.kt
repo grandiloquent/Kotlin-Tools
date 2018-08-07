@@ -65,8 +65,8 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
 
     fun listTasks(): MutableList<DownloadInfo> {
         val list = mutableListOf<DownloadInfo>()
-        // finished = 0 and
-        val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where failed <= 5", null);
+        //
+        val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where finished = 0 and failed <= 5", null);
         try {
             while (cursor.moveToNext()) {
                 val downloadInfo = DownloadInfo(
