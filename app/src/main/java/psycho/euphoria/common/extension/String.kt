@@ -6,6 +6,7 @@ import java.util.HashMap
 
 fun String.deleteRecursively() = File(this).walkBottomUp().fold(true) { res, it -> (it.delete() || !it.exists()) && res }
 
+fun String.getParentFilePath() = substringBeforeLast('/')
 
 fun String.getMimeType(): String {
     val typesMap = HashMap<String, String>().apply {

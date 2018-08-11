@@ -1,8 +1,8 @@
 package psycho.euphoria.player
 
 import android.app.Activity
+import android.graphics.Matrix
 import android.net.Uri
-import android.opengl.Visibility
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
@@ -10,7 +10,6 @@ import android.os.Handler
 import android.util.Log
 import android.view.View
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.extractor.ExtractorsFactory
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.ExtractorMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -18,6 +17,7 @@ import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
+import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.video.VideoListener
 import kotlinx.android.synthetic.main.activity_player_video.*
 import psycho.euphoria.common.extension.*
@@ -27,21 +27,31 @@ import java.io.File
 import java.util.*
 import kotlin.math.max
 import kotlin.math.round
+import android.graphics.RectF
+import android.opengl.ETC1.getHeight
+import android.opengl.ETC1.getWidth
+import android.view.TextureView
 
-class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer {
-    override fun preparePlayback() {
 
-    }
+class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener {
+
 
     private var mPlayer: SimpleExoPlayer? = null
     private val mHideAction = Runnable { }
     private val mHanlder = Handler()
     private val mStringBuilder = StringBuilder()
-    private val mFormatter = Formatter()
+    private val mFormatter = Formatter(mStringBuilder)
     private var mShowTimeoutMs = DEFAULT_SHOW_TIMEOUT_MS
     private var mWindow = Timeline.Window()
     private val mUpdateProgressAction = Runnable { updateProgress() }
     private val mControlDispatcher = DefaultControlDispatcher()
+
+
+    private var mIsAutoPlay = true
+    private var mStartPosition = 0L
+    private var mStartWindow = 0
+    private var mScrubbing = false
+    private var mTextureViewRotation = 0
 
 
     private fun bindActions() {
@@ -60,8 +70,9 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         exo_next.setOnClickListener { next() }
         exo_prev.setOnClickListener { previous() }
     }
+
     private fun generateMediaSource(uri: Uri): MediaSource? {
-        val files = uri.path.listVideoFiles()
+        val files = uri.path.getParentFilePath().listVideoFiles()
         files?.let {
             val mediaSources = arrayOfNulls<MediaSource>(it.size)
             val fileDataSourceFactory = FileDataSourceFactory()
@@ -78,6 +89,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         }
         return null
     }
+
     private fun hide() {
         if (controller.visibility == View.VISIBLE) {
             controller.visibility = View.GONE
@@ -85,18 +97,20 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             mHanlder.removeCallbacks(mHideAction)
         }
     }
+
     private fun hideController() {
         mHanlder.postDelayed(mHideAction, mShowTimeoutMs)
     }
+
     private fun initialize() {
-        setContentView(R.layout.activity_player_video)
         bindActions()
-        updateAll()
     }
+
     private fun initializePlayer() {
         if (mPlayer == null) {
             mPlayer = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector()).also {
                 it.addListener(this)
+                it.playWhenReady = true
                 it.videoComponent?.apply {
                     setVideoTextureView(texture_view)
                     addVideoListener(this@PlayerActivity)
@@ -106,7 +120,9 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                 it.prepare(mediaSource)
             }
         }
+        updateAll()
     }
+
     private fun isPlaying(): Boolean {
         mPlayer?.let {
             return it.playbackState == Player.STATE_ENDED
@@ -114,6 +130,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                     && it.playWhenReady
         } ?: run { return false }
     }
+
     private fun next() {
         mPlayer?.apply {
             if (currentTimeline.isEmpty) return
@@ -124,78 +141,130 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             }
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // Inject UI immediately
+        setContentView(R.layout.activity_player_video)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf("android.permission.ACCESS_NETWORK_STATE",
-                    "android.permission.INTERNET",
                     "android.permission.WAKE_LOCK",
                     "android.permission.WRITE_EXTERNAL_STORAGE"), 100)
         } else initialize()
     }
-    override fun onLoadingChanged(p0: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+    override fun onLayoutChange(view: View, p1: Int, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int, p7: Int, p8: Int) {
+        applyTextureViewRotation(view as TextureView, mTextureViewRotation)
     }
+
+    override fun onLoadingChanged(change: Boolean) {
+    }
+
     override fun onPause() {
         super.onPause()
         C.atMost(23, { releasePlayer() }, {})
     }
+
     override fun onPlaybackParametersChanged(p0: PlaybackParameters?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
-    override fun onPlayerError(p0: ExoPlaybackException?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
+    override fun onPlayerError(error: ExoPlaybackException) {
+        Log.e(TAG, "onPlayerError", error)
+        exo_error_message.text = error.message
     }
+
     override fun onPlayerStateChanged(p0: Boolean, p1: Int) {
         updatePlayPauseButton()
+        updateProgress()
     }
+
     override fun onPositionDiscontinuity(p0: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        mPlayer?.let {
+            if (it.playbackError == null) updateStartPosition()
+        }
+        updateProgress()
+        updateNavigation()
     }
+
     override fun onRenderedFirstFrame() {
     }
+
     override fun onRepeatModeChanged(p0: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        updateNavigation()
     }
+
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         Log.e(TAG, "onRequestPermissionsResult ${permissions.dump()} ${grantResults.dump()}")
         initialize()
     }
+
     override fun onResume() {
         super.onResume()
         C.atMost(23, { if (mPlayer == null) initializePlayer() }, {})
     }
+
     override fun onScrubMove(timeBar: TimeBar, position: Long) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
+
     override fun onScrubStart(timeBar: TimeBar, position: Long) {
+        mHanlder.removeCallbacks(mHideAction)
+        mScrubbing = true
     }
+
     override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        mScrubbing = false
+        seekToTimeBarPosition(position)
+        hideController()
     }
+
     override fun onSeekProcessed() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
+
     override fun onShuffleModeEnabledChanged(p0: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        updateNavigation()
     }
+
     override fun onStart() {
         super.onStart()
         C.more(23, { initializePlayer() }, {})
     }
+
     override fun onStop() {
         super.onStop()
         C.more(23, { releasePlayer() }, {})
     }
+
     override fun onTimelineChanged(p0: Timeline?, p1: Any?, p2: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        updateProgress()
+        updateNavigation()
     }
+
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
     }
-    override fun onVideoSizeChanged(p0: Int, p1: Int, p2: Int, p3: Float) {
+
+    override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
+        Log.e(TAG, "width => ${width} \nheight => ${height} \nunappliedRotationDegrees => ${unappliedRotationDegrees} \npixelWidthHeightRatio => ${pixelWidthHeightRatio} \n")
+        var ratio = if (height == 0 || width == 0) 1f else (width * pixelWidthHeightRatio) / height
+        if (unappliedRotationDegrees == 90 || unappliedRotationDegrees == 270) {
+            ratio = 1 / ratio
+        }
+        if (mTextureViewRotation != 0) {
+            texture_view.removeOnLayoutChangeListener(this)
+        }
+        mTextureViewRotation = unappliedRotationDegrees
+        if (mTextureViewRotation != 0) {
+            texture_view.addOnLayoutChangeListener(this)
+        }
+        applyTextureViewRotation(texture_view, mTextureViewRotation)
+         exo_content_frame.videoAspectRatio = ratio
+
+        //exo_content_frame.setAspectRatio(ratio)
     }
+
+    override fun preparePlayback() {
+    }
+
     private fun previous() {
         mPlayer?.apply {
             if (currentTimeline == null) return
@@ -207,8 +276,10 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             } else this@PlayerActivity.seekTo(0L)
         }
     }
+
     private fun releasePlayer() {
     }
+
     private fun requestPlayPauseFocus() {
         val playing = isPlaying()
         if (!playing) {
@@ -217,10 +288,38 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             exo_pause.requestFocus()
         }
     }
+
     private fun seekTo(windowIndex: Int, position: Long) {
     }
+
     private fun seekTo(position: Long) {
     }
+
+    private fun seekToTimeBarPosition(position: Long) {
+        mPlayer?.let {
+            var windowIndex = 0
+            var positionMs = position
+            val timeline = it.currentTimeline
+            if (!timeline.isEmpty) {
+                val windowcount = timeline.windowCount
+                while (true) {
+                    val windowDurationMs = timeline.getWindow(windowIndex, mWindow).durationMs
+                    if (positionMs < windowDurationMs) {
+                        break
+                    } else if (windowIndex == windowcount - 1) {
+                        positionMs = windowDurationMs
+                        break
+                    }
+                    positionMs -= windowDurationMs
+                    windowIndex++
+                }
+            } else {
+                windowIndex = it.currentWindowIndex
+            }
+            seekTo(windowIndex, positionMs)
+        }
+    }
+
     private fun setButtonEnabled(enabled: Boolean, view: View?) {
         view?.apply {
             isEnabled = enabled
@@ -228,10 +327,35 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             visibility = View.VISIBLE
         }
     }
+
     private fun updateAll() {
         updatePlayPauseButton()
         updateProgress()
+        updateNavigation()
     }
+
+    private fun updateNavigation() {
+        if (controller.visibility != View.VISIBLE) return
+        val timeline = mPlayer?.currentTimeline
+        val haveNonEmptyTimeline = timeline != null && !timeline.isEmpty
+        var isSeekable = false
+        var enablePrevious = false
+        var enableNext = false
+        if (haveNonEmptyTimeline) {
+            mPlayer?.let {
+                timeline?.getWindow(it.currentWindowIndex, mWindow)
+                isSeekable = mWindow.isSeekable
+                enablePrevious = isSeekable || !mWindow.isDynamic || it.previousWindowIndex != C.INDEX_UNSET
+                enableNext = mWindow.isDynamic || it.nextWindowIndex != C.INDEX_UNSET
+            }
+        }
+        setButtonEnabled(enablePrevious, exo_prev)
+        setButtonEnabled(enableNext, exo_next)
+        setButtonEnabled(isSeekable, exo_ffwd)
+        setButtonEnabled(isSeekable, exo_rew)
+        exo_progress.isEnabled = isSeekable
+    }
+
     private fun updatePlayPauseButton() {
         var requestFocus = false
         val playing = isPlaying()
@@ -241,6 +365,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         requestFocus = requestFocus or (!playing && exo_pause.isFocused)
         if (requestFocus) requestPlayPauseFocus()
     }
+
     private fun updateProgress() {
         if (controller.visibility != View.VISIBLE) return
         var position = 0L
@@ -248,14 +373,14 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         var playbackState = 0
         mPlayer?.let {
             val timeline = it.currentTimeline
-            timeline.getWindow(it.currentWindowIndex, mWindow)
+            if (!timeline.isEmpty)
+                timeline.getWindow(it.currentWindowIndex, mWindow)
             duration = mWindow.durationUs.usToMs()
             position = it.currentPosition
             playbackState = it.playbackState
         }
-        exo_position.text = position.getStringForTime(mStringBuilder, mFormatter)
-        exo_duration.text = duration.getStringForTime(mStringBuilder, mFormatter)
-        Log.e(TAG, "updateProgress $position $duration ${exo_position.text} ${exo_duration.text}")
+        exo_position.text = Util.getStringForTime(mStringBuilder, mFormatter, position)
+        exo_duration.text = Util.getStringForTime(mStringBuilder, mFormatter, duration) // duration.getStringForTime(mStringBuilder, mFormatter)
         exo_progress.duration = duration
         exo_progress.position = position
         mHanlder.removeCallbacks(mUpdateProgressAction)
@@ -284,9 +409,41 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         }
     }
 
+    private fun updateStartPosition() {
+        mPlayer?.apply {
+            mIsAutoPlay = playWhenReady
+            mStartPosition = max(0, contentPosition)
+            mStartWindow = currentWindowIndex
+        }
+    }
+
+
     companion object {
         private const val MAX_POSITION_FOR_SEEK_TO_PREVIOUS = 3000
         private const val DEFAULT_SHOW_TIMEOUT_MS = 5000L
         private const val TAG = "PlayerActivity"
+        private fun applyTextureViewRotation(textureView: TextureView, textureViewRotation: Int) {
+            val textureViewWidth = textureView.width.toFloat()
+            val textureViewHeight = textureView.height.toFloat()
+            if (textureViewWidth == 0f || textureViewHeight == 0f || textureViewRotation == 0) {
+                textureView.setTransform(null)
+            } else {
+                val transformMatrix = Matrix()
+                val pivotX = textureViewWidth / 2
+                val pivotY = textureViewHeight / 2
+                transformMatrix.postRotate(textureViewRotation.toFloat(), pivotX, pivotY)
+
+                // After rotation, scale the rotated texture to fit the TextureView size.
+                val originalTextureRect = RectF(0f, 0f, textureViewWidth, textureViewHeight)
+                val rotatedTextureRect = RectF()
+                transformMatrix.mapRect(rotatedTextureRect, originalTextureRect)
+                transformMatrix.postScale(
+                        textureViewWidth / rotatedTextureRect.width(),
+                        textureViewHeight / rotatedTextureRect.height(),
+                        pivotX,
+                        pivotY)
+                textureView.setTransform(transformMatrix)
+            }
+        }
     }
 }

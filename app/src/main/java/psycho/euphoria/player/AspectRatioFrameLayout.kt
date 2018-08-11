@@ -2,6 +2,7 @@ package psycho.euphoria.player
 
 import android.content.Context
 import android.util.AttributeSet
+import android.util.Log
 import android.widget.FrameLayout
 import kotlin.math.abs
 
@@ -50,7 +51,7 @@ class AspectRatioFrameLayout : FrameLayout {
                     mh = (mw / videoAspectRatio).toInt()
                 }
             }
-            RESIZE_MODE_FILL -> {
+            RESIZE_MODE_FIT -> {
                 if (aspectDeformation > 0f) {
                     mh = (mw / videoAspectRatio).toInt()
                 } else {
@@ -62,6 +63,7 @@ class AspectRatioFrameLayout : FrameLayout {
         }
 
         mDispatcher.scheduleUpdate(videoAspectRatio, vr, true)
+        Log.e(TAG, "mw => ${mw} \nmh => ${mh} \nvr => ${vr} \naspectDeformation => ${aspectDeformation} \nwidthMeasureSpec => ${widthMeasureSpec} \nheightMeasureSpec => ${heightMeasureSpec} \n")
         super.onMeasure(MeasureSpec.makeMeasureSpec(mw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(mh, MeasureSpec.EXACTLY))
     }
 

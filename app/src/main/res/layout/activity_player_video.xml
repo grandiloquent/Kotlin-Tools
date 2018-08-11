@@ -15,6 +15,13 @@
             android:layout_height="match_parent"
             android:background="#000" />
 
+        <TextView android:id="@+id/exo_error_message"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:gravity="center"
+            android:background="@color/exo_error_message_background_color"
+            android:padding="16dp"/>
 
     </psycho.euphoria.player.AspectRatioFrameLayout>
 
