@@ -63,7 +63,7 @@ class AspectRatioFrameLayout : FrameLayout {
         }
 
         mDispatcher.scheduleUpdate(videoAspectRatio, vr, true)
-        Log.e(TAG, "mw => ${mw} \nmh => ${mh} \nvr => ${vr} \naspectDeformation => ${aspectDeformation} \nwidthMeasureSpec => ${widthMeasureSpec} \nheightMeasureSpec => ${heightMeasureSpec} \n")
+        //Log.e(TAG, "mw => ${mw} \nmh => ${mh} \nvr => ${vr} \naspectDeformation => ${aspectDeformation} \nwidthMeasureSpec => ${widthMeasureSpec} \nheightMeasureSpec => ${heightMeasureSpec} \n")
         super.onMeasure(MeasureSpec.makeMeasureSpec(mw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(mh, MeasureSpec.EXACTLY))
     }
 

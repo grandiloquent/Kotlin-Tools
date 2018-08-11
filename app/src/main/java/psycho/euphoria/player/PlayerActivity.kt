@@ -69,6 +69,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         exo_pause.setOnClickListener { mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, false) }
         exo_next.setOnClickListener { next() }
         exo_prev.setOnClickListener { previous() }
+        exo_progress.addListener(this)
     }
 
     private fun generateMediaSource(uri: Uri): MediaSource? {
@@ -125,8 +126,8 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
 
     private fun isPlaying(): Boolean {
         mPlayer?.let {
-            return it.playbackState == Player.STATE_ENDED
-                    && it.playbackState == Player.STATE_IDLE
+            return it.playbackState != Player.STATE_ENDED
+                    && it.playbackState != Player.STATE_IDLE
                     && it.playWhenReady
         } ?: run { return false }
     }
@@ -257,7 +258,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             texture_view.addOnLayoutChangeListener(this)
         }
         applyTextureViewRotation(texture_view, mTextureViewRotation)
-         exo_content_frame.videoAspectRatio = ratio
+        exo_content_frame.videoAspectRatio = ratio
 
         //exo_content_frame.setAspectRatio(ratio)
     }
@@ -290,9 +291,14 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     private fun seekTo(windowIndex: Int, position: Long) {
+        val dispatched = mControlDispatcher.dispatchSeekTo(mPlayer, windowIndex, position)
+        if (!dispatched) updateProgress()
     }
 
     private fun seekTo(position: Long) {
+        mPlayer?.apply {
+            seekTo(currentWindowIndex, position)
+        }
     }
 
     private fun seekToTimeBarPosition(position: Long) {
@@ -359,6 +365,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     private fun updatePlayPauseButton() {
         var requestFocus = false
         val playing = isPlaying()
+        Log.e(TAG, "updatePlayPauseButton $playing")
         exo_play.visibility = if (playing) View.GONE else View.VISIBLE
         requestFocus = requestFocus or (playing && exo_play.isFocused)
         exo_pause.visibility = if (!playing) View.GONE else View.VISIBLE
