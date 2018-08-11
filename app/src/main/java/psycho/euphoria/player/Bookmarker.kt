@@ -2,7 +2,6 @@ package psycho.euphoria.player
 
 import android.content.Context
 import android.util.Log
-import psycho.euphoria.tools.CacheManager
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream

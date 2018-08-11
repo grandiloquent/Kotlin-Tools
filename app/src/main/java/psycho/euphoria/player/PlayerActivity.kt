@@ -158,9 +158,10 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                 val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(testMp4.toUri())
                 it.prepare(mediaSource)
-                if (mStartWindow > 0) {
-                    seekTo(mStartWindow, C.TIME_UNSET)
-                }
+
+            }
+            if (mStartWindow > 0) {
+                seekTo(mStartWindow, C.TIME_UNSET)
             }
         }
         updateAll()
@@ -213,7 +214,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     override fun onPlayerError(error: ExoPlaybackException) {
-        Log.e(TAG, "onPlayerError", error)
+
         exo_error_message.text = error.message
     }
 
@@ -239,7 +240,6 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>?, grantResults: IntArray?) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        Log.e(TAG, "onRequestPermissionsResult ${permissions.dump()} ${grantResults.dump()}")
         initialize()
     }
 
@@ -282,10 +282,10 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     override fun onTimelineChanged(p0: Timeline?, p1: Any?, p2: Int) {
         updateProgress()
         updateNavigation()
-        Log.e(TAG, "onTimelineChanged")
+
         getCurrentUri()?.let {
             val position = mBookmarker.getBookmark(it)
-            Log.e(TAG, "onTimelineChanged $position")
+            Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
             position?.let {
                 seekTo(it)
             }
@@ -324,7 +324,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                     dy = -dy
                     val max = Services.maxMusicVolume
                     val dv = max * dy * 3 / mScreenHeight
-                    Log.e(TAG, "onTouch ${mVolume + dv}")
+
                     Services.musicVolume = mVolume + dv
                 }
                 if (mIsChangingPosition) {
@@ -339,7 +339,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             }
             MotionEvent.ACTION_UP -> {
                 if (mIsChangingPosition) {
-                    Log.e(TAG, "onTouch $mIsChangingPosition")
+
                     seekTo(mSeekPosition)
                 } else {
                     show()
@@ -350,10 +350,17 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {
+        getCurrentUri()?.let {
+            val position = mBookmarker.getBookmark(it)
+            Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
+            position?.let {
+                seekTo(it)
+            }
+        }
     }
 
     override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
-        Log.e(TAG, "width => ${width} \nheight => ${height} \nunappliedRotationDegrees => ${unappliedRotationDegrees} \npixelWidthHeightRatio => ${pixelWidthHeightRatio} \n")
+
         var ratio = if (height == 0 || width == 0) 1f else (width * pixelWidthHeightRatio) / height
         if (unappliedRotationDegrees == 90 || unappliedRotationDegrees == 270) {
             ratio = 1 / ratio
@@ -390,8 +397,8 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         mPlayer?.let {
             getCurrentUri()?.let {
                 if (mStartPosition > 0L) {
+                    Log.e(TAG, "releasePlayer $it,$mStartPosition")
                     mBookmarker.setBookmark(it, mStartPosition)
-                    Log.e(TAG, "releasePlayer $mStartPosition")
                 }
             }
             it.release()
@@ -519,7 +526,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     private fun updatePlayPauseButton() {
         var requestFocus = false
         val playing = isPlaying()
-        Log.e(TAG, "updatePlayPauseButton $playing")
+
         exo_play.visibility = if (playing) View.GONE else View.VISIBLE
         requestFocus = requestFocus or (playing && exo_play.isFocused)
         exo_pause.visibility = if (!playing) View.GONE else View.VISIBLE
