@@ -1,7 +1,6 @@
 package psycho.euphoria.player
 
 import android.app.Activity
-import android.content.Context
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
@@ -29,42 +28,40 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.round
 import android.graphics.RectF
-import android.media.AudioManager
-import android.opengl.ETC1.getHeight
-import android.opengl.ETC1.getWidth
 import android.view.MotionEvent
 import android.view.TextureView
 import kotlin.math.abs
+import kotlin.math.min
 
 
 class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener, View.OnTouchListener {
 
-
-    private var mPlayer: SimpleExoPlayer? = null
-    private val mHideAction = Runnable { hide() }
-    private val mHanlder = Handler()
+    private val mBookmarker = Bookmarker(this)
+    private val mControlDispatcher = DefaultControlDispatcher()
     private val mStringBuilder = StringBuilder()
     private val mFormatter = Formatter(mStringBuilder)
-    private var mShowTimeoutMs = DEFAULT_SHOW_TIMEOUT_MS
-    private var mWindow = Timeline.Window()
+    private val mHanlder = Handler()
+    private val mHideAction = Runnable { hide() }
     private val mUpdateProgressAction = Runnable { updateProgress() }
-    private val mControlDispatcher = DefaultControlDispatcher()
-
+    private var mCurrentPosition = 0L
     private var mDownX = 0
     private var mDownY = 0
-    private lateinit var mAudioManager: AudioManager
-
+    private var mFiles: List<File>? = null
     private var mIsAutoPlay = true
+    private var mIsChangeVolume = false
+    private var mMediaSource: MediaSource? = null
+    private var mPlayer: SimpleExoPlayer? = null
+    private var mScreenHeight = 0
+    private var mScrubbing = false
+    private var mShowTimeoutMs = DEFAULT_SHOW_TIMEOUT_MS
+    private var mScreenWidth = 0
     private var mStartPosition = 0L
     private var mStartWindow = 0
-    private var mScrubbing = false
     private var mTextureViewRotation = 0
-    private var mIsChangeVolume = false
-    private var mIsChangePosition = false
-    private var mCurrentPosition = 0L
-    private var mSreenWidth = 0
     private var mVolume = 0
-
+    private var mWindow = Timeline.Window()
+    private var mIsChangingPosition = false
+    private var mSeekPosition = 0L
 
     private fun bindActions() {
         exo_play.setOnClickListener { it ->
@@ -92,16 +89,23 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             hideController()
         }
         exo_progress.addListener(this)
+        exo_ffwd.setOnClickListener { fastForward() }
+        exo_rew.setOnClickListener { rewind() }
         root_view.setOnTouchListener(this)
     }
 
     private fun generateMediaSource(uri: Uri): MediaSource? {
         val files = uri.path.getParentFilePath().listVideoFiles()
+        mFiles = files
         files?.let {
             val mediaSources = arrayOfNulls<MediaSource>(it.size)
             val fileDataSourceFactory = FileDataSourceFactory()
             for (i in 0 until it.size) {
-                mediaSources[i] = ExtractorMediaSource.Factory(fileDataSourceFactory).createMediaSource(it[i].toUri())
+                val u = it[i].toUri()
+                if (uri == u) {
+                    mStartWindow = i
+                }
+                mediaSources[i] = ExtractorMediaSource.Factory(fileDataSourceFactory).createMediaSource(u)
             }
             if (it.size > 1) {
                 val mediaSource = ConcatenatingMediaSource()
@@ -114,11 +118,20 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         return null
     }
 
+    private fun getCurrentUri(): String? {
+        mFiles?.let {
+            if (mStartWindow.inRange(it))
+                return it[mStartWindow].absolutePath
+        }
+        return null
+    }
+
     private fun hide() {
         if (controller.visibility == View.VISIBLE) {
             controller.visibility = View.GONE
             mHanlder.removeCallbacks(mUpdateProgressAction)
             mHanlder.removeCallbacks(mHideAction)
+            hideSystemUI(true)
         }
     }
 
@@ -128,11 +141,12 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
 
     private fun initialize() {
         bindActions()
-        mSreenWidth = resources.displayMetrics.widthPixels
-        mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        mScreenWidth = widthPixels
+        mScreenHeight = heightPixels
     }
 
     private fun initializePlayer() {
+        hideController()
         if (mPlayer == null) {
             mPlayer = ExoPlayerFactory.newSimpleInstance(this, DefaultTrackSelector()).also {
                 it.addListener(this)
@@ -144,6 +158,9 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                 val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(testMp4.toUri())
                 it.prepare(mediaSource)
+                if (mStartWindow > 0) {
+                    seekTo(mStartWindow, C.TIME_UNSET)
+                }
             }
         }
         updateAll()
@@ -169,6 +186,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        Services.context = this.applicationContext
         super.onCreate(savedInstanceState)
         // Inject UI immediately
         setContentView(R.layout.activity_player_video)
@@ -264,6 +282,14 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     override fun onTimelineChanged(p0: Timeline?, p1: Any?, p2: Int) {
         updateProgress()
         updateNavigation()
+        Log.e(TAG, "onTimelineChanged")
+        getCurrentUri()?.let {
+            val position = mBookmarker.getBookmark(it)
+            Log.e(TAG, "onTimelineChanged $position")
+            position?.let {
+                seekTo(it)
+            }
+        }
     }
 
     override fun onTouch(view: View?, event: MotionEvent): Boolean {
@@ -274,28 +300,47 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                 mDownX = x
                 mDownY = y
                 mIsChangeVolume = false
+                mIsChangingPosition = false
             }
             MotionEvent.ACTION_MOVE -> {
                 val dx = x - mDownX
-                val dy = y - mDownY
+                var dy = y - mDownY
                 var adx = abs(dx)
                 var ady = abs(dy)
-                if (!mIsChangeVolume) {
+                if (!mIsChangingPosition && !mIsChangeVolume) {
                     if (adx > THRESHOLD || ady > THRESHOLD) {
                         if (adx >= THRESHOLD) {
-                            mIsChangePosition = true
+                            mIsChangingPosition = true
                             mCurrentPosition = mPlayer?.contentPosition ?: 0L
                         } else {
-                            if (mDownX > mSreenWidth * 0.5f) {
+                            if (mDownX > mScreenWidth * 0.5f) {
                                 mIsChangeVolume = true
-                                mVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                                mVolume = Services.musicVolume
                             }
                         }
                     }
                 }
+                if (mIsChangeVolume) {
+                    dy = -dy
+                    val max = Services.maxMusicVolume
+                    val dv = max * dy * 3 / mScreenHeight
+                    Log.e(TAG, "onTouch ${mVolume + dv}")
+                    Services.musicVolume = mVolume + dv
+                }
+                if (mIsChangingPosition) {
+                    val totalDuration = mPlayer?.duration ?: 0L
+                    val delta = dx * totalDuration / mScreenHeight;
+                    // Limit the maximum value to 30 seconds
+                    mSeekPosition = mCurrentPosition + min(delta, 30000L)
+                    if (mSeekPosition > totalDuration) {
+                        mSeekPosition = totalDuration
+                    }
+                }
             }
             MotionEvent.ACTION_UP -> {
-                if (mIsChangeVolume) {
+                if (mIsChangingPosition) {
+                    Log.e(TAG, "onTouch $mIsChangingPosition")
+                    seekTo(mSeekPosition)
                 } else {
                     show()
                 }
@@ -341,6 +386,18 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     private fun releasePlayer() {
+        updateStartPosition()
+        mPlayer?.let {
+            getCurrentUri()?.let {
+                if (mStartPosition > 0L) {
+                    mBookmarker.setBookmark(it, mStartPosition)
+                    Log.e(TAG, "releasePlayer $mStartPosition")
+                }
+            }
+            it.release()
+            mPlayer = null
+            mMediaSource = null
+        }
     }
 
     private fun requestPlayPauseFocus() {
@@ -353,8 +410,10 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     }
 
     private fun seekTo(windowIndex: Int, position: Long) {
-        val dispatched = mControlDispatcher.dispatchSeekTo(mPlayer, windowIndex, position)
-        if (!dispatched) updateProgress()
+        mPlayer?.let {
+            val dispatched = mControlDispatcher.dispatchSeekTo(it, windowIndex, position)
+            if (!dispatched) updateProgress()
+        }
     }
 
     private fun seekTo(position: Long) {
@@ -401,6 +460,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             controller.visibility = View.VISIBLE
             updateAll()
             requestPlayPauseFocus()
+            showSystemUI(true)
         }
         hideController()
     }
@@ -433,6 +493,29 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         exo_progress.isEnabled = isSeekable
     }
 
+    private fun rewind() {
+        mPlayer?.apply {
+            val speed = playbackParameters.speed
+            var targetSpeed = 0f
+            if (speed <= 1.0)
+                targetSpeed = speed / 2f
+            else
+                targetSpeed = ((speed - 5) - speed % 5)
+            if (targetSpeed < 1f) targetSpeed = 1f
+            playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
+
+        }
+    }
+
+    private fun fastForward() {
+        mPlayer?.apply {
+            val speed = playbackParameters.speed
+            val targetSpeed = ((speed / 5 + 1) * 5).toFloat()
+            playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
+        }
+    }
+
+
     private fun updatePlayPauseButton() {
         var requestFocus = false
         val playing = isPlaying()
@@ -443,6 +526,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         requestFocus = requestFocus or (!playing && exo_pause.isFocused)
         if (requestFocus) requestPlayPauseFocus()
     }
+
 
     private fun updateProgress() {
         if (controller.visibility != View.VISIBLE) return
@@ -486,6 +570,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             }
         }
     }
+
 
     private fun updateStartPosition() {
         mPlayer?.apply {

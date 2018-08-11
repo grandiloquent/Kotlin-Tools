@@ -8,7 +8,14 @@ import java.util.*
 import java.util.regex.Pattern
 import android.content.Intent
 import android.content.ComponentName
+import android.media.AudioManager
 import android.os.Build
+import kotlin.properties.Delegates
+
+
+
+val Context.widthPixels get() = resources.displayMetrics.widthPixels
+val Context.heightPixels get() = resources.displayMetrics.heightPixels
 
 
 private val physicalPaths = arrayListOf(
@@ -69,7 +76,8 @@ fun Context.getStorageDirectories(): Array<String> {
     return paths.toTypedArray()
 }
 
-fun Context.startForegroundServiceCompat(intent: Intent): ComponentName{
+
+fun Context.startForegroundServiceCompat(intent: Intent): ComponentName {
     return if (Build.VERSION.SDK_INT >= 26) {
         startForegroundService(intent)
     } else {
