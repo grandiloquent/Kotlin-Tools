@@ -2,6 +2,29 @@ package psycho.euphoria.common.extension
 
 import java.util.*
 
+fun <T> Array<T>?.dump(): String? {
+    if (this != null && this.isEmpty()) {
+        val sb = StringBuilder()
+        for (i in 0 until this.size) {
+            sb.append(i.toString()).append(",")
+        }
+        return sb.toString()
+    } else
+        return null
+
+}
+
+fun IntArray?.dump(): String? {
+    if (this != null && this.isEmpty()) {
+        val sb = StringBuilder()
+        for (i in 0 until this.size) {
+            sb.append(i.toString()).append(",")
+        }
+        return sb.toString()
+    } else
+        return null
+
+}
 /**
  * Returns the index of the largest element in {@code array} that is less than (or optionally
  * equal to) a specified {@code value}.

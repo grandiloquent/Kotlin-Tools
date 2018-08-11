@@ -1,6 +1,7 @@
 package psycho.euphoria.tools.commons
 
 import android.content.Context
+import psycho.euphoria.common.extension.formatSize
 import java.io.File
 
 data class FileDirItem(val path: String, val name: String = "", var isDirectory: Boolean = false, var children: Int = 0, var size: Long = 0L) :

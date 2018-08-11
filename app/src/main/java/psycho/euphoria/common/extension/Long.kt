@@ -1,10 +1,12 @@
 package psycho.euphoria.common.extension
 
+import psycho.euphoria.common.extension.C.TIME_END_OF_SOURCE
 import psycho.euphoria.common.extension.C.TIME_UNSET
 import java.text.DecimalFormat
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
+
 
 fun Long.contrain(minValue: Long, maxValue: Long) = max(minValue, min(this, maxValue))
 
@@ -17,17 +19,20 @@ fun Long.formatSize(): String {
     return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
 }
 
-fun Long.getStringForTime(sb: StringBuilder, formatter: Formatter): String {
-    var timeMs = this
+fun Long.usToMs():Long {
+    return if (this == TIME_UNSET || this == TIME_END_OF_SOURCE) this else this / 1000
+}
 
-    if (this == TIME_UNSET) {
+fun Long.getStringForTime(builder: StringBuilder, formatter: Formatter): String {
+    var timeMs = this
+    if (timeMs == C.TIME_UNSET) {
         timeMs = 0
     }
     val totalSeconds = (timeMs + 500) / 1000
     val seconds = totalSeconds % 60
-    val minutes = (totalSeconds / 60) % 60
+    val minutes = totalSeconds / 60 % 60
     val hours = totalSeconds / 3600
-    sb.setLength(0)
+    builder.setLength(0)
     return if (hours > 0)
         formatter.format("%d:%02d:%02d", hours, minutes, seconds).toString()
     else

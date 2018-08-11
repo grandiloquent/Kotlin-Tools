@@ -5,6 +5,7 @@ import android.os.Build
 object C {
     const val TIME_UNSET = Long.MIN_VALUE + 1
     const val INDEX_UNSET = -1
+    const val TIME_END_OF_SOURCE = java.lang.Long.MIN_VALUE
 
     inline fun atLeast(sdk: Int, f1: () -> Unit, f2: () -> Unit) {
         if (Build.VERSION.SDK_INT >= sdk) f1()

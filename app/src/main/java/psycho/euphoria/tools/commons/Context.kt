@@ -29,6 +29,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.Toast
 import psycho.euphoria.common.extension.getIntValue
+import psycho.euphoria.common.extension.getMimeType
 import psycho.euphoria.common.extension.getStringValue
 import java.io.File
 import java.util.*

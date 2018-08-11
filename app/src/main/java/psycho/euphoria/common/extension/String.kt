@@ -612,6 +612,13 @@ fun String.getMimeType(): String {
     return typesMap[getFilenameExtension().toLowerCase()] ?: ""
 }
 
+fun String.listVideoFiles(): List<File>? {
+    val dir = File(this)
+    if (dir.exists()) {
+        return dir.listVideoFiles()
+    }
+    return null
+}
 /*
 
 inline fun <T, R> Iterable<T>.fold(initial: R, operation: (acc: R, T) -> R): R {
