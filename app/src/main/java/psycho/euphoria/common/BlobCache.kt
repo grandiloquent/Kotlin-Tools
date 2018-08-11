@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.commons
+package psycho.euphoria.common
 
 import android.util.Log
 import java.io.Closeable

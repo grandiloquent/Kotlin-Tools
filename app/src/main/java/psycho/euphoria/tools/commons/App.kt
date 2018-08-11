@@ -1,6 +1,7 @@
 package psycho.euphoria.tools.commons
 
 import android.app.Application
+import psycho.euphoria.common.extension.DelegatesExt
 import psycho.euphoria.tools.BuildConfig
 
 class App : Application() {

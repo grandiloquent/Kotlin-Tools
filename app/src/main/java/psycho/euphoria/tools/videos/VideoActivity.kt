@@ -22,6 +22,9 @@ import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
 import com.google.android.exoplayer2.video.VideoListener
 import kotlinx.android.synthetic.main.activity_video.*
+import psycho.euphoria.common.extension.beGone
+import psycho.euphoria.common.extension.beInvisible
+import psycho.euphoria.common.extension.beVisible
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File

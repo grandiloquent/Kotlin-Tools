@@ -3,7 +3,7 @@ package psycho.euphoria.tools
 import android.content.Context
 import android.preference.PreferenceManager
 import android.util.Log
-import psycho.euphoria.tools.commons.BlobCache
+import psycho.euphoria.common.BlobCache
 import java.io.IOException
 
 object CacheManager {

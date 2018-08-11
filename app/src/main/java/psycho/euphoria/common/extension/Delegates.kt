@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.commons
+package psycho.euphoria.common.extension
 
 import android.annotation.SuppressLint
 import android.content.Context

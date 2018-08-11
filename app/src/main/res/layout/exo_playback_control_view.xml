@@ -71,7 +71,7 @@
       android:includeFontPadding="false"
       android:textColor="#FFBEBEBE"/>
 
-    <psycho.euphoria.tools.videos.DefaultTimeBar
+    <psycho.euphoria.tools.ui.DefaultTimeBar
       android:id="@+id/exo_progress"
       android:layout_width="0dp"
       android:layout_weight="1"

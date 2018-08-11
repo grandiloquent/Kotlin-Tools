@@ -12,9 +12,7 @@ fun ClosedRange<Int>.random() = Random().nextInt((endInclusive + 1) - start) + s
 fun Point.formatAsResolution() = "$x x $y ${getMPx()}"
 
 
-fun Double.round(newScale: Int = 2): Double {
-    return toBigDecimal().setScale(newScale, RoundingMode.HALF_UP).toDouble()
-}
+
 fun Int.getFormattedDuration(): String {
     val sb = StringBuilder(8)
     val hours = this / 3600
@@ -31,13 +29,6 @@ fun Long.formatDate(): String {
     val cal = Calendar.getInstance(Locale.ENGLISH)
     cal.timeInMillis = this
     return DateFormat.format("dd.MM.yyyy kk:mm", cal).toString()
-}
-fun Long.formatSize(): String {
-    if (this <= 0)
-        return "0 B"
-    val units = arrayOf("B", "kB", "MB", "GB", "TB")
-    val digitGroups = (Math.log10(toDouble()) / Math.log10(1024.0)).toInt()
-    return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
 }
 
 fun Int.formatNumberWithLocale(): String {
