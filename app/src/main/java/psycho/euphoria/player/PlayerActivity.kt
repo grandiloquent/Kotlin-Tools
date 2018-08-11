@@ -1,6 +1,7 @@
 package psycho.euphoria.player
 
 import android.app.Activity
+import android.content.Context
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
@@ -28,16 +29,19 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.round
 import android.graphics.RectF
+import android.media.AudioManager
 import android.opengl.ETC1.getHeight
 import android.opengl.ETC1.getWidth
+import android.view.MotionEvent
 import android.view.TextureView
+import kotlin.math.abs
 
 
-class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener {
+class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener, View.OnTouchListener {
 
 
     private var mPlayer: SimpleExoPlayer? = null
-    private val mHideAction = Runnable { }
+    private val mHideAction = Runnable { hide() }
     private val mHanlder = Handler()
     private val mStringBuilder = StringBuilder()
     private val mFormatter = Formatter(mStringBuilder)
@@ -46,12 +50,20 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     private val mUpdateProgressAction = Runnable { updateProgress() }
     private val mControlDispatcher = DefaultControlDispatcher()
 
+    private var mDownX = 0
+    private var mDownY = 0
+    private lateinit var mAudioManager: AudioManager
 
     private var mIsAutoPlay = true
     private var mStartPosition = 0L
     private var mStartWindow = 0
     private var mScrubbing = false
     private var mTextureViewRotation = 0
+    private var mIsChangeVolume = false
+    private var mIsChangePosition = false
+    private var mCurrentPosition = 0L
+    private var mSreenWidth = 0
+    private var mVolume = 0
 
 
     private fun bindActions() {
@@ -65,11 +77,22 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                     mControlDispatcher.dispatchSetPlayWhenReady(it, true)
                 }
             }
+            hideController()
         }
-        exo_pause.setOnClickListener { mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, false) }
-        exo_next.setOnClickListener { next() }
-        exo_prev.setOnClickListener { previous() }
+        exo_pause.setOnClickListener {
+            mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, false)
+            hideController()
+        }
+        exo_next.setOnClickListener {
+            next()
+            hideController()
+        }
+        exo_prev.setOnClickListener {
+            previous()
+            hideController()
+        }
         exo_progress.addListener(this)
+        root_view.setOnTouchListener(this)
     }
 
     private fun generateMediaSource(uri: Uri): MediaSource? {
@@ -105,6 +128,8 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
 
     private fun initialize() {
         bindActions()
+        mSreenWidth = resources.displayMetrics.widthPixels
+        mAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
 
     private fun initializePlayer() {
@@ -241,6 +266,44 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         updateNavigation()
     }
 
+    override fun onTouch(view: View?, event: MotionEvent): Boolean {
+        val x = event.x.toInt()
+        val y = event.y.toInt()
+        when (event.action) {
+            MotionEvent.ACTION_DOWN -> {
+                mDownX = x
+                mDownY = y
+                mIsChangeVolume = false
+            }
+            MotionEvent.ACTION_MOVE -> {
+                val dx = x - mDownX
+                val dy = y - mDownY
+                var adx = abs(dx)
+                var ady = abs(dy)
+                if (!mIsChangeVolume) {
+                    if (adx > THRESHOLD || ady > THRESHOLD) {
+                        if (adx >= THRESHOLD) {
+                            mIsChangePosition = true
+                            mCurrentPosition = mPlayer?.contentPosition ?: 0L
+                        } else {
+                            if (mDownX > mSreenWidth * 0.5f) {
+                                mIsChangeVolume = true
+                                mVolume = mAudioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
+                            }
+                        }
+                    }
+                }
+            }
+            MotionEvent.ACTION_UP -> {
+                if (mIsChangeVolume) {
+                } else {
+                    show()
+                }
+            }
+        }
+        return true
+    }
+
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {
     }
 
@@ -259,7 +322,6 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         }
         applyTextureViewRotation(texture_view, mTextureViewRotation)
         exo_content_frame.videoAspectRatio = ratio
-
         //exo_content_frame.setAspectRatio(ratio)
     }
 
@@ -332,6 +394,15 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             alpha = if (enabled) 1f else 0.3f
             visibility = View.VISIBLE
         }
+    }
+
+    private fun show() {
+        if (controller.visibility != View.VISIBLE) {
+            controller.visibility = View.VISIBLE
+            updateAll()
+            requestPlayPauseFocus()
+        }
+        hideController()
     }
 
     private fun updateAll() {
@@ -424,10 +495,10 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         }
     }
 
-
     companion object {
         private const val MAX_POSITION_FOR_SEEK_TO_PREVIOUS = 3000
         private const val DEFAULT_SHOW_TIMEOUT_MS = 5000L
+        private const val THRESHOLD = 80
         private const val TAG = "PlayerActivity"
         private fun applyTextureViewRotation(textureView: TextureView, textureViewRotation: Int) {
             val textureViewWidth = textureView.width.toFloat()
