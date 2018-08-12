@@ -27,3 +27,8 @@ fun Int.getFormattedDuration(sb: StringBuilder = StringBuilder(8)): String {
     sb.append(":").append(String.format(Locale.getDefault(), "%02d", seconds))
     return sb.toString()
 }
+
+fun Int.clamp(min: Int, max: Int): Int {
+    if (this > max) return max
+    return if (this < min) min else this
+}

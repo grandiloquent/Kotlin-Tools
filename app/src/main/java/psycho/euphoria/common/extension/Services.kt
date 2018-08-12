@@ -10,7 +10,7 @@ import android.view.WindowManager
 import kotlin.properties.Delegates
 
 object Services {
-    
+
     var context: Context by Delegates.notNull<Context>()
 
     val windowManager by lazy {
@@ -20,7 +20,7 @@ object Services {
             context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     }
 
-    val Context.navigationBarHeight by lazy {
+    val navigationBarHeight by lazy {
         if (navigationBarBottom) navigationBarSize.y else 0
     }
     val navigationBarBottom by lazy {

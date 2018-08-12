@@ -19,8 +19,13 @@ fun Long.formatSize(): String {
     return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
 }
 
-fun Long.usToMs():Long {
+fun Long.usToMs(): Long {
     return if (this == TIME_UNSET || this == TIME_END_OF_SOURCE) this else this / 1000
+}
+
+fun Long.clamp(min: Long, max: Long): Long {
+    if (this > max) return max
+    return if (this < min) min else this
 }
 
 fun Long.getStringForTime(builder: StringBuilder, formatter: Formatter): String {
