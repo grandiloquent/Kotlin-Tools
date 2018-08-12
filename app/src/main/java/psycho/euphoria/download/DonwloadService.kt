@@ -1,4 +1,4 @@
-package psycho.euphoria.common.download
+package psycho.euphoria.download
 
 import android.app.Service
 import android.content.Intent

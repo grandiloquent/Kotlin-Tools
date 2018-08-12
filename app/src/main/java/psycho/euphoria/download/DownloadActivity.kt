@@ -1,4 +1,4 @@
-package psycho.euphoria.common.download
+package psycho.euphoria.download
 
 import android.content.ClipboardManager
 import android.content.Intent

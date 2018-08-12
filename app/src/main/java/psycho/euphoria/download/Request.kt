@@ -1,4 +1,4 @@
-package psycho.euphoria.common.download
+package psycho.euphoria.download
 
 class Request(
         val id: Long,

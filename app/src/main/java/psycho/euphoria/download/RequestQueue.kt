@@ -1,4 +1,4 @@
-package psycho.euphoria.common.download
+package psycho.euphoria.download
 
 import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger

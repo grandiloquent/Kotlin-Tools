@@ -1,4 +1,4 @@
-package psycho.euphoria.common.download
+package psycho.euphoria.download
 
 import android.os.Process
 import java.util.concurrent.BlockingQueue

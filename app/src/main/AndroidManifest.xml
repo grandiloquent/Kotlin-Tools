@@ -77,7 +77,7 @@
         <service android:name=".music.MediaPlaybackService" />
 
         <service
-            android:name="psycho.euphoria.common.download.DownloadService"
+            android:name="psycho.euphoria.download.DownloadService"
             android:label="@string/activity_download_title" />
 
 
