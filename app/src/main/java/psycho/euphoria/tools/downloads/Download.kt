@@ -35,7 +35,7 @@ class DownloadService : Service() {
         Log.e("onStartCommand", "intent => ${intent} \nflags => ${flags} \nstartId => ${startId} \n")
         // startDownload()
         runBlocking {
-           launch {  download() }
+            launch { download() }
         }
         return super.onStartCommand(intent, flags, startId)
     }
@@ -135,12 +135,15 @@ class DownloadService : Service() {
                         makeNotify(taskState.id, taskState.speed, taskState.current, taskState.total)
                     }
                 }.execute(i)
-                mNotificationManager.cancel("${i.id}",0)
+                mNotificationManager.cancel("${i.id}", 0)
 
             }
             tasks.add(task)
         }
-        for (t in tasks) t.await()
+
+        for (t in tasks) {
+            t.await()
+        }
     }
 
     companion object {

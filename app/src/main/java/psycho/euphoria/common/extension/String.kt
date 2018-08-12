@@ -4,6 +4,7 @@ import psycho.euphoria.tools.commons.getFilenameExtension
 import java.io.File
 import java.util.HashMap
 
+
 fun String.deleteRecursively() = File(this).walkBottomUp().fold(true) { res, it -> (it.delete() || !it.exists()) && res }
 
 fun String.getParentFilePath() = substringBeforeLast('/')
@@ -619,6 +620,12 @@ fun String.listVideoFiles(): List<File>? {
         return dir.listVideoFiles()
     }
     return null
+}
+
+fun String.generateFileNameFromUri(parent: File): File {
+    var fileName = this.substringBeforeLast('?')
+    fileName = fileName.substringAfterLast('/')
+    return parent.buildUniqueFile(fileName)
 }
 /*
 
