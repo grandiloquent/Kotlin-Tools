@@ -14,14 +14,15 @@ import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import com.davidecirillo.multichoicerecyclerview.MultiChoiceToolbar
 import kotlinx.android.synthetic.main.activity_file.*
 import kotlinx.android.synthetic.main.toolbar.*
+import psycho.euphoria.common.extension.toUri
+import psycho.euphoria.download.DownloadActivity
+import psycho.euphoria.player.PlayerActivity
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
 import psycho.euphoria.tools.commons.*
-import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
 import psycho.euphoria.player.SplitVideo
-import psycho.euphoria.tools.videos.VideoActivity
 import java.io.File
 
 
@@ -91,8 +92,8 @@ class FileActivity : CustomActivity() {
     private fun onClickFile(path: String) {
         when {
             path.isVideoFast() -> {
-                val intent = Intent(this, VideoActivity::class.java)
-                intent.putExtra(KEY_PATH, path)
+                val intent = Intent(this, PlayerActivity::class.java)
+                intent.data = File(path).toUri()
                 startActivityForResult(intent, REQUEST_VIDEO_CODE)
             }
             path.isImageFast() -> {
@@ -149,7 +150,7 @@ class FileActivity : CustomActivity() {
                 }
             }
             R.id.action_sdcard -> {
-                var sdCardPath = mPrefer.getString(PREFER_SD_CARD_PATH,"")
+                var sdCardPath = mPrefer.getString(PREFER_SD_CARD_PATH, "")
                 if (sdCardPath.isBlank()) {
                     sdCardPath = getSDCardPath()
                     mPrefer.edit().putString(PREFER_SD_CARD_PATH, sdCardPath).apply()

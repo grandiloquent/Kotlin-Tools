@@ -6,7 +6,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.widget.Button
-import psycho.euphoria.tools.downloads.DownloadActivity
+import psycho.euphoria.download.DownloadActivity
 import psycho.euphoria.tools.files.FileActivity
 
 class MainActivity : Activity() {

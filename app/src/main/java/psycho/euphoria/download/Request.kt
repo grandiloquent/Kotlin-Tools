@@ -1,5 +1,8 @@
 package psycho.euphoria.download
 
+import android.util.Log
+
+
 class Request(
         val id: Long,
         var uri: String,
@@ -8,7 +11,7 @@ class Request(
         var currentBytes: Long,
         var totalBytes: Long,
         var failedCount: Int,
-        var finish: Int) {
+        var finish: Int) : Comparable<Request> {
 
     private var mCanceled = false
 
@@ -18,6 +21,19 @@ class Request(
     var tag: Any? = null
     var requestCompleteListener: RequestCompleteListener? = null
 
+
+    override fun compareTo(other: Request): Int {
+        val left = this.getPriority()
+        val right = other.getPriority()
+
+        // High-priority requests are "lesser" so they are sorted to the front.
+        // Equal priorities are sorted by sequence number to provide FIFO ordering.
+        return if (left === right) this.sequence - other.sequence else right.ordinal - left.ordinal
+    }
+
+    fun getPriority(): Priority {
+        return Priority.NORMAL
+    }
 
     fun cancel() {
         synchronized(mLock) {
@@ -47,6 +63,7 @@ class Request(
         synchronized(mLock) {
             listener = requestCompleteListener
         }
+        // Log.e(TAG, "notifySpeed $speed")
         listener?.onNotifySpeed(TaskState(id, speed, currentBytes, totalBytes))
     }
 
@@ -55,7 +72,7 @@ class Request(
         synchronized(mLock) {
             listener = requestCompleteListener
         }
-        listener?.onNotifyCompleted()
+        listener?.onNotifyCompleted(id)
     }
 
 
@@ -63,11 +80,21 @@ class Request(
         DownloadTaskProvider.getInstance().update(this)
     }
 
+    companion object {
+        private const val TAG = "Request"
+    }
+
     interface RequestCompleteListener {
 
         fun onNoUsableReceived(request: Request)
         fun onNotifySpeed(taskState: TaskState)
-        fun onNotifyCompleted()
+        fun onNotifyCompleted(id: Long)
     }
 
+    enum class Priority {
+        LOW,
+        NORMAL,
+        HIGH,
+        IMMEDIATE
+    }
 }

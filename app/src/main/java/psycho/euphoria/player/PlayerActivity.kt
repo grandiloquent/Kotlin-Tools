@@ -30,6 +30,7 @@ import kotlin.math.round
 import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.TextureView
+import android.view.ViewGroup
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -62,6 +63,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
     private var mWindow = Timeline.Window()
     private var mIsChangingPosition = false
     private var mSeekPosition = 0L
+    private lateinit var mTextureView: TextureView
 
     private fun bindActions() {
         exo_play.setOnClickListener { it ->
@@ -152,11 +154,11 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                 it.addListener(this)
                 it.playWhenReady = true
                 it.videoComponent?.apply {
-                    setVideoTextureView(texture_view)
+                    setVideoTextureView(mTextureView)
                     addVideoListener(this@PlayerActivity)
                 }
-                val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
-                val mediaSource = generateMediaSource(testMp4.toUri())
+               // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
+                val mediaSource = generateMediaSource(intent.data)
                 it.prepare(mediaSource)
 
             }
@@ -191,6 +193,9 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         super.onCreate(savedInstanceState)
         // Inject UI immediately
         setContentView(R.layout.activity_player_video)
+        mTextureView= TextureView(this)
+        mTextureView.layoutParams= ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)
+        exo_content_frame.addView(mTextureView,0)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf("android.permission.ACCESS_NETWORK_STATE",
                     "android.permission.WAKE_LOCK",
@@ -366,13 +371,13 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             ratio = 1 / ratio
         }
         if (mTextureViewRotation != 0) {
-            texture_view.removeOnLayoutChangeListener(this)
+            mTextureView.removeOnLayoutChangeListener(this)
         }
         mTextureViewRotation = unappliedRotationDegrees
         if (mTextureViewRotation != 0) {
-            texture_view.addOnLayoutChangeListener(this)
+            mTextureView.addOnLayoutChangeListener(this)
         }
-        applyTextureViewRotation(texture_view, mTextureViewRotation)
+        applyTextureViewRotation(mTextureView, mTextureViewRotation)
         exo_content_frame.videoAspectRatio = ratio
         //exo_content_frame.setAspectRatio(ratio)
     }

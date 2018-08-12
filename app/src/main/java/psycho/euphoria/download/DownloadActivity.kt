@@ -10,7 +10,6 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.Menu
 import android.view.MenuItem
-import com.google.android.exoplayer2.offline.DownloadService
 import kotlinx.android.synthetic.main.activity_download.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
@@ -100,9 +99,8 @@ class DownloadActivity: AppCompatActivity() {
     }
 
     private fun insertDownloadTask(url: String) {
-        if (!url.isNullOrBlank() && url.isValidURL()) {
-            DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, Environment.getExternalStorageDirectory())
-                    ?: "")
+        if (!url.isBlank() && url.isValidURL()) {
+            DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, Environment.getExternalStorageDirectory()))
             refreshRecyclerView()
         }
     }

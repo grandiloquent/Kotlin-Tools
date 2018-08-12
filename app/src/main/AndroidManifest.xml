@@ -5,7 +5,7 @@
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <!--<uses-permission android:name="android.permission.INTERNET" />-->
+    <uses-permission android:name="android.permission.INTERNET" />
 
 
     <application
@@ -72,7 +72,7 @@
             android:name=".pictures.PictureActivity"
 
             android:theme="@style/Theme.AppCompat.Light" />
-        <activity android:name=".downloads.DownloadActivity" />
+        <activity android:name="psycho.euphoria.download.DownloadActivity" />
 
         <service android:name=".music.MediaPlaybackService" />
 
@@ -81,18 +81,11 @@
             android:label="@string/activity_download_title" />
 
 
-        <activity
-            android:name=".videos.VideoActivity"
-            android:configChanges="orientation|keyboardHidden|screenSize"
-            android:theme="@style/Theme.AppCompat.Light">
-
-        </activity>
-
         <activity android:name=".TranslatorActivity" />
 
         <provider
             android:name="android.support.v4.content.FileProvider"
-            android:authorities="${applicationId}.provider"
+            android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

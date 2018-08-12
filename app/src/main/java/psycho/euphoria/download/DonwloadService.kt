@@ -6,13 +6,15 @@ import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.support.v4.app.NotificationCompat
+import android.util.Log
 import psycho.euphoria.common.extension.Services
 import psycho.euphoria.common.extension.createNotificationChannel
 import psycho.euphoria.common.extension.formatSize
 import psycho.euphoria.common.extension.getFormattedDuration
 import psycho.euphoria.tools.R
+import psycho.euphoria.tools.commons.notificationManager
 
-class DonwloadService : Service() {
+class DownloadService : Service() {
 
     private val mActiveNotifies = HashMap<String, Long>()
     private val mStringBuilder = StringBuilder(8)
@@ -28,14 +30,15 @@ class DonwloadService : Service() {
         super.onCreate()
         mUpdateThread = HandlerThread("${TAG}-Thread")
         mUpdateThread?.start()
-        mUpdateHandler = Handler(mUpdateHandler?.looper, Handler.Callback {
+        mUpdateHandler = Handler(mUpdateThread?.looper, Handler.Callback {
             when (it.what) {
                 MSG_UPDATE_NOTIFICATION -> {
                     val taskState = it.obj as TaskState
+                    Log.e(TAG, "onCreate $taskState")
                     makeNotification(taskState.id, taskState.speed, taskState.current, taskState.total)
                 }
                 MSG_COMPLETE_NOTIFICATION -> {
-                    Services.notificationManager.cancel(it.arg1)
+                    Services.notificationManager.cancel("${it.arg1}",0)
                 }
             }
             /**
@@ -51,8 +54,30 @@ class DonwloadService : Service() {
     }
 
     private fun startDownload() {
-        val tasks = ArrayList<Request>()
-        tasks.forEach { mRequestQueue?.add(it) }
+        val tasks = DownloadTaskProvider.getInstance().listTasks()
+        Log.e(TAG, "startDownload ${tasks.size}")
+        tasks.forEach {
+            it.requestCompleteListener = object : Request.RequestCompleteListener {
+                override fun onNoUsableReceived(request: Request) {
+
+                }
+
+                override fun onNotifySpeed(taskState: TaskState) {
+                    val msg = mUpdateHandler?.obtainMessage(MSG_UPDATE_NOTIFICATION, taskState)
+                    mUpdateHandler?.sendMessage(msg)
+                    //Log.e(TAG, "onNotifySpeed $taskState")
+                }
+
+                override fun onNotifyCompleted(id: Long) {
+                    val msg = mUpdateHandler?.obtainMessage(MSG_COMPLETE_NOTIFICATION)
+                    msg?.arg1 = id.toInt()
+                    mUpdateHandler?.sendMessage(msg)
+                }
+
+            }
+            mRequestQueue?.add(it)
+        }
+        mRequestQueue?.start()
     }
 
     override fun onDestroy() {
@@ -150,7 +175,9 @@ class DonwloadService : Service() {
             builder.setProgress(100, 0, true)
         }
         builder.setContentText("${(getRemainingMillis(total, current, speed) / 1000).toInt().getFormattedDuration(mStringBuilder)} (${current.formatSize()}/${total.formatSize()})")
+        mStringBuilder.setLength(0)
 
+        notificationManager.notify(tag,0,builder.build())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
