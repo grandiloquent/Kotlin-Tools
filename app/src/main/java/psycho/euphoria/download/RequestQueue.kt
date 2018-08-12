@@ -4,7 +4,7 @@ import java.util.concurrent.PriorityBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
 
-class RequestQueue(private val network: Network, private val threadPoolSize: Int) {
+class RequestQueue(private val threadPoolSize: Int) {
     private val mDispatchers: Array<NetworkDispatcher?> = arrayOfNulls(threadPoolSize)
     private val mNetworkQueue = PriorityBlockingQueue<Request>()
     private val mCurrentRequests = HashSet<Request>()
@@ -14,7 +14,7 @@ class RequestQueue(private val network: Network, private val threadPoolSize: Int
     fun start() {
         stop()
         for (i in 0 until threadPoolSize) {
-            val networkDispatcher = NetworkDispatcher(mNetworkQueue, network)
+            val networkDispatcher = NetworkDispatcher(mNetworkQueue, Network())
             mDispatchers[i] = networkDispatcher
             networkDispatcher.start()
         }

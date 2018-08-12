@@ -1,4 +1,5 @@
 package psycho.euphoria.download
+
 import android.text.format.DateUtils.SECOND_IN_MILLIS
 import android.util.Log
 import psycho.euphoria.common.extension.*
@@ -14,6 +15,7 @@ import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
+
 class Network {
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
@@ -21,7 +23,6 @@ class Network {
     private var mLastUpdateBytes = 0L
     private var mLastUpdateTime = 0L
     private fun transferData(httpURLConnection: HttpURLConnection?, request: Request) {
-        Log.e(TAG,"[transferData]")
         Log.e(TAG, "transferData ${request.id}")
         if (request.currentBytes >= request.totalBytes) {
             Log.e(TAG, "[ERROR]: request => ${request} \n")
@@ -38,6 +39,7 @@ class Network {
                 while (bytes >= 0) {
                     output.write(buffer, 0, bytes)
                     request.currentBytes += bytes
+
                     updateProgress(request)
                     bytes = input.read(buffer)
                     if (request.currentBytes > request.totalBytes) {
@@ -46,10 +48,10 @@ class Network {
                 }
             }
         }
-        Log.e(TAG, "transferData ${request.currentBytes}")
     }
+
     private fun addRequest(httpURLConnection: HttpURLConnection?, request: Request) {
-        Log.e(TAG,"[addRequest]")
+        Log.e(TAG, "[addRequest] ${request.id}")
         httpURLConnection?.let {
             val file = File(request.fileName)
             if (file.exists()) {
@@ -64,18 +66,21 @@ class Network {
             it.connection = "close"
         }
     }
+
     private fun parseHeaders(httpURLConnection: HttpURLConnection?, request: Request) {
-        Log.e(TAG,"[parseHeaders]")
+        Log.e(TAG, "[parseHeaders]")
         httpURLConnection?.let {
             for (header in it.headerFields) {
                 println("${header.key} ${header.value}")
             }
             request.etag = it.eTag
             if (it.transferEncoding == null) {
-                request.totalBytes += (httpURLConnection.contentLength_.toLongOrNull() ?: 0L)
+                request.totalBytes += (httpURLConnection.contentLength_.toLongOrNull()
+                        ?: 0L)
             }
         }
     }
+
     private fun updateProgress(request: Request) {
         //Log.e(TAG,"[updateProgress]")
         val now = System.currentTimeMillis()
@@ -103,8 +108,9 @@ class Network {
             request.writeDatabase()
         }
     }
+
     fun performRequest(request: Request) {
-        Log.e(TAG,"[performRequest]")
+        Log.e(TAG, "[performRequest]")
         var url = URL(request.uri)
         var httpURLConnection: HttpURLConnection? = null
         try {
@@ -122,6 +128,7 @@ class Network {
                     // Download task has been completed, update the database
                     request.finish = 1
                     request.writeDatabase()
+                    request.notifyCompleted()
                 }
                 HTTP_PARTIAL -> {
 //                    if (request.totalBytes <= 0L)// The cached information may be lost and re-parsed
@@ -130,6 +137,7 @@ class Network {
                     // Download task has been completed, update the database
                     request.finish = 1
                     request.writeDatabase()
+                    request.notifyCompleted()
                 }
                 HTTP_MOVED_PERM,
                 HTTP_MOVED_TEMP,
@@ -145,6 +153,7 @@ class Network {
                 HTTP_REQUESTED_RANGE_NOT_SATISFIABLE -> {
                     request.finish = 1
                     request.writeDatabase()
+                    request.notifyCompleted()
                 }
                 else -> throw Exception("Response code $responseCode")
             }
@@ -152,15 +161,17 @@ class Network {
             // The resource address is incorrect, the task cannot be restarted, so it is marked as completed
             request.finish = 1
             request.writeDatabase()
-            Log.e(TAG, "performRequest",malformedURLException)
+            request.notifyCompleted()
+            Log.e(TAG, "performRequest", malformedURLException)
         } catch (ignored: Exception) {
             request.failedCount += 1
             request.writeDatabase()
-            Log.e(TAG, "performRequest",ignored)
+            Log.e(TAG, "performRequest", ignored)
         } finally {
             httpURLConnection?.disconnect()
         }
     }
+
     companion object {
         private const val MIN_PROGRESS_STEP = 65536
         private const val MIN_PROGRESS_TIME = 2000L

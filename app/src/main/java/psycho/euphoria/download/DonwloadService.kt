@@ -16,6 +16,7 @@ import psycho.euphoria.tools.commons.notificationManager
 
 class DownloadService : Service() {
 
+    private val mLock = java.lang.Object()
     private val mActiveNotifies = HashMap<String, Long>()
     private val mStringBuilder = StringBuilder(8)
     private var mUpdateThread: HandlerThread? = null
@@ -34,11 +35,13 @@ class DownloadService : Service() {
             when (it.what) {
                 MSG_UPDATE_NOTIFICATION -> {
                     val taskState = it.obj as TaskState
-                    Log.e(TAG, "onCreate $taskState")
+                    //Log.e(TAG, "onCreate $taskState")
                     makeNotification(taskState.id, taskState.speed, taskState.current, taskState.total)
                 }
                 MSG_COMPLETE_NOTIFICATION -> {
-                    Services.notificationManager.cancel("${it.arg1}",0)
+                    synchronized(mLock) {
+                        Services.notificationManager.cancel("${it.arg1}", 0)
+                    }
                 }
             }
             /**
@@ -50,19 +53,21 @@ class DownloadService : Service() {
         Services.context = this.applicationContext
 
         createNotificationChannel(CHANNEL_ACTIVE, resources.getString(R.string.download_running))
-        mRequestQueue = RequestQueue(Network(), 3)
+        mRequestQueue = RequestQueue(3)
     }
 
     private fun startDownload() {
         val tasks = DownloadTaskProvider.getInstance().listTasks()
         Log.e(TAG, "startDownload ${tasks.size}")
-        tasks.forEach {
-            it.requestCompleteListener = object : Request.RequestCompleteListener {
+
+        for (task in tasks) {
+            task.requestCompleteListener = object : Request.RequestCompleteListener {
                 override fun onNoUsableReceived(request: Request) {
 
                 }
 
                 override fun onNotifySpeed(taskState: TaskState) {
+                    //Log.e(TAG, "onNotifySpeed ${taskState}")
                     val msg = mUpdateHandler?.obtainMessage(MSG_UPDATE_NOTIFICATION, taskState)
                     mUpdateHandler?.sendMessage(msg)
                     //Log.e(TAG, "onNotifySpeed $taskState")
@@ -75,7 +80,7 @@ class DownloadService : Service() {
                 }
 
             }
-            mRequestQueue?.add(it)
+            mRequestQueue?.add(task)
         }
         mRequestQueue?.start()
     }
@@ -148,7 +153,11 @@ class DownloadService : Service() {
          *       <a href="{@docRoot}openjdk-redirect.html?v=8&path=/technotes/guides/concurrency/threadPrimitiveDeprecation.html">Why
          *       are Thread.stop, Thread.suspend and Thread.resume Deprecated?</a>.
          */
-        mUpdateThread?.stop()
+        try {
+            mUpdateThread?.interrupt()
+        } catch (e: Exception) {
+            Log.e(TAG, "onDestroy", e)
+        }
     }
 
     private fun makeNotification(id: Long,
@@ -167,7 +176,9 @@ class DownloadService : Service() {
         }
         builder.setWhen(firstShow)
         builder.setOnlyAlertOnce(true)
-        builder.setContentText(speed.formatSize())
+        builder.setContentTitle(speed.formatSize())
+
+        Log.e(TAG, "makeNotification $id $speed $current $total")
 
         if (total > 0L) {
             builder.setProgress(100, ((current * 100) / total).toInt(), false)
@@ -177,7 +188,7 @@ class DownloadService : Service() {
         builder.setContentText("${(getRemainingMillis(total, current, speed) / 1000).toInt().getFormattedDuration(mStringBuilder)} (${current.formatSize()}/${total.formatSize()})")
         mStringBuilder.setLength(0)
 
-        notificationManager.notify(tag,0,builder.build())
+        notificationManager.notify(tag, 0, builder.build())
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
