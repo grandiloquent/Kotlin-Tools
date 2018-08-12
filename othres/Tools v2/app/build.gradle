@@ -1,0 +1,48 @@
+apply plugin: 'com.android.application'
+
+apply plugin: 'kotlin-android'
+//apply plugin: 'kotlin-kapt'
+apply plugin: 'kotlin-android-extensions'
+
+android {
+    compileSdkVersion 28
+    defaultConfig {
+        applicationId "psycho.euphoria.tools"
+        minSdkVersion 15
+        targetSdkVersion 28
+        versionCode 1
+        versionName "1.0"
+
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+androidExtensions {
+    experimental = true
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    implementation 'com.github.chrisbanes:PhotoView:2.1.4'
+    implementation "com.android.support:recyclerview-v7:$support_version"
+    implementation "com.android.support:support-v4:$support_version"
+    implementation 'com.android.support.constraint:constraint-layout:1.1.2'
+    implementation 'com.google.android.exoplayer:exoplayer-core:2.8.2'
+    implementation 'com.github.bumptech.glide:glide:4.7.1'
+    implementation 'com.googlecode.mp4parser:isoparser:1.1.22'
+    implementation 'com.squareup.okhttp3:okhttp:3.11.0'
+//    debugImplementation 'com.squareup.leakcanary:leakcanary-android:1.5.4'
+//    releaseImplementation 'com.squareup.leakcanary:leakcanary-android-no-op:1.5.4'
+    implementation  'org.jetbrains.kotlinx:kotlinx-coroutines-core:0.24.0'
+//    kapt "android.arch.persistence.room:compiler:1.1.1"
+//    implementation "android.arch.persistence.room:runtime:1.1.1"
+//    annotationProcessor "android.arch.persistence.room:compiler:1.1.1"
+
+
+}

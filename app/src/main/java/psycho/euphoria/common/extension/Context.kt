@@ -2,22 +2,22 @@ package psycho.euphoria.common.extension
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.os.Build
 import android.os.Environment
 import android.text.TextUtils
+import psycho.euphoria.tools.commons.notificationManager
 import java.io.File
 import java.util.*
 import java.util.regex.Pattern
-import android.content.Intent
-import android.content.ComponentName
-import android.media.AudioManager
-import android.os.Build
-import psycho.euphoria.tools.commons.notificationManager
-import kotlin.properties.Delegates
 
 
 val Context.widthPixels get() = resources.displayMetrics.widthPixels
 val Context.heightPixels get() = resources.displayMetrics.heightPixels
+
+
 
 
 private val physicalPaths = arrayListOf(

@@ -5,8 +5,31 @@ import android.content.pm.PackageManager
 import android.app.Activity
 import android.net.Uri
 import android.os.Build
+import android.util.DisplayMetrics
+import android.view.KeyCharacterMap
+import android.view.KeyEvent
 import android.view.View
+import android.view.ViewConfiguration
 
+fun Activity.hasNavBar(): Boolean {
+    // Log.e(TAG, "hasNavBar")
+    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+        val display = windowManager.defaultDisplay
+        val realDisplayMetrics = DisplayMetrics()
+        display.getRealMetrics(realDisplayMetrics)
+        val rh = realDisplayMetrics.heightPixels
+        var rw = realDisplayMetrics.widthPixels
+        val displayMetrics = DisplayMetrics()
+        display.getMetrics(displayMetrics)
+        val h = displayMetrics.heightPixels
+        val w = displayMetrics.widthPixels
+        rw - w > 0 || rh - h > 0
+    } else {
+        val hasMenuKey = ViewConfiguration.get(this).hasPermanentMenuKey()
+        val hasBackKey = KeyCharacterMap.deviceHasKey(KeyEvent.KEYCODE_BACK)
+        !hasMenuKey && !hasBackKey
+    }
+}
 
 fun Activity.maybeRequestReadExternalStoragePermission(vararg uris: Uri): Boolean {
     if (Build.VERSION.SDK_INT < 23) {

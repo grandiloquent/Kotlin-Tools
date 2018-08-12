@@ -1,6 +1,7 @@
 package psycho.euphoria.player
 
 import android.app.Activity
+import android.content.res.Configuration
 import android.graphics.Matrix
 import android.net.Uri
 import android.os.Build
@@ -31,6 +32,8 @@ import android.graphics.RectF
 import android.view.MotionEvent
 import android.view.TextureView
 import android.view.ViewGroup
+import psycho.euphoria.common.extension.Services.navigationBarHeight
+import psycho.euphoria.common.extension.Services.navigationBarWidth
 import kotlin.math.abs
 import kotlin.math.min
 
@@ -157,7 +160,7 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
                     setVideoTextureView(mTextureView)
                     addVideoListener(this@PlayerActivity)
                 }
-               // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
+                // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(intent.data)
                 it.prepare(mediaSource)
 
@@ -193,9 +196,9 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
         super.onCreate(savedInstanceState)
         // Inject UI immediately
         setContentView(R.layout.activity_player_video)
-        mTextureView= TextureView(this)
-        mTextureView.layoutParams= ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,ViewGroup.LayoutParams.MATCH_PARENT)
-        exo_content_frame.addView(mTextureView,0)
+        mTextureView = TextureView(this)
+        mTextureView.layoutParams = ViewGroup.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
+        exo_content_frame.addView(mTextureView, 0)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf("android.permission.ACCESS_NETWORK_STATE",
                     "android.permission.WAKE_LOCK",
@@ -473,6 +476,19 @@ class PlayerActivity : Activity(), TimeBar.OnScrubListener, Player.EventListener
             updateAll()
             requestPlayPauseFocus()
             showSystemUI(true)
+            if (hasNavBar()) {
+                val left = 0
+                val top = 0
+                var right = 0
+                var bottom = 0
+                if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+                    bottom += navigationBarHeight
+                } else {
+                    right += navigationBarWidth
+                    bottom += navigationBarHeight
+                }
+                exo_progress.setPadding(left, top, right, bottom)
+            }
         }
         hideController()
     }
