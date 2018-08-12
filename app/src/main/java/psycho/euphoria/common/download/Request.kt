@@ -1,8 +1,14 @@
 package psycho.euphoria.common.download
 
 class Request(
+        val id: Long,
         var uri: String,
-        private val requestCompleteListener: RequestCompleteListener) {
+        val fileName: String,
+        var etag: String?,
+        var currentBytes: Long,
+        var totalBytes: Long,
+        var failedCount: Int,
+        var finish: Int) {
 
     private var mCanceled = false
 
@@ -10,22 +16,16 @@ class Request(
     var sequence = 0
     var requestQueue: RequestQueue? = null
     var tag: Any? = null
-    var fileName: String? = null
-    var currentBytes = 0L
-    var totalBytes = 0L
-    var etag: String? = null
-    var id = 0L
+    var requestCompleteListener: RequestCompleteListener? = null
 
-
-    fun finished(reason: String) {
-
-    }
 
     fun cancel() {
         synchronized(mLock) {
             mCanceled = true
-
         }
+    }
+
+    fun finished(reason: String) {
     }
 
     fun isCanceled(): Boolean {
@@ -34,27 +34,40 @@ class Request(
         }
     }
 
-    fun parseNetworkResponse(networkResponse: NetworkResponse) {
-
-    }
-
-    fun notifySpeed(speed: Long) {
-
-    }
-
     fun notifyNoUsable() {
         var listener: RequestCompleteListener? = null
-
         synchronized(mLock) {
             listener = requestCompleteListener
         }
         listener?.onNoUsableReceived(this)
     }
 
+    fun notifySpeed(speed: Long) {
+        var listener: RequestCompleteListener? = null
+        synchronized(mLock) {
+            listener = requestCompleteListener
+        }
+        listener?.onNotifySpeed(TaskState(id, speed, currentBytes, totalBytes))
+    }
+
+    fun notifyCompleted() {
+        var listener: RequestCompleteListener? = null
+        synchronized(mLock) {
+            listener = requestCompleteListener
+        }
+        listener?.onNotifyCompleted()
+    }
+
+
+    fun writeDatabase() {
+        DownloadTaskProvider.getInstance().update(this)
+    }
+
     interface RequestCompleteListener {
 
-        fun onReceived(request: Request, response: Response)
         fun onNoUsableReceived(request: Request)
+        fun onNotifySpeed(taskState: TaskState)
+        fun onNotifyCompleted()
     }
 
 }

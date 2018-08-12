@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.downloads
+package psycho.euphoria.common.download
 
 import android.content.ClipboardManager
 import android.content.Intent
@@ -10,12 +10,13 @@ import android.support.v7.widget.RecyclerView
 import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.Menu
 import android.view.MenuItem
+import com.google.android.exoplayer2.offline.DownloadService
 import kotlinx.android.synthetic.main.activity_download.*
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
+import java.io.File
 
-
-class DownloadActivity() : AppCompatActivity() {
+class DownloadActivity: AppCompatActivity() {
 
     private lateinit var mLayoutManager: RecyclerView.LayoutManager
     private lateinit var mAdapter: DownloadListAdapter
@@ -150,6 +151,23 @@ class DownloadActivity() : AppCompatActivity() {
     companion object {
         private const val MENU_ADD_DOWNLOAD = 1
         private const val MENU_START_DOWNLOAD = 2
+
+        fun generateFileNameFromURL(url: String, directory: File): String {
+            if (url.isBlank()) {
+                var file = File(directory, ('a'..'z').randomString(6))
+                while (file.exists()) {
+                    file = File(directory, ('a'..'z').randomString(6))
+                }
+                return file.absolutePath
+            } else {
+                var fileName = url.substringBefore('?')
+                var invalidFileNameChars = arrayOf('\"', '<', '>', '|', 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, ':', '*', '?', '\\', '/')
+                fileName = fileName.substringAfterLast('/').filter {
+                    !invalidFileNameChars.contains(it)
+                }
+                return File(directory, fileName).absolutePath
+            }
+        }
+
     }
 }
-

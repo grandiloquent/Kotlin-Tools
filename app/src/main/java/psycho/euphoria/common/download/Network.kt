@@ -53,7 +53,7 @@ class Network {
             } else {
                 mSpeed = ((mSpeed * 3) + sampleSpeed) / 4
             }
-            if (mSpeedSampleStart != 0L) l - {
+            if (mSpeedSampleStart != 0L) {
                 request.notifySpeed(mSpeed)
             }
             mSpeedSampleStart = now

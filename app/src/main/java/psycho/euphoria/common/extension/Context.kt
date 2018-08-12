@@ -1,5 +1,7 @@
 package psycho.euphoria.common.extension
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.Context
 import android.os.Environment
 import android.text.TextUtils
@@ -10,8 +12,8 @@ import android.content.Intent
 import android.content.ComponentName
 import android.media.AudioManager
 import android.os.Build
+import psycho.euphoria.tools.commons.notificationManager
 import kotlin.properties.Delegates
-
 
 
 val Context.widthPixels get() = resources.displayMetrics.widthPixels
@@ -35,6 +37,55 @@ private val physicalPaths = arrayListOf(
         "/storage/usbdisk2"
 )
 
+
+fun Context.createNotificationChannel(channelId: String, channelName: String, channelImportance: Int = NotificationManager.IMPORTANCE_MIN) {
+    /**
+     * Creates a notification channel that notifications can be posted to.
+     *
+     * This can also be used to restore a deleted channel and to update an existing channel's
+     * name, description, and/or importance.
+     *
+     * <p>The name and description should only be changed if the locale changes
+     * or in response to the user renaming this channel. For example, if a user has a channel
+     * named 'John Doe' that represents messages from a 'John Doe', and 'John Doe' changes his name
+     * to 'John Smith,' the channel can be renamed to match.
+     *
+     * <p>The importance of an existing channel will only be changed if the new importance is lower
+     * than the current value and the user has not altered any settings on this channel.
+     *
+     * All other fields are ignored for channels that already exist.
+     *
+     * @param channel  the channel to create.  Note that the created channel may differ from this
+     *                 value. If the provided channel is malformed, a RemoteException will be
+     *                 thrown.
+     */
+    /**
+     * Creates a notification channel.
+     *
+     * @param id The id of the channel. Must be unique per package. The value may be truncated if
+     *           it is too long.
+     * @param name The user visible name of the channel. You can rename this channel when the system
+     *             locale changes by listening for the {@link Intent#ACTION_LOCALE_CHANGED}
+     *             broadcast. The recommended maximum length is 40 characters; the value may be
+     *             truncated if it is too long.
+     * @param importance The importance of the channel. This controls how interruptive notifications
+     *                   posted to this channel are.
+     */
+
+    /**
+     * Min notification importance: only shows in the shade, below the fold.  This should
+     * not be used with {@link Service#startForeground(int, Notification) Service.startForeground}
+     * since a foreground service is supposed to be something the user cares about so it does
+     * not make semantic sense to mark its notification as minimum importance.  If you do this
+     * as of Android version {@link android.os.Build.VERSION_CODES#O}, the system will show
+     * a higher-priority notification about your app running in the background.
+     *    public static final int IMPORTANCE_MIN = 1;
+     */
+
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        notificationManager.createNotificationChannel(NotificationChannel(channelId, channelName, channelImportance))
+    }
+}
 
 fun Context.getStorageDirectories(): Array<String> {
     val paths = HashSet<String>()

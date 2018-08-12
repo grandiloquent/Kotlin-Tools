@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.videos
+package psycho.euphoria.player
 
 import android.os.AsyncTask
 import android.os.Environment

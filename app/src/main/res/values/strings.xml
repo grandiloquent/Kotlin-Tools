@@ -91,6 +91,7 @@
     <string name="exo_track_stereo">Stereo</string>
     <!-- Describes a surround sound audio track. [CHAR LIMIT=40] -->
     <string name="exo_track_surround">Surround sound</string>
+    <string name="download_running">In progress</string>
     <!-- Describes a 5.1 surround sound (https://en.wikipedia.org/wiki/5.1_surround_sound) audio track. [CHAR LIMIT=40] -->
     <string name="exo_track_surround_5_point_1">5.1 surround sound</string>
     <!-- Describes a 7.1 (https://en.wikipedia.org/wiki/7.1_surround_sound) audio track. [CHAR LIMIT=40] -->

@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.downloads
+package psycho.euphoria.common.download
 
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
@@ -8,8 +8,8 @@ import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_download.*
 import psycho.euphoria.tools.R
 
-class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
-                          private val itemClick: (DownloadInfo) -> Unit,
+class DownloadListAdapter(private val downloads: MutableList<Request>,
+                          private val itemClick: (Request) -> Unit,
                           private val itemDrag: (ViewHolder) -> Unit) :
         RecyclerView.Adapter<DownloadListAdapter.ViewHolder>() {
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -18,7 +18,7 @@ class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
         return ViewHolder(view, itemClick)
     }
 
-    fun switchData(downloadList: List<DownloadInfo>) {
+    fun switchData(downloadList: List<Request>) {
         downloads.clear()
         downloads.addAll(downloadList)
         notifyDataSetChanged()
@@ -40,7 +40,7 @@ class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
 
     }
 
-    fun getItem(position: Int): DownloadInfo {
+    fun getItem(position: Int): Request {
         return downloads.get(position)
     }
 
@@ -50,10 +50,10 @@ class DownloadListAdapter(private val downloads: MutableList<DownloadInfo>,
 
 
     class ViewHolder(override val containerView: View,
-                     private val itemClick: (DownloadInfo) -> Unit) :
+                     private val itemClick: (Request) -> Unit) :
             RecyclerView.ViewHolder(containerView), LayoutContainer {
 
-        fun bindDownloadInfo(downloadInfo: DownloadInfo) {
+        fun bindDownloadInfo(downloadInfo: Request) {
             with(downloadInfo) {
 
                 file_name.text = downloadInfo.fileName

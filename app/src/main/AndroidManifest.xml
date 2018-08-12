@@ -17,14 +17,14 @@
         <activity
             android:name=".files.FileActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-
-        </activity>
-
-        <activity android:name="psycho.euphoria.player.PlayerActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <activity android:name="psycho.euphoria.player.PlayerActivity">
+
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
@@ -77,7 +77,7 @@
         <service android:name=".music.MediaPlaybackService" />
 
         <service
-            android:name=".downloads.DownloadService"
+            android:name="psycho.euphoria.common.download.DownloadService"
             android:label="@string/activity_download_title" />
 
 

@@ -20,7 +20,7 @@ import psycho.euphoria.tools.commons.*
 import psycho.euphoria.tools.downloads.DownloadActivity
 import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
-import psycho.euphoria.tools.videos.SplitVideo
+import psycho.euphoria.player.SplitVideo
 import psycho.euphoria.tools.videos.VideoActivity
 import java.io.File
 

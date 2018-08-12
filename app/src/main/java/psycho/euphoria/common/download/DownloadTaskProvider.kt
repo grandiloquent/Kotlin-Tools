@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.downloads
+package psycho.euphoria.common.download
 
 import android.content.ContentValues
 import android.content.Context
@@ -52,7 +52,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
                finished: Int = 0,
                current_bytes: Long = 0L,
                total_bytes: Long = 0L) {
-        var contentValues = ContentValues()
+        val contentValues = ContentValues()
         contentValues.put(COLUMN_CREATE_TIME, System.currentTimeMillis())
         contentValues.put(COLUMN_CURRENT_BYTES, current_bytes)
         contentValues.put(COLUMN_FAILED, failed)
@@ -63,13 +63,13 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         writableDatabase.insertWithOnConflict(TABLE_NAME_TASKS, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE)
     }
 
-    fun listTasks(): MutableList<DownloadInfo> {
-        val list = mutableListOf<DownloadInfo>()
+    fun listTasks(): MutableList<Request> {
+        val list = mutableListOf<Request>()
         //
         val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where finished = 0 and failed <= 5", null);
         try {
             while (cursor.moveToNext()) {
-                val downloadInfo = DownloadInfo(
+                val downloadInfo = Request(
                         cursor.getLong(0),
                         cursor.getString(1),
                         cursor.getString(2),
@@ -96,7 +96,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
                finished: Int = 0,
                current_bytes: Long = 0L,
                total_bytes: Long = 0L) {
-        var contentValues = ContentValues()
+        val contentValues = ContentValues()
         contentValues.put(COLUMN_CURRENT_BYTES, current_bytes)
         contentValues.put(COLUMN_FAILED, failed)
         if (filename != null)
@@ -108,8 +108,8 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$_id"), SQLiteDatabase.CONFLICT_IGNORE)
     }
 
-    fun update(downloadInfo: DownloadInfo) {
-        var contentValues = ContentValues()
+    fun update(downloadInfo: Request) {
+        val  contentValues = ContentValues()
         contentValues.put(COLUMN_CURRENT_BYTES, downloadInfo.currentBytes)
         contentValues.put(COLUMN_FAILED, downloadInfo.failedCount)
         contentValues.put(COLUMN_FILENAME, downloadInfo.fileName)
