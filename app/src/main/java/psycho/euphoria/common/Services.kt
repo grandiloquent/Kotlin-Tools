@@ -8,6 +8,7 @@ import android.graphics.Point
 import android.media.AudioManager
 import android.os.Build
 import android.preference.PreferenceManager
+import android.util.Log
 import android.view.WindowManager
 import psycho.euphoria.common.extension.getSDCardPath
 import psycho.euphoria.common.extension.putString
@@ -15,6 +16,7 @@ import kotlin.properties.Delegates
 
 object Services {
 
+    private const val TAG="Services"
     private const val KEY_OTG_PARTITION = "otg_partition"
     private const val KEY_SD_CARD_PATH = "sd_card_path"
     private const val KEY_TREE_URI = "tree_uri"
@@ -70,6 +72,8 @@ object Services {
             context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
     val navigationBarHeight by lazy {
+        //resources.getIdentifier("navigation_bar_height", "dimen", "android")
+        //resources.getDimensionPixelSize(resourceId)
         if (navigationBarBottom) navigationBarSize.y else 0
     }
 
@@ -78,7 +82,37 @@ object Services {
     }
     val usableScreenSize by lazy {
         val size = Point()
+        /**
+         * Gets the size of the display, in pixels.
+         * Value returned by this method does not necessarily represent the actual raw size
+         * (native resolution) of the display.
+         * <p>
+         * 1. The returned size may be adjusted to exclude certain system decor elements
+         * that are always visible.
+         * </p><p>
+         * 2. It may be scaled to provide compatibility with older applications that
+         * were originally designed for smaller displays.
+         * </p><p>
+         * 3. It can be different depending on the WindowManager to which the display belongs.
+         * </p><p>
+         * - If requested from non-Activity context (e.g. Application context via
+         * {@code (WindowManager) getApplicationContext().getSystemService(Context.WINDOW_SERVICE)})
+         * it will report the size of the entire display based on current rotation and with subtracted
+         * system decoration areas.
+         * </p><p>
+         * - If requested from activity (either using {@code getWindowManager()} or
+         * {@code (WindowManager) getSystemService(Context.WINDOW_SERVICE)}) resulting size will
+         * correspond to current app window size. In this case it can be smaller than physical size in
+         * multi-window mode.
+         * </p><p>
+         * Typically for the purposes of layout apps should make a request from activity context
+         * to obtain size available for the app content.
+         * </p>
+         *
+         * @param outSize A {@link Point} object to receive the size information.
+         */
         windowManager.defaultDisplay.getSize(size)
+        Log.e(TAG, "[realScreenSize] $size")
         size
 
     }
@@ -105,6 +139,7 @@ object Services {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
             windowManager.defaultDisplay.getRealSize(size)
 
+        Log.e(TAG, "[usableScreenSize] $size")
 
         size
     }

@@ -33,6 +33,8 @@ import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.round
 
+
+
 /*
 1 [onCreate] 
     2 [onStart] 
@@ -263,12 +265,12 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             mHanlder.removeCallbacks(mUpdateProgressAction)
             mHanlder.removeCallbacks(mHideAction)
 
-            hideSystemUI(true)
-            if (mIsHasBar) {
-                controller.setPadding(0, 0, 0,0)
-               Log.e(TAG, "[hide]")
-
-            }
+            hideSystemUI(false)
+//            if (mIsHasBar) {
+//                controller.setPadding(0, 0, 0,0)
+//               Log.e(TAG, "[hide] ${controller.paddingLeft} ${controller.paddingRight} ${controller.paddingTop} ${controller.paddingBottom}")
+//
+//            }
         }
     }
 
@@ -667,6 +669,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 var right = 0
                 var bottom = 0
                 if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+
                     bottom += navigationBarHeight
                 } else {
                     right += navigationBarWidth
