@@ -72,6 +72,13 @@ class FileActivity : CustomActivity() {
         }
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+        super.onActivityResult(requestCode, resultCode, resultData)
+        if (requestCode == REQUEST_VIDEO_CODE && resultCode == Activity.RESULT_OK) {
+            refreshRecyclerView()
+        }
+    }
+
     override fun onBackPressed() {
         mFileAdapter?.let {
             if (it.selectedItemCount > 0) {
@@ -79,7 +86,6 @@ class FileActivity : CustomActivity() {
                 return
             }
         }
-
         val parent = File(mRecentDirectory).parentFile
         if (parent == null)
             super.onBackPressed()
@@ -117,19 +123,10 @@ class FileActivity : CustomActivity() {
         }
     }
 
-    override fun onPause() {
-        Services.prefer.putInt(STATE_SORT_ORDER, mSortOrder)
-        Services.prefer.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
-        super.onPause()
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-
         mSortOrder = Services.prefer.int(STATE_SORT_ORDER)
         mRecentDirectory = Services.prefer.getString(STATE_RECENT_DIRECTORY, Environment.getExternalStorageDirectory().absolutePath)
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -192,12 +189,16 @@ class FileActivity : CustomActivity() {
         return super.onOptionsItemSelected(item)
     }
 
+    override fun onPause() {
+        Services.prefer.putInt(STATE_SORT_ORDER, mSortOrder)
+        Services.prefer.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
+        super.onPause()
+    }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         initialize()
     }
-
 
     private fun refreshRecyclerView() {
         refreshRecyclerView(mRecentDirectory)
@@ -252,16 +253,12 @@ class FileActivity : CustomActivity() {
                     if (it) {
                         refreshRecyclerView()
                         mFileAdapter?.deselectAll()
+                    } else {
+                        //
+                        toast("Renaming the file failed : ${fileItem.name}")
                     }
                 }
             }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-        if (requestCode == REQUEST_VIDEO_CODE && resultCode == Activity.RESULT_OK) {
-            refreshRecyclerView()
         }
     }
 

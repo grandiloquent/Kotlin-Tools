@@ -1,5 +1,6 @@
 package psycho.euphoria.player
 
+import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Matrix
 import android.graphics.RectF
@@ -32,7 +33,6 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.round
-
 
 
 /*
@@ -169,17 +169,64 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         //mTracker.e("[onOptionsItemSelected]")
         when (item.itemId) {
-            R.id.action_delete -> {
-            }
+            R.id.action_delete -> deleteVideo(getCurrentUri())
+            R.id.action_rename -> renameVideo(getCurrentUri())
         }
         return super.onOptionsItemSelected(item)
     }
 
-    private fun deleteVideo(path: String) {
+    private fun deleteVideo(path: String?) {
         //mTracker.e("[deleteVideo]")
         mPlayer?.let {
-            updateStartPosition()
-            next()
+            val path = path ?: return
+            val files = mFiles ?: return
+            var index = it.nextWindowIndex
+            val file: File
+            if (index != -1) {
+                file = files[index]
+            } else if (files.size > 1) {
+                index = 0
+                file = files[index]
+
+            } else {
+                file = File(path)
+                deleteFile(file, false) {
+                    toast(path)
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                    return@deleteFile
+                }
+
+            }
+            deleteFile(File(path), false) {
+                toast(path)
+                setResult(Activity.RESULT_OK)
+            }
+            mMediaSource = generateMediaSource(file.toUri())
+            it.prepare(mMediaSource)
+            it.seekTo(index, C.TIME_UNSET)
+
+
+        }
+    }
+
+    private fun renameVideo(path: String?) {
+        mPlayer?.let {
+            val path = path ?: return
+            dialog(this, path.getFilenameFromPath(), getString(R.string.menu_rename_file), true) {
+                renameFile(path, path.getParentPath() + File.separator + it.toString()) {
+                    if (it) {
+                        mMediaSource = generateMediaSource(File(path).toUri())
+                        mPlayer?.prepare(mMediaSource)
+                        mPlayer?.seekTo(mStartWindow, C.TIME_UNSET)
+                    } else {
+                        //
+                        toast("Renaming the file failed : ${path.getFilenameFromPath()}")
+                    }
+                }
+            }
+
+
         }
     }
 
@@ -219,7 +266,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //mTracker.e("[fastForward]")
         mPlayer?.apply {
             val speed = playbackParameters.speed
-            val targetSpeed = ((speed / 5 + 1) * 5).toFloat()
+            val targetSpeed = ((speed / 5 + 1) * 5)
+            toast("[fastForward] $targetSpeed")
             playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
         }
     }
@@ -299,6 +347,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 }
                 // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(intent.data)
+                mMediaSource = mediaSource
                 it.prepare(mediaSource)
             }
             if (mStartWindow > 0) {
@@ -317,14 +366,18 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         } ?: run { return false }
     }
 
+    // Jump to the next video in the playlist
     private fun next() {
         //mTracker.e("[next]")
         mPlayer?.apply {
             if (currentTimeline.isEmpty) return
             if (nextWindowIndex != C.INDEX_UNSET) {
+                Log.e(TAG, "[next] Seek to next: currentWindowIndex $currentWindowIndex,nextWindowIndex $nextWindowIndex")
                 seekTo(nextWindowIndex, C.TIME_UNSET)
             } else {
                 seekTo(currentWindowIndex, C.TIME_UNSET)
+                Log.e(TAG, "[next] Seek to current: currentWindowIndex $currentWindowIndex,nextWindowIndex $nextWindowIndex")
+
             }
         }
     }
@@ -433,6 +486,11 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //mTracker.e("[onSeekProcessed]")
     }
 
+    /**
+     * Called when the value of {@link #getShuffleModeEnabled()} changes.
+     *
+     * @param shuffleModeEnabled Whether shuffling of windows is enabled.
+     */
     override fun onShuffleModeEnabledChanged(p0: Boolean) {
         //mTracker.e("[onShuffleModeEnabledChanged]")
         updateNavigation()
@@ -454,13 +512,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //mTracker.e("[onTimelineChanged]")
         updateProgress()
         updateNavigation()
-        getCurrentUri()?.let {
-            val position = mBookmarker.getBookmark(it)
-            Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
-            position?.let {
-                seekTo(it)
-            }
-        }
+        seekToLastedState()
     }
 
     override fun onTouch(view: View?, event: MotionEvent): Boolean {
@@ -521,9 +573,15 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
 
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {
         //mTracker.e("[onTracksChanged]")
+        seekToLastedState()
+    }
+
+    private fun seekToLastedState() {
         getCurrentUri()?.let {
+            supportActionBar?.title = it.getFilenameFromPath()
             val position = mBookmarker.getBookmark(it)
-            Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
+
+            // Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
             position?.let {
                 seekTo(it)
             }
@@ -548,10 +606,12 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //exo_content_frame.setAspectRatio(ratio)
     }
 
+
     override fun preparePlayback() {
         //mTracker.e("[preparePlayback]")
     }
 
+    // Jump to the previous video of the playlist
     private fun previous() {
         //mTracker.e("[previous]")
         mPlayer?.apply {
@@ -560,9 +620,13 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             if (previousWindowIndex != C.INDEX_UNSET
                     && currentPosition <= MAX_POSITION_FOR_SEEK_TO_PREVIOUS
                     || (mWindow.isDynamic && !mWindow.isSeekable)) {
-                Log.e(TAG, "[previous] $previousWindowIndex $currentWindowIndex")
+                //Log.e(TAG, "[previous] Seek to previous: previousWindowIndex,$previousWindowIndex currentWindowIndex,$currentWindowIndex")
                 this@PlayerActivity.seekTo(previousWindowIndex, C.TIME_UNSET)
-            } else this@PlayerActivity.seekTo(0L)
+            } else {
+                //Log.e(TAG, "[previous] Seek to the starting position")
+                this@PlayerActivity.seekTo(0L)
+
+            }
         }
     }
 
@@ -602,6 +666,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             else
                 targetSpeed = ((speed - 5) - speed % 5)
             if (targetSpeed < 1f) targetSpeed = 1f
+            toast("[frewind] $targetSpeed")
+
             playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
         }
     }
@@ -677,7 +743,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 }
 
                 controller.setPadding(left, top, right, bottom)
-                Log.e(TAG, "[show] $left $top $right $bottom")
+                //Log.e(TAG, "[show] $left $top $right $bottom")
             }
         }
         hideController()

@@ -26,7 +26,7 @@ fun File.buildUniqueFile(): File {
     val parent = parentFile
     val ext = extension
     val name = nameWithoutExtension
-    return buildUniqueFileWithExtension(name, ext)
+    return parent.buildUniqueFileWithExtension(name, ext)
 }
 
 fun File.buildUniqueFile(displayName: String): File {
