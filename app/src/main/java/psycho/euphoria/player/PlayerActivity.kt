@@ -2,6 +2,7 @@ package psycho.euphoria.player
 
 import android.app.Activity
 import android.content.res.Configuration
+import android.graphics.Color
 import android.graphics.Matrix
 import android.graphics.RectF
 import android.net.Uri
@@ -11,23 +12,23 @@ import android.os.Handler
 import android.util.Log
 import android.view.*
 import com.google.android.exoplayer2.*
-import com.google.android.exoplayer2.source.ConcatenatingMediaSource
-import com.google.android.exoplayer2.source.ExtractorMediaSource
-import com.google.android.exoplayer2.source.MediaSource
-import com.google.android.exoplayer2.source.TrackGroupArray
+import com.google.android.exoplayer2.source.*
+import com.google.android.exoplayer2.text.Cue
+import com.google.android.exoplayer2.text.TextOutput
 import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
 import com.google.android.exoplayer2.upstream.FileDataSourceFactory
+import com.google.android.exoplayer2.util.MimeTypes
 import com.google.android.exoplayer2.util.Util
 import com.google.android.exoplayer2.video.VideoListener
 import kotlinx.android.synthetic.main.activity_player_video.*
-import psycho.euphoria.common.extension.*
 import psycho.euphoria.common.C
-import psycho.euphoria.common.Services.navigationBarHeight
-import psycho.euphoria.common.Services.navigationBarWidth
-import psycho.euphoria.tools.R
 import psycho.euphoria.common.CustomActivity
 import psycho.euphoria.common.Services
+import psycho.euphoria.common.Services.navigationBarHeight
+import psycho.euphoria.common.Services.navigationBarWidth
+import psycho.euphoria.common.extension.*
+import psycho.euphoria.tools.R
 import java.io.File
 import java.util.*
 import kotlin.math.abs
@@ -35,108 +36,12 @@ import kotlin.math.max
 import kotlin.math.round
 
 
-/*
-1 [onCreate] 
-    2 [onStart] 
-    3 [initializePlayer] 
-    4 [hideController] 
-    5 [onPlayerStateChanged] 
-    6 [updatePlayPauseButton] 
-    7 [isPlaying] 
-    8 [updateProgress] 
-    9 [generateMediaSource] 
-    10 [onPlayerStateChanged] 
-    11 [updatePlayPauseButton] 
-    12 [isPlaying] 
-    13 [updateProgress] 
-    14 [seekTo] 
-    15 [onPositionDiscontinuity] 
-    16 [updateStartPosition] 
-    17 [updateProgress] 
-    18 [updateNavigation] 
-    19 [setButtonEnabled] 
-    20 [setButtonEnabled] 
-    21 [setButtonEnabled] 
-    22 [setButtonEnabled] 
-    23 [updateAll] 
-    24 [updatePlayPauseButton] 
-    25 [isPlaying] 
-    26 [updateProgress] 
-    27 [updateNavigation] 
-    28 [setButtonEnabled] 
-    29 [setButtonEnabled] 
-    30 [setButtonEnabled] 
-    31 [setButtonEnabled] 
-    32 [onResume] 
-    33 [onPause] 
-    34 [onTimelineChanged] 
-    35 [updateProgress] 
-    36 [updateNavigation] 
-    37 [setButtonEnabled] 
-    38 [setButtonEnabled] 
-    39 [setButtonEnabled] 
-    40 [setButtonEnabled] 
-    41 [getCurrentUri] 
-    42 [seekTo] 
-    43 [onPositionDiscontinuity] 
-    44 [updateStartPosition] 
-    45 [updateProgress] 
-    46 [updateNavigation] 
-    47 [setButtonEnabled] 
-    48 [setButtonEnabled] 
-    49 [setButtonEnabled] 
-    50 [setButtonEnabled] 
-    51 [onSeekProcessed] 
-    52 [onLoadingChanged] 
-    53 [onSeekProcessed] 
-    54 [onRequestPermissionsResult] 
-    55 [initialize] 
-    56 [bindActions] 
-    57 [onResume] 
-    58 [onTracksChanged] 
-    59 [getCurrentUri] 
-    60 [seekTo] 
-    61 [onPositionDiscontinuity] 
-    62 [updateStartPosition] 
-    63 [updateProgress] 
-    64 [updateNavigation] 
-    65 [setButtonEnabled] 
-    66 [setButtonEnabled] 
-    67 [setButtonEnabled] 
-    68 [setButtonEnabled] 
-    69 [onTimelineChanged] 
-    70 [updateProgress] 
-    71 [updateNavigation] 
-    72 [setButtonEnabled] 
-    73 [setButtonEnabled] 
-    74 [setButtonEnabled] 
-    75 [setButtonEnabled] 
-    76 [getCurrentUri] 
-    77 [seekTo] 
-    78 [onPositionDiscontinuity] 
-    79 [updateStartPosition] 
-    80 [updateProgress] 
-    81 [updateNavigation] 
-    82 [setButtonEnabled] 
-    83 [setButtonEnabled] 
-    84 [setButtonEnabled] 
-    85 [setButtonEnabled] 
-    86 [onSeekProcessed] 
-    87 [onSeekProcessed] 
-    88 [onVideoSizeChanged] 
-    89 [onRenderedFirstFrame] 
-    90 [onPlayerStateChanged] 
-    91 [updatePlayPauseButton] 
-    92 [isPlaying] 
-    93 [updateProgress] 
-    94 [onLoadingChanged] 
-    95 [updateProgress] 
-    96 [updateProgress] 
-    97 [updateProgress] 
-    98 [updateProgress] 
-    99 [hide] 
- */
-class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener, View.OnTouchListener {
+class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
+        Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener,
+        View.OnTouchListener,
+        TextOutput {
+
+
     private val mBookmarker = Bookmarker(this)
     private val mControlDispatcher = DefaultControlDispatcher()
     private val mStringBuilder = StringBuilder()
@@ -166,69 +71,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
     private lateinit var mTextureView: TextureView
     //private val mTracker = Tracker("PlayerActivity")
 
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        //mTracker.e("[onOptionsItemSelected]")
-        when (item.itemId) {
-            R.id.action_delete -> deleteVideo(getCurrentUri())
-            R.id.action_rename -> renameVideo(getCurrentUri())
-        }
-        return super.onOptionsItemSelected(item)
-    }
-
-    private fun deleteVideo(path: String?) {
-        //mTracker.e("[deleteVideo]")
-        mPlayer?.let {
-            val path = path ?: return
-            val files = mFiles ?: return
-            var index = it.nextWindowIndex
-            val file: File
-            if (index != -1) {
-                file = files[index]
-            } else if (files.size > 1) {
-                index = 0
-                file = files[index]
-
-            } else {
-                file = File(path)
-                deleteFile(file, false) {
-                    toast(path)
-                    setResult(Activity.RESULT_OK)
-                    finish()
-                    return@deleteFile
-                }
-
-            }
-            deleteFile(File(path), false) {
-                toast(path)
-                setResult(Activity.RESULT_OK)
-            }
-            mMediaSource = generateMediaSource(file.toUri())
-            it.prepare(mMediaSource)
-            it.seekTo(index, C.TIME_UNSET)
-
-
-        }
-    }
-
-    private fun renameVideo(path: String?) {
-        mPlayer?.let {
-            val path = path ?: return
-            dialog(this, path.getFilenameFromPath(), getString(R.string.menu_rename_file), true) {
-                renameFile(path, path.getParentPath() + File.separator + it.toString()) {
-                    if (it) {
-                        mMediaSource = generateMediaSource(File(path).toUri())
-                        mPlayer?.prepare(mMediaSource)
-                        mPlayer?.seekTo(mStartWindow, C.TIME_UNSET)
-                    } else {
-                        //
-                        toast("Renaming the file failed : ${path.getFilenameFromPath()}")
-                    }
-                }
-            }
-
-
-        }
-    }
 
     private fun bindActions() {
         //mTracker.e("[bindActions]")
@@ -262,6 +104,37 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         root_view.setOnTouchListener(this)
     }
 
+    private fun deleteVideo(path: String?) {
+        //mTracker.e("[deleteVideo]")
+        mPlayer?.let {
+            val path = path ?: return
+            val files = mFiles ?: return
+            var index = it.nextWindowIndex
+            val file: File
+            if (index != -1) {
+                file = files[index]
+            } else if (files.size > 1) {
+                index = 0
+                file = files[index]
+            } else {
+                file = File(path)
+                deleteFile(file, false) {
+                    toast(path)
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                    return@deleteFile
+                }
+            }
+            deleteFile(File(path), false) {
+                toast(path)
+                setResult(Activity.RESULT_OK)
+            }
+            mMediaSource = generateMediaSource(file.toUri())
+            it.prepare(mMediaSource)
+            it.seekTo(index, C.TIME_UNSET)
+        }
+    }
+
     private fun fastForward() {
         //mTracker.e("[fastForward]")
         mPlayer?.apply {
@@ -284,7 +157,14 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 if (uri == u) {
                     mStartWindow = i
                 }
-                mediaSources[i] = ExtractorMediaSource.Factory(fileDataSourceFactory).createMediaSource(u)
+                val m = ExtractorMediaSource.Factory(fileDataSourceFactory).createMediaSource(u)
+                val sm = buildSubtitleMediaSource(it[i])
+                if (sm != null) {
+                    Log.e(TAG, "[generateMediaSource] Create Subtitle Source ${it[i]}")
+                    mediaSources[i] = MergingMediaSource(m, sm)
+                } else {
+                    mediaSources[i] = m
+                }
             }
             if (it.size > 1) {
                 val mediaSource = ConcatenatingMediaSource()
@@ -293,6 +173,17 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             } else {
                 return mediaSources[0]
             }
+        }
+        return null
+    }
+
+    private fun buildSubtitleMediaSource(file: File): SingleSampleMediaSource? {
+        val subtitleFile = file.changeExtension("srt")
+
+        //Log.e(TAG, "[buildSubtitleMediaSource] ${subtitleFile.absolutePath}")
+        if (subtitleFile.exists()) {
+            return SingleSampleMediaSource.Factory(FileDataSourceFactory()).createMediaSource(subtitleFile.toUri(),
+                    SRT_FORMAT, C.TIME_UNSET)
         }
         return null
     }
@@ -312,7 +203,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             controller.visibility = View.GONE
             mHanlder.removeCallbacks(mUpdateProgressAction)
             mHanlder.removeCallbacks(mHideAction)
-
             hideSystemUI(false)
 //            if (mIsHasBar) {
 //                controller.setPadding(0, 0, 0,0)
@@ -345,6 +235,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                     setVideoTextureView(mTextureView)
                     addVideoListener(this@PlayerActivity)
                 }
+                it.textComponent?.addTextOutput(this)
+
                 // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(intent.data)
                 mMediaSource = mediaSource
@@ -377,7 +269,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             } else {
                 seekTo(currentWindowIndex, C.TIME_UNSET)
                 Log.e(TAG, "[next] Seek to current: currentWindowIndex $currentWindowIndex,nextWindowIndex $nextWindowIndex")
-
             }
         }
     }
@@ -404,6 +295,11 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         return super.onCreateOptionsMenu(menu)
     }
 
+    override fun onCues(cues: MutableList<Cue>?) {
+        Log.e(TAG, "[onCues] ${cues?.size}")
+        exo_subtitles.setCues(cues)
+    }
+
     override fun onLayoutChange(view: View, p1: Int, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int, p7: Int, p8: Int) {
         //mTracker.e("[onLayoutChange]")
         applyTextureViewRotation(view as TextureView, mTextureViewRotation)
@@ -411,6 +307,15 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
 
     override fun onLoadingChanged(change: Boolean) {
         //mTracker.e("[onLoadingChanged]")
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        //mTracker.e("[onOptionsItemSelected]")
+        when (item.itemId) {
+            R.id.action_delete -> deleteVideo(getCurrentUri())
+            R.id.action_rename -> renameVideo(getCurrentUri())
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     override fun onPause() {
@@ -458,7 +363,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         initialize()
     }
 
-
     override fun onResume() {
         //mTracker.e("[onResume]")
         super.onResume()
@@ -486,13 +390,13 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //mTracker.e("[onSeekProcessed]")
     }
 
-    /**
-     * Called when the value of {@link #getShuffleModeEnabled()} changes.
-     *
-     * @param shuffleModeEnabled Whether shuffling of windows is enabled.
-     */
     override fun onShuffleModeEnabledChanged(p0: Boolean) {
         //mTracker.e("[onShuffleModeEnabledChanged]")
+        /**
+         * Called when the value of {@link #getShuffleModeEnabled()} changes.
+         *
+         * @param shuffleModeEnabled Whether shuffling of windows is enabled.
+         */
         updateNavigation()
     }
 
@@ -576,18 +480,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         seekToLastedState()
     }
 
-    private fun seekToLastedState() {
-        getCurrentUri()?.let {
-            supportActionBar?.title = it.getFilenameFromPath()
-            val position = mBookmarker.getBookmark(it)
-
-            // Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
-            position?.let {
-                seekTo(it)
-            }
-        }
-    }
-
     override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
         //mTracker.e("[onVideoSizeChanged]")
         var ratio = if (height == 0 || width == 0) 1f else (width * pixelWidthHeightRatio) / height
@@ -605,7 +497,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         exo_content_frame.videoAspectRatio = ratio
         //exo_content_frame.setAspectRatio(ratio)
     }
-
 
     override fun preparePlayback() {
         //mTracker.e("[preparePlayback]")
@@ -625,7 +516,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             } else {
                 //Log.e(TAG, "[previous] Seek to the starting position")
                 this@PlayerActivity.seekTo(0L)
-
             }
         }
     }
@@ -643,6 +533,24 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
             it.release()
             mPlayer = null
             mMediaSource = null
+        }
+    }
+
+    private fun renameVideo(path: String?) {
+        mPlayer?.let {
+            val path = path ?: return
+            dialog(this, path.getFilenameFromPath(), getString(R.string.menu_rename_file), true) {
+                renameFile(path, path.getParentPath() + File.separator + it.toString()) {
+                    if (it) {
+                        mMediaSource = generateMediaSource(File(path).toUri())
+                        mPlayer?.prepare(mMediaSource)
+                        mPlayer?.seekTo(mStartWindow, C.TIME_UNSET)
+                    } else {
+                        //
+                        toast("Renaming the file failed : ${path.getFilenameFromPath()}")
+                    }
+                }
+            }
         }
     }
 
@@ -667,7 +575,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 targetSpeed = ((speed - 5) - speed % 5)
             if (targetSpeed < 1f) targetSpeed = 1f
             toast("[frewind] $targetSpeed")
-
             playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
         }
     }
@@ -684,6 +591,17 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         //mTracker.e("[seekTo]")
         mPlayer?.apply {
             seekTo(currentWindowIndex, position)
+        }
+    }
+
+    private fun seekToLastedState() {
+        getCurrentUri()?.let {
+            supportActionBar?.title = it.getFilenameFromPath()
+            val position = mBookmarker.getBookmark(it)
+            // Log.e(TAG, "onTimelineChanged $it $position $mStartWindow")
+            position?.let {
+                seekTo(it)
+            }
         }
     }
 
@@ -735,13 +653,11 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
                 var right = 0
                 var bottom = 0
                 if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-
                     bottom += navigationBarHeight
                 } else {
                     right += navigationBarWidth
                     bottom += navigationBarHeight
                 }
-
                 controller.setPadding(left, top, right, bottom)
                 //Log.e(TAG, "[show] $left $top $right $bottom")
             }
@@ -849,6 +765,11 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener, Player.EventLi
         private const val DEFAULT_SHOW_TIMEOUT_MS = 5000L
         private const val THRESHOLD = 80
         private const val TAG = "PlayerActivity"
+        private val SRT_FORMAT by lazy {
+            Format.createTextSampleFormat(null, MimeTypes.APPLICATION_SUBRIP,
+                    Format.NO_VALUE, "en")
+        }
+
         private fun applyTextureViewRotation(textureView: TextureView, textureViewRotation: Int) {
 
             val textureViewWidth = textureView.width.toFloat()

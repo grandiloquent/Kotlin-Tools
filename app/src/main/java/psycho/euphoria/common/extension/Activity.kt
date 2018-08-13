@@ -117,27 +117,30 @@ fun Activity.openPath(path: String, forceChooser: Boolean, openAsText: Boolean =
 }
 
 fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: String, forceMimeType: String = "") {
-    Thread {
-        val newUri = getFinalUriFromPath(path, applicationId) ?: return@Thread
-        val mimeType = if (forceMimeType.isNotEmpty()) forceMimeType else getUriMimeType(path, newUri)
-        Intent().apply {
-            action = Intent.ACTION_VIEW
-            setDataAndType(newUri, mimeType)
-            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-            if (resolveActivity(packageManager) != null) {
-                val chooser = Intent.createChooser(this, STRING_OPEN_WITH)
-                try {
-                    startActivity(if (forceChooser) chooser else this)
-                } catch (e: NullPointerException) {
-                    showErrorToast(e)
-                }
-            } else {
-                if (!tryGenericMimeType(this, mimeType, newUri)) {
-                    toast(STRING_NO_APP_FOUND)
-                }
+
+    val newUri = getFinalUriFromPath(path, applicationId) ?: return
+    val mimeType = if (forceMimeType.isNotEmpty()) forceMimeType else getUriMimeType(path, newUri)
+    Intent().apply {
+        action = Intent.ACTION_VIEW
+        setDataAndType(newUri, mimeType)
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        if (resolveActivity(packageManager) != null) {
+            val chooser = Intent.createChooser(this, STRING_OPEN_WITH)
+            try {
+                startActivity(if (forceChooser) chooser else this)
+            } catch (e: NullPointerException) {
+
+                showErrorToast(e)
+            }
+        } else {
+            if (!tryGenericMimeType(this, mimeType, newUri)) {
+
+                toast(STRING_NO_APP_FOUND)
+
             }
         }
-    }.start()
+    }
+
 }
 
 fun Activity.setupDialogStuff(view: View, dialog: AlertDialog, titleId: Int = 0, callback: (() -> Unit)? = null) {

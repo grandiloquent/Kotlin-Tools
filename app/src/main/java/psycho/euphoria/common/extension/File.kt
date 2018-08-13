@@ -10,7 +10,6 @@ import java.io.FileNotFoundException
 import java.util.ArrayList
 
 
-
 fun File.isVideo(): Boolean {
     return arrayOf(".mp4", ".flv").any { name.endsWith(it, true) }
 }
@@ -19,9 +18,18 @@ fun File.listVideoFiles(): List<File>? {
     return listFiles()?.filter { it.isFile && it.isVideo() }
 }
 
+fun File.changeExtension(ext: String): File {
+    var e = ""
+    if (ext[0] != '.') {
+        e = "."
+    }
+    return File("${absolutePath.substringBeforeLast('.')}${e}${ext}")
+}
+
 fun File.toUri(): Uri {
     return Uri.fromFile(this)
 }
+
 fun File.buildUniqueFile(): File {
     val parent = parentFile
     val ext = extension
@@ -49,6 +57,7 @@ fun File.buildUniqueFile(displayName: String): File {
 fun File.isImageVideoGif(): Boolean {
     return absolutePath.isImageFast() || absolutePath.isVideoFast() || absolutePath.isGif() || absolutePath.isRawFast()
 }
+
 fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
     if (!isDirectory) return null
     val files = listFiles()
@@ -73,7 +82,7 @@ fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
     return ls
 }
 
-fun File.buildUniqueFileWithExtension( name: String, ext: String?): File {
+fun File.buildUniqueFileWithExtension(name: String, ext: String?): File {
     var file = buildFile(this, name, ext)
 
     // If conflicting file, try adding counter suffix
