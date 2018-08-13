@@ -8,17 +8,11 @@ import java.io.FileNotFoundException
 import java.util.*
 
 
-data class FileItem(val path: String,
-                    val name: String,
-                    val size: Long,
-                    val count: Int,
-                    val isDirectory: Boolean)
 
-fun File.isImageVideoGif() = absolutePath.isImageFast() || absolutePath.isVideoFast() || absolutePath.isGif() || absolutePath.isRawFast()
+
 fun File.getDirectChildrenCount(countHiddenItems: Boolean) = listFiles()?.filter { if (countHiddenItems) true else !it.isHidden }?.size
         ?: 0
 
-fun File.toFileDirItem(context: Context) = FileDirItem(absolutePath, name, context.getIsPathDirectory(absolutePath), 0, length())
 fun File.buildUniqueFile(): File {
     val parent = parentFile
     val ext = extension
@@ -143,29 +137,7 @@ fun File.getProperSize(countHiddenItems: Boolean): Long {
     }
 }
 
-fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
-    if (!isDirectory) return null
-    val files = listFiles()
-    if (files == null) return null
-    when (sort) {
 
-        SORT_BY_DATE_MODIFIED -> files.sortWith(compareBy<File> { it.isFile }.thenByDescending { it.lastModified() })
-    // Sort files in descending order, so the larger the file size, the more front
-        SORT_BY_SIZE -> files.sortWith(compareBy<File> { it.isFile }.thenByDescending { it.length() })
-        else -> files.sortWith(compareBy<File> { it.isFile }.thenBy { it.name })
-    }
-    val ls = ArrayList<FileItem>()
-    for (file in files) {
-        ls.add(FileItem(
-                file.absolutePath,
-                file.name,
-                if (file.isDirectory) 0L else file.length(),
-                if (file.isDirectory) file.listFiles()?.size ?: 0 else 0,
-                file.isDirectory
-        ))
-    }
-    return ls
-}
 
 private fun getDirectoryFileCount(dir: File, countHiddenItems: Boolean): Int {
     var count = 0

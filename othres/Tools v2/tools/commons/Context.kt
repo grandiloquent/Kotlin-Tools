@@ -64,7 +64,10 @@ fun Context.isPathOnSD(path: String) = sdCardPath.isNotEmpty() && path.startsWit
 fun Context.needsStupidWritePermissions(path: String) = (isPathOnSD(path) || path.startsWith(OTG_PATH)) && isLollipopPlus()
 val Context.audioManager get() = getSystemService(Context.AUDIO_SERVICE) as AudioManager
 val Context.baseConfig: BaseConfig get() = BaseConfig.newInstance(this)
-
+val Context.navigationBarBottom: Boolean get() = usableScreenSize.y < realScreenSize.y
+val Context.navigationBarHeight: Int get() = if (navigationBarBottom) navigationBarSize.y else 0
+val Context.navigationBarRight: Boolean get() = usableScreenSize.x < realScreenSize.x
+val Context.navigationBarWidth: Int get() = if (navigationBarRight) navigationBarSize.x else 0
 val Context.portrait get() = resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT
 val Context.sdCardPath: String get() = baseConfig.sdCardPath
 val Context.version: Int get() = Build.VERSION.SDK_INT
@@ -91,7 +94,12 @@ val Context.clipboardManager: ClipboardManager
         else
             return getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     }
-
+internal val Context.navigationBarSize: Point
+    get() = when {
+        navigationBarRight -> Point(realScreenSize.x - usableScreenSize.x, usableScreenSize.y)
+        navigationBarBottom -> Point(usableScreenSize.x, realScreenSize.y - usableScreenSize.y)
+        else -> Point()
+    }
 val Context.notificationManager: NotificationManager
     get() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
@@ -99,7 +107,41 @@ val Context.notificationManager: NotificationManager
         else
             return getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
+val Context.realScreenSize: Point
+    get() {
+        val size = Point()
+        /**
+         * Gets the real size of the display without subtracting any window decor or
+         * applying any compatibility scale factors.
+         * <p>
+         * The size is adjusted based on the current rotation of the display.
+         * </p><p>
+         * The real size may be smaller than the physical size of the screen when the
+         * window manager is emulating a smaller display (using adb shell wm size).
+         * </p>
+         *
+         * @param outSize Set to the real size of the display.
+         */
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1)
+            windowManager.defaultDisplay.getRealSize(size)
 
+
+        return size
+    }
+val Context.usableScreenSize: Point
+    get() {
+        val size = Point()
+        windowManager.defaultDisplay.getSize(size)
+        return size
+    }
+val Context.widthPixels: Int
+    get() {
+        return resources.displayMetrics.widthPixels
+    }
+val Context.heightPixels: Int
+    get() {
+        return resources.displayMetrics.heightPixels
+    }
 /*
 Functions
  */

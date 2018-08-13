@@ -7,12 +7,12 @@ import android.os.HandlerThread
 import android.os.IBinder
 import android.support.v4.app.NotificationCompat
 import android.util.Log
-import psycho.euphoria.common.extension.Services
+import psycho.euphoria.common.Services
+import psycho.euphoria.common.Services.notificationManager
 import psycho.euphoria.common.extension.createNotificationChannel
 import psycho.euphoria.common.extension.formatSize
 import psycho.euphoria.common.extension.getFormattedDuration
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.commons.notificationManager
 
 class DownloadService : Service() {
 

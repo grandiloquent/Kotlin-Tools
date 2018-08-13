@@ -15,8 +15,8 @@ import android.view.ViewConfiguration
 import android.view.animation.DecelerateInterpolator
 import android.widget.LinearLayout
 import android.widget.Scroller
-import psycho.euphoria.tools.commons.dp2px
-import psycho.euphoria.tools.commons.sp2px
+import psycho.euphoria.common.extension.dp2px
+import psycho.euphoria.common.extension.sp2px
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.max

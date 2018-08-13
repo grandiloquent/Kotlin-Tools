@@ -5,7 +5,7 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Environment
-import psycho.euphoria.tools.commons.App
+import psycho.euphoria.common.App
 import java.io.File
 
 class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(context,

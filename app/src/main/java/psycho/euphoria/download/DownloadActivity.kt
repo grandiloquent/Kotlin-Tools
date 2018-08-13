@@ -11,6 +11,9 @@ import android.support.v7.widget.helper.ItemTouchHelper
 import android.view.Menu
 import android.view.MenuItem
 import kotlinx.android.synthetic.main.activity_download.*
+import psycho.euphoria.common.Services.clipboardManager
+import psycho.euphoria.common.extension.isValidURL
+import psycho.euphoria.common.extension.toast
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File

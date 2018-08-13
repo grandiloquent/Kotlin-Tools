@@ -14,12 +14,12 @@ import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import com.davidecirillo.multichoicerecyclerview.MultiChoiceToolbar
 import kotlinx.android.synthetic.main.activity_file.*
 import kotlinx.android.synthetic.main.toolbar.*
-import psycho.euphoria.common.extension.toUri
+import psycho.euphoria.common.*
+import psycho.euphoria.common.extension.*
 import psycho.euphoria.download.DownloadActivity
 import psycho.euphoria.player.PlayerActivity
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
-import psycho.euphoria.tools.commons.*
 import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
 import psycho.euphoria.player.SplitVideo
@@ -39,7 +39,7 @@ class FileActivity : CustomActivity() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
             for (i in it.selectedItemList) {
-                deleteFile(File(it.getItem(i).path).toFileDirItem(this), true) {
+                deleteFile(File(it.getItem(i).path), true) {
                     if (it) {
                         refreshRecyclerView()
                         mFileAdapter?.deselect(i)
@@ -117,12 +117,19 @@ class FileActivity : CustomActivity() {
         }
     }
 
+    override fun onPause() {
+        Services.prefer.putInt(STATE_SORT_ORDER, mSortOrder)
+        Services.prefer.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
+        super.onPause()
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        savedInstanceState?.apply {
-            mSortOrder = getInt(STATE_SORT_ORDER)
-            mRecentDirectory = getString(STATE_RECENT_DIRECTORY)
-        }
+
+
+        mSortOrder = Services.prefer.int(STATE_SORT_ORDER)
+        mRecentDirectory = Services.prefer.getString(STATE_RECENT_DIRECTORY, Environment.getExternalStorageDirectory().absolutePath)
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(arrayOf(
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
@@ -150,11 +157,6 @@ class FileActivity : CustomActivity() {
                 }
             }
             R.id.action_sdcard -> {
-                var sdCardPath = mPrefer.getString(PREFER_SD_CARD_PATH, "")
-                if (sdCardPath.isBlank()) {
-                    sdCardPath = getSDCardPath()
-                    mPrefer.edit().putString(PREFER_SD_CARD_PATH, sdCardPath).apply()
-                }
                 refreshRecyclerView(sdCardPath)
                 mRecentDirectory = sdCardPath
             }
@@ -196,11 +198,6 @@ class FileActivity : CustomActivity() {
         initialize()
     }
 
-    override fun onSaveInstanceState(outState: Bundle) {
-        super.onSaveInstanceState(outState)
-        outState.putInt(STATE_SORT_ORDER, mSortOrder)
-        outState.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
-    }
 
     private fun refreshRecyclerView() {
         refreshRecyclerView(mRecentDirectory)

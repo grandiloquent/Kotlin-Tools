@@ -12,6 +12,10 @@ import android.util.DisplayMetrics
 import android.util.Log
 import android.view.WindowManager
 import android.widget.EditText
+import psycho.euphoria.common.MIMETYPE_DRM_MESSAGE
+import psycho.euphoria.common.extension.getDocumentFile
+import psycho.euphoria.common.extension.getFilenameFromPath
+import psycho.euphoria.common.extension.needsStupidWritePermissions
 import java.io.File
 import java.io.FileFilter
 import java.util.*

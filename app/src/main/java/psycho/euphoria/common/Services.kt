@@ -1,17 +1,31 @@
-package psycho.euphoria.common.extension
+package psycho.euphoria.common
 
 import android.app.ActivityManager
 import android.app.NotificationManager
+import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Point
 import android.media.AudioManager
 import android.os.Build
+import android.preference.PreferenceManager
 import android.view.WindowManager
+import psycho.euphoria.common.extension.getSDCardPath
+import psycho.euphoria.common.extension.putString
 import kotlin.properties.Delegates
 
 object Services {
 
+    private const val KEY_OTG_PARTITION = "otg_partition"
+    private const val KEY_SD_CARD_PATH = "sd_card_path"
+    private const val KEY_TREE_URI = "tree_uri"
+    private const val KEY_OTG_TREE_URI = "otg_tree_uri"
+    private const val KEY_TEXT_COLOR = "text_color"
+    private const val KEY_BACKGROUND_COLOR = "background_color"
+    private const val KEY_KEEP_LAST_MODIFIED = "keep_last_modified"
     var context: Context by Delegates.notNull<Context>()
+    // public static final int BASE = 1;
+
+    private fun getDefaultSDCardPath() = if (prefer.contains(KEY_SD_CARD_PATH)) "" else context.getSDCardPath()
 
     val windowManager by lazy {
         if (Build.VERSION.SDK_INT >= 23)
@@ -19,10 +33,46 @@ object Services {
         else
             context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     }
+    val prefer by lazy {
+        PreferenceManager.getDefaultSharedPreferences(context)
+    }
 
+    val density by lazy {
+        context.resources.displayMetrics.density
+    }
+    var treeUri: String
+        get() = prefer.getString(KEY_TREE_URI, "")
+        set(value) = prefer.putString(KEY_TREE_URI, value)
+    var OTGTreeUri: String
+        get() = prefer.getString(KEY_OTG_TREE_URI, "")
+        set(value) = prefer.putString(KEY_OTG_TREE_URI, value)
+    var sdCardPath: String
+        get() = prefer.getString(KEY_SD_CARD_PATH, getDefaultSDCardPath())
+        set(sdCardPath) = prefer.edit().putString(KEY_SD_CARD_PATH, sdCardPath).apply()
+    var textColor: Int
+        get() = prefer.getInt(KEY_TEXT_COLOR, 0XFFEEEEEE.toInt())
+        set(textColor) = prefer.edit().putInt(KEY_TEXT_COLOR, textColor).apply()
+    var backgroundColor: Int
+        get() = prefer.getInt(KEY_BACKGROUND_COLOR, 0XFF424242.toInt())
+        set(backgroundColor) = prefer.edit().putInt(KEY_BACKGROUND_COLOR, backgroundColor).apply()
+
+    var OTGPartition: String
+        get() = prefer.getString(KEY_OTG_PARTITION, "")
+        set(OTGPartition) = prefer.edit().putString(KEY_OTG_PARTITION, OTGPartition).apply()
+    var keepLastModified: Boolean
+        get() = prefer.getBoolean(KEY_KEEP_LAST_MODIFIED, true)
+        set(keepLastModified) = prefer.edit().putBoolean(KEY_KEEP_LAST_MODIFIED, keepLastModified).apply()
+
+    val clipboardManager by lazy {
+        if (Build.VERSION.SDK_INT >= 23)
+            context.getSystemService(ClipboardManager::class.java)
+        else
+            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+    }
     val navigationBarHeight by lazy {
         if (navigationBarBottom) navigationBarSize.y else 0
     }
+
     val navigationBarBottom by lazy {
         usableScreenSize.y < realScreenSize.y
     }

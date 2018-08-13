@@ -1,14 +1,38 @@
 package psycho.euphoria.common.extension
 
-import psycho.euphoria.tools.commons.getFilenameExtension
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.util.Patterns
+import psycho.euphoria.common.*
 import java.io.File
 import java.util.HashMap
 
+fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
+fun String.isImageSlow() = isImageFast() || getMimeType().startsWith("image")
+fun String.isArchiveFast() = archiveExtensions.any { endsWith(it, true) }
+fun String.getFilenameFromPath() = substring(lastIndexOf("/") + 1)
+fun String.isImageFast() = photoExtensions.any { endsWith(it, true) }
+fun String.isVideoFast() = videoExtensions.any { endsWith(it, true) }
+fun String.isGif() = endsWith(".gif", true)
+fun String.isRawFast() = rawExtensions.any { endsWith(it, true) }
+fun String.isAudioFast() = audioExtensions.any { endsWith(it, true) }
+fun String.getFilenameExtension() = substring(lastIndexOf(".") + 1)
 
 fun String.deleteRecursively() = File(this).walkBottomUp().fold(true) { res, it -> (it.delete() || !it.exists()) && res }
 
 fun String.getParentFilePath() = substringBeforeLast('/')
 
+
+fun String.triggerScanFile(context: Context = Services.context) {
+    val file = File(this)
+    if (!file.exists()) return
+
+    val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+    val uri = Uri.fromFile(file)
+    mediaScanIntent.data = uri
+    context.sendBroadcast(mediaScanIntent)
+}
 fun String.getMimeType(): String {
     val typesMap = HashMap<String, String>().apply {
         put("323", "text/h323")
@@ -622,10 +646,35 @@ fun String.listVideoFiles(): List<File>? {
     return null
 }
 
+fun String.getParentPath(): String {
+    var parent = removeSuffix("/${getFilenameFromPath()}")
+    if (parent == "otg:") {
+        parent = OTG_PATH
+    }
+    return parent
+}
+fun String.isValidURL(): Boolean {
+    return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
+}
 fun String.generateFileNameFromUri(parent: File): File {
     var fileName = this.substringBeforeLast('?')
     fileName = fileName.substringAfterLast('/')
     return parent.buildUniqueFile(fileName)
+}
+fun String.getGenericMimeType(): String {
+    if (!contains("/"))
+        return this
+
+    val type = substring(0, indexOf("/"))
+    return "$type/*"
+}
+fun String.convertToSeconds(): Int {
+
+    val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
+
+    return if (strings.size > 1) {
+        Integer.parseInt(strings[0]) * 60 + Integer.parseInt(strings[1])
+    } else 0
 }
 /*
 

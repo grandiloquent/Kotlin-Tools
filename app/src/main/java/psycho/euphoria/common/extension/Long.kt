@@ -1,7 +1,8 @@
 package psycho.euphoria.common.extension
 
-import psycho.euphoria.common.extension.C.TIME_END_OF_SOURCE
-import psycho.euphoria.common.extension.C.TIME_UNSET
+import psycho.euphoria.common.C
+import psycho.euphoria.common.C.TIME_END_OF_SOURCE
+import psycho.euphoria.common.C.TIME_UNSET
 import java.text.DecimalFormat
 import java.util.*
 import kotlin.math.max

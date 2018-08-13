@@ -16,9 +16,8 @@ import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_file.*
 import kotlinx.android.synthetic.main.item_file.view.*
-import psycho.euphoria.common.extension.formatSize
+import psycho.euphoria.common.extension.*
 import psycho.euphoria.tools.R
-import psycho.euphoria.tools.commons.*
 
 class FileAdapter(private val activity: AppCompatActivity,
                   private val files: ArrayList<FileItem>,
