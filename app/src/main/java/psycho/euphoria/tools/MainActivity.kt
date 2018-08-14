@@ -7,7 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.widget.Button
 import psycho.euphoria.download.DownloadActivity
-import psycho.euphoria.tools.files.FileActivity
+import psycho.euphoria.file.FileActivity
 
 class MainActivity : Activity() {
     private lateinit var mButtonPicture: Button

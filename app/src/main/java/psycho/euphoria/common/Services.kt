@@ -4,6 +4,7 @@ import android.app.ActivityManager
 import android.app.NotificationManager
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Point
 import android.media.AudioManager
 import android.os.Build
@@ -16,7 +17,7 @@ import kotlin.properties.Delegates
 
 object Services {
 
-    private const val TAG="Services"
+    private const val TAG = "Services"
     private const val KEY_OTG_PARTITION = "otg_partition"
     private const val KEY_SD_CARD_PATH = "sd_card_path"
     private const val KEY_TREE_URI = "tree_uri"
@@ -115,6 +116,9 @@ object Services {
         Log.e(TAG, "[realScreenSize] $size")
         size
 
+    }
+    val packageManager by lazy {
+        context.packageManager
     }
     val navigationBarRight by lazy {
         usableScreenSize.x < realScreenSize.x

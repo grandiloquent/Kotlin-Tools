@@ -1,12 +1,17 @@
 package psycho.euphoria.common
 
 import android.app.Application
+import psycho.euphoria.common.util.ThreadPool
 import psycho.euphoria.tools.BuildConfig
 
 class App : Application() {
 
     companion object {
         var instance: App by DelegatesExt.notNullSingleValue()
+    }
+
+    val threadPool by lazy {
+        ThreadPool()
     }
 
     override fun onCreate() {

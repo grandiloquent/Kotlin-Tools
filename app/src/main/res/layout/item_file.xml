@@ -15,7 +15,7 @@
         android:layout_height="wrap_content"
         android:paddingRight="@dimen/activity_margin">
 
-        <ImageView
+        <psycho.euphoria.file.FastImageView
             android:id="@+id/item_icon"
             android:layout_width="@dimen/normal_icon_size"
             android:layout_height="@dimen/normal_icon_size"

@@ -1,4 +1,4 @@
-package psycho.euphoria.tools.files
+package psycho.euphoria.file
 
 import android.content.pm.PackageManager
 import android.graphics.Color
@@ -8,16 +8,14 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import com.bumptech.glide.Glide
-import com.bumptech.glide.load.engine.DiskCacheStrategy
-import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions
-import com.bumptech.glide.request.RequestOptions
 import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_file.*
 import kotlinx.android.synthetic.main.item_file.view.*
+import kotlinx.android.synthetic.main.statusbar.*
 import psycho.euphoria.common.extension.*
 import psycho.euphoria.tools.R
+import java.io.File
 
 class FileAdapter(private val activity: AppCompatActivity,
                   private val files: ArrayList<FileItem>,
@@ -29,7 +27,6 @@ class FileAdapter(private val activity: AppCompatActivity,
     private val mPdfDrawble: Drawable = activity.resources.getDrawable(R.drawable.ic_file_pdf)
     private val mAudioDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_audio)
     private val mArchiveDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_archive)
-    private val mOptions: RequestOptions // Glide option
 
 
     init {
@@ -37,9 +34,7 @@ class FileAdapter(private val activity: AppCompatActivity,
 
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_file, TEXT_COLOR.toInt())
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_folder, TEXT_COLOR.toInt())
-        mOptions = RequestOptions()
-                .diskCacheStrategy(DiskCacheStrategy.RESOURCE)
-                .error(mFileDrawble)
+
     }
 
     fun switchData(list: List<FileItem>) {
@@ -92,7 +87,6 @@ class FileAdapter(private val activity: AppCompatActivity,
         private var mFileItem: FileItem? = null
 
 
-
         init {
             //itemView.isLongClickable = true
             //itemView.setOnClickListener(this)
@@ -104,40 +98,52 @@ class FileAdapter(private val activity: AppCompatActivity,
             with(fileItem) {
                 item_name.text = name
                 if (isDirectory) {
-                    item_icon.setImageDrawable(mFolderDrawable)
+                    //item_icon.setImageDrawable(mFolderDrawable)
+                    item_icon.drawble = mFolderDrawable
                     item_details.text = "$count item"
                 } else {
                     item_details.text = size.formatSize()
 
-                    when {
-                        name.endsWith(".pdf", true) -> item_icon.setImageDrawable(mPdfDrawble)
-                        name.isArchiveFast() -> item_icon.setImageDrawable(mArchiveDrawable)
-                        name.isAudioFast() -> item_icon.setImageDrawable(mAudioDrawable)
-                        name.isImageFast() or name.isVideoFast() or name.endsWith(".apk", true) -> {
-                            // If the file type is a picture, video or Android app installation package, try to get the thumbnail
-                            // The way to determine the file type is to compare the extension of the file, so it is not very reliable
-                            var itemToLoad = if (fileItem.name.endsWith(".apk", true)) {
-                                val packageManager = activity.packageManager
-                                val packageInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
-                                if (packageInfo != null) {
-                                    val appInfo = packageInfo.applicationInfo.apply {
-                                        sourceDir = path
-                                        publicSourceDir = path
-
-                                    }
-                                    appInfo.loadIcon(packageManager)
-                                } else {
-                                    path
-                                }
-                            } else {
-                                path
-                            }
-                            Glide.with(activity).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(mOptions).into(item_icon)
-                        }
-                        else -> {
-                            item_icon.setImageDrawable(mFileDrawble)
+                    if (name.isVideoFast() || name.endsWith(".apk", true)) {
+                        ThumbnailManager.instance?.into(path, item_icon, mFileDrawble)
+                    } else {
+                        item_icon.drawble = when {
+                            name.endsWith(".pdf", true) -> mPdfDrawble
+                            name.isArchiveFast() -> mArchiveDrawable
+                            else -> mFileDrawble
                         }
                     }
+
+
+//                    when {
+//                        name.endsWith(".pdf", true) -> item_icon.setImageDrawable(mPdfDrawble)
+//                        name.isArchiveFast() -> item_icon.setImageDrawable(mArchiveDrawable)
+//                        name.isAudioFast() -> item_icon.setImageDrawable(mAudioDrawable)
+//                        name.isImageFast() or name.isVideoFast() or name.endsWith(".apk", true) -> {
+//                            // If the file type is a picture, video or Android app installation package, try to get the thumbnail
+//                            // The way to determine the file type is to compare the extension of the file, so it is not very reliable
+//                            var itemToLoad = if (fileItem.name.endsWith(".apk", true)) {
+//                                val packageManager = activity.packageManager
+//                                val packageInfo = packageManager.getPackageArchiveInfo(path, PackageManager.GET_ACTIVITIES)
+//                                if (packageInfo != null) {
+//                                    val appInfo = packageInfo.applicationInfo.apply {
+//                                        sourceDir = path
+//                                        publicSourceDir = path
+//
+//                                    }
+//                                    appInfo.loadIcon(packageManager)
+//                                } else {
+//                                    path
+//                                }
+//                            } else {
+//                                path
+//                            }
+//                            Glide.with(activity).load(itemToLoad).transition(DrawableTransitionOptions.withCrossFade()).apply(mOptions).into(item_icon)
+//                        }
+//                        else -> {
+//                            item_icon.setImageDrawable(mFileDrawble)
+//                        }
+                    //}
 
 
                     // Load images with Glide

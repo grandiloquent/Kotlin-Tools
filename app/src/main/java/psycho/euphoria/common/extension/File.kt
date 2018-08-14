@@ -7,6 +7,7 @@ import psycho.euphoria.common.SORT_BY_NAME
 import psycho.euphoria.common.SORT_BY_SIZE
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.FilenameFilter
 import java.util.ArrayList
 
 
@@ -58,9 +59,9 @@ fun File.isImageVideoGif(): Boolean {
     return absolutePath.isImageFast() || absolutePath.isVideoFast() || absolutePath.isGif() || absolutePath.isRawFast()
 }
 
-fun File.listFileItems(sort: Int = SORT_BY_NAME): ArrayList<FileItem>? {
+fun File.listFileItems(sort: Int = SORT_BY_NAME, mIsNotShowHidden: Boolean = true): ArrayList<FileItem>? {
     if (!isDirectory) return null
-    val files = listFiles()
+    val files = if (mIsNotShowHidden) listFiles(FilenameFilter { file, s -> !s.startsWith(".") }) else listFiles()
     if (files == null) return null
     when (sort) {
 
