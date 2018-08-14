@@ -48,9 +48,9 @@ class FastImageView : View {
 //            canvas.clipRect(Rect(0, 0, 126, 126))
 //
             if (intrinsicHeight == intrinsicWidth) {
-                Log.e(TAG,
-                        "intrinsicHeight ${intrinsicHeight}\n"
-                                + "intrinsicWidth ${intrinsicWidth}\n")
+//                Log.e(TAG,
+//                        "intrinsicHeight ${intrinsicHeight}\n"
+//                                + "intrinsicWidth ${intrinsicWidth}\n")
 
                 left = abs(width - intrinsicHeight) / 2
                 top = left
@@ -65,19 +65,19 @@ class FastImageView : View {
                 h = (intrinsicHeight / scale).toInt()
                 left = (width - w) / 2
                 top = (height - h) / 2
-                Log.e(TAG,
-                        "h ${h}\n"
-                                + "height ${height}\n"
-                                + "intrinsicHeight ${intrinsicHeight}\n"
-                                + "intrinsicWidth ${intrinsicWidth}\n"
-                                + "left ${left}\n"
-                                + "scale ${scale}\n"
-                                + "scaleHeight ${scaleHeight}\n"
-                                + "scaleWidth ${scaleWidth}\n"
-                                + "top ${top}\n"
-                                + "w ${w}\n"
-                                + "width ${width}\n"
-                )
+//                Log.e(TAG,
+//                        "h ${h}\n"
+//                                + "height ${height}\n"
+//                                + "intrinsicHeight ${intrinsicHeight}\n"
+//                                + "intrinsicWidth ${intrinsicWidth}\n"
+//                                + "left ${left}\n"
+//                                + "scale ${scale}\n"
+//                                + "scaleHeight ${scaleHeight}\n"
+//                                + "scaleWidth ${scaleWidth}\n"
+//                                + "top ${top}\n"
+//                                + "w ${w}\n"
+//                                + "width ${width}\n"
+//                )
             }
 
 

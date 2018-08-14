@@ -7,10 +7,15 @@
 
     <include layout="@layout/toolbar" />
 
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/recycler_view"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
+  <psycho.euphoria.file.PullToRefreshView
+      android:id="@+id/pull_refresh_view"
+      android:layout_width="match_parent"
+      android:layout_height="match_parent">
+      <android.support.v7.widget.RecyclerView
+          android:id="@+id/recycler_view"
+          android:layout_width="match_parent"
+          android:layout_height="match_parent"
+          app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
+  </psycho.euphoria.file.PullToRefreshView>
 
 </LinearLayout>

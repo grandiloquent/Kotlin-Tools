@@ -10,6 +10,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
+import android.view.ViewConfiguration
 import android.view.WindowManager
 import psycho.euphoria.common.extension.getSDCardPath
 import psycho.euphoria.common.extension.putString
@@ -161,6 +162,9 @@ object Services {
         else
             context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     }
+    val touchSlop by lazy {
+        ViewConfiguration.get(context).scaledTouchSlop
+    }
     val activityManager by lazy {
         if (Build.VERSION.SDK_INT >= 23)
             context.getSystemService(ActivityManager::class.java)
@@ -183,4 +187,8 @@ object Services {
         set(value) {
             audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0)
         }
+
+    fun dp2px(dp: Int): Int {
+        return Math.round(dp.toFloat() * density)
+    }
 }

@@ -62,6 +62,14 @@ class FileActivity : CustomActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
+
+        pull_refresh_view.listener=object :PullToRefreshView.OnRefreshListener{
+            override fun onRefresh() {
+                refreshRecyclerView()
+                pull_refresh_view.setRefreshing(false)
+            }
+
+        }
     }
 
     private fun initializeRecyclerView() {
