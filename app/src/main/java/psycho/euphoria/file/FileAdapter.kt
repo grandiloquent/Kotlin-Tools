@@ -76,6 +76,14 @@ class FileAdapter(private val activity: AppCompatActivity,
         return files[position]
     }
 
+    override fun getItemViewType(position: Int): Int {
+        return super.getItemViewType(position)
+    }
+
+    override fun onViewRecycled(holder: ViewHolder) {
+        holder.item_icon.drawble = null
+    }
+
     companion object {
         private const val TEXT_COLOR = 0XFF333333
     }

@@ -63,12 +63,9 @@ class FileActivity : CustomActivity() {
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
 
-        pull_refresh_view.listener=object :PullToRefreshView.OnRefreshListener{
-            override fun onRefresh() {
-                refreshRecyclerView()
-                pull_refresh_view.setRefreshing(false)
-            }
-
+        pull_refresh_view.setOnRefreshListener {
+            refreshRecyclerView()
+            pull_refresh_view.setRefreshing(false)
         }
     }
 
