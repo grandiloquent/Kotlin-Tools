@@ -1,4 +1,5 @@
 package psycho.euphoria.common.ui
+
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
@@ -40,6 +41,7 @@ class SwipeRefreshLayout : ViewGroup {
     private var mInitialMotionX = 0f
     private var mAlphaStartAnimation: Animation? = null
     private var mAlphaMaxAnimation: Animation? = null
+    private var TOUCH_THRESHOLD: Int
     private val mRefreshListener = object : Animation.AnimationListener {
         override fun onAnimationStart(animation: Animation) {}
         override fun onAnimationRepeat(animation: Animation) {}
@@ -77,9 +79,11 @@ class SwipeRefreshLayout : ViewGroup {
             moveToStart(interpolatedTime)
         }
     }
+
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
+
     init {
         mProgress.setStyle(CircularProgressDrawable.DEFAULT)
         mCircleView.setImageDrawable(mProgress)
@@ -96,7 +100,9 @@ class SwipeRefreshLayout : ViewGroup {
         mOriginalOffsetTop = -mCircleDiameter
         mCurrentTargetOffsetLeft = -mCircleDiameter
         moveToStart(1.0f);
+        TOUCH_THRESHOLD = Services.widthPixels / 3
     }
+
     private fun animateOffsetToCorrectPosition(from: Int, listener: Animation.AnimationListener) {
         mFrom = from
         mAnimateToCorrectPosition.reset()
@@ -106,6 +112,7 @@ class SwipeRefreshLayout : ViewGroup {
         mCircleView.clearAnimation()
         mCircleView.startAnimation(mAnimateToCorrectPosition)
     }
+
     private fun animateOffsetToStartPosition(from: Int, listener: AnimationListener?) {
         mFrom = from
         mAnimateToStartPosition.reset()
@@ -117,6 +124,7 @@ class SwipeRefreshLayout : ViewGroup {
         mCircleView.clearAnimation()
         mCircleView.startAnimation(mAnimateToStartPosition)
     }
+
     private fun ensureTarget() {
         if (mTarget == null) {
             for (i in 0 until childCount) {
@@ -128,6 +136,7 @@ class SwipeRefreshLayout : ViewGroup {
             }
         }
     }
+
     private fun finishSpinner(overscrollTop: Float) {
         if (overscrollTop > mTotalDragDistance) {
             setRefreshing(true, true)
@@ -140,12 +149,14 @@ class SwipeRefreshLayout : ViewGroup {
                 override fun onAnimationEnd(animation: Animation?) {
                     startScaleDownAnimation(null)
                 }
+
                 override fun onAnimationRepeat(animation: Animation) {}
             }
             animateOffsetToStartPosition(mCurrentTargetOffsetLeft, listener)
             mProgress.setArrowEnabled(false)
         }
     }
+
     override fun getChildDrawingOrder(childCount: Int, i: Int): Int {
         return if (mCircleViewIndex < 0) {
             i
@@ -157,9 +168,11 @@ class SwipeRefreshLayout : ViewGroup {
             i
         }
     }
+
     private fun isAnimationRunning(animation: Animation?): Boolean {
         return animation != null && animation.hasStarted() && !animation.hasEnded()
     }
+
     private fun moveSpinner(overscrollTop: Float) {
         mProgress.setArrowEnabled(true)
         val originalDragPercent = overscrollTop / mTotalDragDistance
@@ -194,12 +207,14 @@ class SwipeRefreshLayout : ViewGroup {
         mProgress.setProgressRotation(rotation)
         setTargetOffsetLeftAndRight(targetY - mCurrentTargetOffsetLeft)
     }
+
     private fun moveToStart(interpolatedTime: Float) {
         var targetTop = 0
         targetTop = mFrom + ((mOriginalOffsetTop - mFrom) * interpolatedTime).toInt()
         val offset = targetTop - mCircleView.left
         setTargetOffsetLeftAndRight(offset)
     }
+
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         ensureTarget()
         val action = ev.getActionMasked()
@@ -230,7 +245,8 @@ class SwipeRefreshLayout : ViewGroup {
                     return false
                 }
                 val x = ev.getX(pointerIndex)
-                startDragging(x)
+                if (x < TOUCH_THRESHOLD)
+                    startDragging(x)
             }
             MotionEvent.ACTION_POINTER_UP -> onSecondaryPointerUp(ev)
             MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
@@ -240,6 +256,7 @@ class SwipeRefreshLayout : ViewGroup {
         }
         return mIsBeingDragged
     }
+
     override fun onLayout(p0: Boolean, p1: Int, p2: Int, p3: Int, p4: Int) {
         val width = measuredWidth
         val height = measuredHeight
@@ -266,6 +283,7 @@ class SwipeRefreshLayout : ViewGroup {
                 height / 2 + circleHeight / 2)
 //
     }
+
     public override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         if (mTarget == null) {
@@ -288,6 +306,7 @@ class SwipeRefreshLayout : ViewGroup {
             }
         }
     }
+
     private fun onSecondaryPointerUp(ev: MotionEvent) {
         val pointerIndex = ev.actionIndex
         val pointerId = ev.getPointerId(pointerIndex)
@@ -296,6 +315,7 @@ class SwipeRefreshLayout : ViewGroup {
             mActivePointerId = ev.getPointerId(newPointerIndex)
         }
     }
+
     override fun onTouchEvent(ev: MotionEvent): Boolean {
         val action = ev.actionMasked
         var pointerIndex = -1
@@ -316,7 +336,8 @@ class SwipeRefreshLayout : ViewGroup {
                     return false
                 }
                 val x = ev.getX(pointerIndex)
-                startDragging(x)
+                if (x < TOUCH_THRESHOLD)
+                    startDragging(x)
                 if (mIsBeingDragged) {
                     val overscrollTop = (x - mInitialMotionX) * DRAG_RATE
                     if (overscrollTop > 0) {
@@ -352,6 +373,7 @@ class SwipeRefreshLayout : ViewGroup {
         }
         return true
     }
+
     fun reset() {
         mCircleView.clearAnimation()
         mProgress.stop()
@@ -359,10 +381,12 @@ class SwipeRefreshLayout : ViewGroup {
         setTargetOffsetLeftAndRight(mOriginalOffsetTop - mCurrentTargetOffsetLeft)
         mCurrentTargetOffsetLeft = mCircleView.left
     }
+
     private fun setAnimationProgress(progress: Float) {
         mCircleView.scaleX = progress
         mCircleView.scaleY = progress
     }
+
     fun setRefreshing(refreshing: Boolean) {
         if (refreshing && mRefreshing != refreshing) {
             mRefreshing = refreshing
@@ -379,6 +403,7 @@ class SwipeRefreshLayout : ViewGroup {
             setRefreshing(refreshing, false)
         }
     }
+
     private fun setRefreshing(refreshing: Boolean, notify: Boolean) {
         if (mRefreshing != refreshing) {
             mNotify = notify
@@ -392,11 +417,13 @@ class SwipeRefreshLayout : ViewGroup {
             }
         }
     }
+
     fun setTargetOffsetLeftAndRight(offset: Int) {
         mCircleView.bringToFront()
         mCircleView.offsetLeftAndRight(offset)
         mCurrentTargetOffsetLeft = mCircleView.left
     }
+
     private fun startAlphaAnimation(startingAlpha: Int, endingAlpha: Int): Animation {
         val alpha = object : Animation() {
             public override fun applyTransformation(interpolatedTime: Float, t: Transformation) {
@@ -410,6 +437,7 @@ class SwipeRefreshLayout : ViewGroup {
         mCircleView.startAnimation(alpha)
         return alpha
     }
+
     private fun startDragging(x: Float) {
         val xDiff = x - mInitialDownX
         if (xDiff > mTouchSlop && !mIsBeingDragged) {
@@ -418,12 +446,15 @@ class SwipeRefreshLayout : ViewGroup {
             mProgress.setAlpha(STARTING_PROGRESS_ALPHA)
         }
     }
+
     private fun startProgressAlphaMaxAnimation() {
         mAlphaMaxAnimation = startAlphaAnimation(mProgress.alpha, MAX_ALPHA)
     }
+
     private fun startProgressAlphaStartAnimation() {
         mAlphaStartAnimation = startAlphaAnimation(mProgress.alpha, STARTING_PROGRESS_ALPHA)
     }
+
     fun startScaleDownAnimation(listener: Animation.AnimationListener?) {
         mScaleDownAnimation = object : Animation() {
             public override fun applyTransformation(interpolatedTime: Float, t: Transformation) {
@@ -435,6 +466,7 @@ class SwipeRefreshLayout : ViewGroup {
         mCircleView.clearAnimation()
         mCircleView.startAnimation(mScaleDownAnimation)
     }
+
     private fun startScaleUpAnimation() {
         mCircleView.visibility = View.VISIBLE
         mScaleAnimation = object : Animation() {
@@ -446,6 +478,7 @@ class SwipeRefreshLayout : ViewGroup {
         mCircleView.clearAnimation()
         mCircleView.startAnimation(mScaleAnimation)
     }
+
     companion object {
         private const val TAG = "SwipeRefreshLayout"
         private const val CIRCLE_DIAMETER = 40
@@ -461,6 +494,7 @@ class SwipeRefreshLayout : ViewGroup {
         private const val ANIMATE_TO_START_DURATION = 200L
         private const val MAX_PROGRESS_ANGLE = .8f
     }
+
     interface OnRefreshListener {
         fun onRefresh()
     }

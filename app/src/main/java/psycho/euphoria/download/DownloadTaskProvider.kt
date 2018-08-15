@@ -4,8 +4,9 @@ import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Environment
+import psycho.euphoria.common.Services
 import java.io.File
-class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(context,
+class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelper(context,
         File(Environment.getExternalStorageDirectory(), DATANAME).absolutePath,
         null,
         VERSION) {

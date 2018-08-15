@@ -1,4 +1,5 @@
 package psycho.euphoria.common
+
 import android.app.ActivityManager
 import android.app.Application
 import android.app.NotificationManager
@@ -18,12 +19,14 @@ import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.ViewParent
+
 class App : Application() {
     override fun onCreate() {
         super.onCreate()
         Services.context = this
     }
 }
+
 object Services {
     private const val TAG = "Services"
     private const val KEY_OTG_PARTITION = "otg_partition"
@@ -59,7 +62,7 @@ object Services {
     var treeUri: String
         get() = prefer.getString(KEY_TREE_URI, "")
         set(value) = prefer.edit().putString(KEY_TREE_URI, value).apply()
-/*==================================*/
+    /*==================================*/
     val activityManager by lazy {
         if (Build.VERSION.SDK_INT >= 23)
             context.getSystemService(ActivityManager::class.java)
@@ -186,13 +189,18 @@ object Services {
         else
             context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     }
+    val widthPixels by lazy {
+        context.resources.displayMetrics.widthPixels
+    }
     val handler by lazy {
         Handler(Looper.getMainLooper())
     }
+
     /*==================================*/
     fun dp2px(dp: Int): Int {
         return Math.round(dp.toFloat() * density)
     }
+
     fun setBackground(view: View, background: Drawable) {
         if (Build.VERSION.SDK_INT >= 16) {
             view.background = background
@@ -200,6 +208,7 @@ object Services {
             view.setBackgroundDrawable(background)
         }
     }
+
     fun offsetTopAndBottom(view: View, offset: Int) {
         if (Build.VERSION.SDK_INT >= 23) {
             view.offsetTopAndBottom(offset)
@@ -227,6 +236,7 @@ object Services {
             compatOffsetTopAndBottom(view, offset)
         }
     }
+
     private fun compatOffsetTopAndBottom(view: View, offset: Int) {
         view.offsetTopAndBottom(offset)
         if (view.visibility == View.VISIBLE) {
@@ -237,11 +247,13 @@ object Services {
             }
         }
     }
+
     private fun tickleInvalidationFlag(view: View) {
         val y = view.translationY
         view.translationY = y + 1
         view.translationY = y
     }
+
     fun getColor(id: Int): Int {
         if (Build.VERSION.SDK_INT >= 23) {
             return context.getColor(id);
@@ -250,6 +262,7 @@ object Services {
         }
     }
 }
+
 inline fun View.visible() {
     if (visibility != View.VISIBLE) {
         visibility = View.VISIBLE
