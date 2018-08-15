@@ -1,5 +1,4 @@
 package psycho.euphoria.common
-
 import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -17,13 +16,8 @@ import android.view.View
 import android.view.ViewConfiguration
 import psycho.euphoria.common.extension.*
 import psycho.euphoria.tools.R
-
 open class CustomActivity : AppCompatActivity() {
-
     protected var mIsHasBar = false
-
-
-
     fun handleSAFDialog(path: String, callback: () -> Unit): Boolean {
         return if (!path.startsWith(OTG_PATH) && isShowingSAFDialog(path, Services.treeUri, REQUEST_OPEN_DOCUMENT_TREE)) {
             funAfterSAFPermission = callback
@@ -127,7 +121,6 @@ open class CustomActivity : AppCompatActivity() {
                 View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION or
                 View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
     }
-
     /*
      if (requestCode == MIC_PERMISSION_REQUEST_CODE && permissions.length > 0) {
                 if (grantResults[0] != PackageManager.PERMISSION_GRANTED) {
@@ -141,11 +134,9 @@ open class CustomActivity : AppCompatActivity() {
      */
     companion object {
         var funAfterSAFPermission: (() -> Unit)? = null
-
         fun checkPermission(activity: Activity, permission: String): Boolean {
             return ContextCompat.checkSelfPermission(activity, permission) == PackageManager.PERMISSION_GRANTED
         }
-
         fun requestPermisson(activity: Activity, permission: String, shouldManual: () -> Unit?, requestPermissionCode: Int) {
             if (ActivityCompat.shouldShowRequestPermissionRationale(activity, permission)) {
                 // Require users to set up on the phone Manual

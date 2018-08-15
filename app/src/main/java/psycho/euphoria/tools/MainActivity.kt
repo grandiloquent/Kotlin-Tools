@@ -1,5 +1,4 @@
 package psycho.euphoria.tools
-
 import android.Manifest
 import android.app.Activity
 import android.content.Intent
@@ -8,7 +7,6 @@ import android.os.Bundle
 import android.widget.Button
 import psycho.euphoria.download.DownloadActivity
 import psycho.euphoria.file.FileActivity
-
 class MainActivity : Activity() {
     private lateinit var mButtonPicture: Button
     private fun initialize() {
@@ -31,13 +29,10 @@ class MainActivity : Activity() {
             launchDownloadActivity()
         }
     }
-
     fun launchDownloadActivity() {
         val intent = Intent(this, DownloadActivity::class.java)
         startActivity(intent)
-
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -48,16 +43,13 @@ class MainActivity : Activity() {
             ), REQUEST_PERMISSIONS_CODE)
         } else initialize()
     }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         initialize()
     }
-
     companion object {
         private const val REQUEST_PERMISSIONS_CODE = 1
         const val TYPE_PICTURE = "picture"
         const val TYPE_VIDEO = "video"
         const val TYPE_MUSIC = "music"
     }
-
 }

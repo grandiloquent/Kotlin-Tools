@@ -1,6 +1,4 @@
-
 package psycho.euphoria.common;
-
 import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
@@ -9,32 +7,24 @@ import android.os.Build;
 import android.os.ParcelFileDescriptor;
 import android.text.TextUtils;
 import android.util.Log;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
-
 public class Utils {
     private static final String TAG = "Utils";
     private static final String DEBUG_TAG = "GalleryDebug";
-
     private static final long POLY64REV = 0x95AC9329AC4BC9B5L;
     private static final long INITIALCRC = 0xFFFFFFFFFFFFFFFFL;
-
     private static long[] sCrcTable = new long[256];
-
     private static final boolean IS_DEBUG_BUILD =
             Build.TYPE.equals("eng") || Build.TYPE.equals("userdebug");
-
     private static final String MASK_STRING = "********************************";
-
     // Throws AssertionError if the input is false.
     public static void assertTrue(boolean cond) {
         if (!cond) {
             throw new AssertionError();
         }
     }
-
     // Throws AssertionError with the message. We had a method having the form
     //   assertTrue(boolean cond, String message, Object ... args);
     // However a call to that method will cause memory allocation even if the
@@ -44,19 +34,16 @@ public class Utils {
         throw new AssertionError(
                 args.length == 0 ? message : String.format(message, args));
     }
-
     // Throws NullPointerException if the input is null.
     public static <T> T checkNotNull(T object) {
         if (object == null) throw new NullPointerException();
         return object;
     }
-
     // Returns true if two input Object are both null or equal
     // to each other.
     public static boolean equals(Object a, Object b) {
         return (a == b) || (a == null ? false : a.equals(b));
     }
-
     // Returns the next power of two.
     // Returns the input if it is already power of 2.
     // Throws IllegalArgumentException if the input is <= 0 or
@@ -71,7 +58,6 @@ public class Utils {
         n |= n >> 1;
         return n + 1;
     }
-
     // Returns the previous power of two.
     // Returns the input if it is already power of 2.
     // Throws IllegalArgumentException if the input is <= 0
@@ -79,38 +65,32 @@ public class Utils {
         if (n <= 0) throw new IllegalArgumentException();
         return Integer.highestOneBit(n);
     }
-
     // Returns the input value x clamped to the range [min, max].
     public static int clamp(int x, int min, int max) {
         if (x > max) return max;
         if (x < min) return min;
         return x;
     }
-
     // Returns the input value x clamped to the range [min, max].
     public static float clamp(float x, float min, float max) {
         if (x > max) return max;
         if (x < min) return min;
         return x;
     }
-
     // Returns the input value x clamped to the range [min, max].
     public static long clamp(long x, long min, long max) {
         if (x > max) return max;
         if (x < min) return min;
         return x;
     }
-
     public static boolean isOpaque(int color) {
         return color >>> 24 == 0xFF;
     }
-
     public static void swap(int[] array, int i, int j) {
         int temp = array[i];
         array[i] = array[j];
         array[j] = temp;
     }
-
     /**
      * A function thats returns a 64-bit crc for string
      *
@@ -123,7 +103,6 @@ public class Utils {
         }
         return crc64Long(getBytes(in));
     }
-
     static {
         // http://bioinf.cs.ucl.ac.uk/downloads/crc64/crc64.c
         long part;
@@ -136,7 +115,6 @@ public class Utils {
             sCrcTable[i] = part;
         }
     }
-
     public static final long crc64Long(byte[] buffer) {
         long crc = INITIALCRC;
         for (int k = 0, n = buffer.length; k < n; ++k) {
@@ -144,7 +122,6 @@ public class Utils {
         }
         return crc;
     }
-
     public static byte[] getBytes(String in) {
         byte[] result = new byte[in.length() * 2];
         int output = 0;
@@ -154,7 +131,6 @@ public class Utils {
         }
         return result;
     }
-
     public static void closeSilently(Closeable c) {
         if (c == null) return;
         try {
@@ -163,11 +139,9 @@ public class Utils {
             Log.w(TAG, "close fail ", t);
         }
     }
-
     public static int compare(long a, long b) {
         return a < b ? -1 : a == b ? 0 : 1;
     }
-
     public static int ceilLog2(float value) {
         int i;
         for (i = 0; i < 31; i++) {
@@ -175,7 +149,6 @@ public class Utils {
         }
         return i;
     }
-
     public static int floorLog2(float value) {
         int i;
         for (i = 0; i < 31; i++) {
@@ -183,7 +156,6 @@ public class Utils {
         }
         return i - 1;
     }
-
     public static void closeSilently(ParcelFileDescriptor fd) {
         try {
             if (fd != null) fd.close();
@@ -191,7 +163,6 @@ public class Utils {
             Log.w(TAG, "fail to close", t);
         }
     }
-
     public static void closeSilently(Cursor cursor) {
         try {
             if (cursor != null) cursor.close();
@@ -199,7 +170,6 @@ public class Utils {
             Log.w(TAG, "fail to close", t);
         }
     }
-
     public static float interpolateAngle(
             float source, float target, float progress) {
         // interpolate the angle from source to target
@@ -208,20 +178,16 @@ public class Utils {
         float diff = target - source;
         if (diff < 0) diff += 360f;
         if (diff > 180) diff -= 360f;
-
         float result = source + diff * progress;
         return result < 0 ? result + 360f : result;
     }
-
     public static float interpolateScale(
             float source, float target, float progress) {
         return source + progress * (target - source);
     }
-
     public static String ensureNotNull(String value) {
         return value == null ? "" : value;
     }
-
     public static float parseFloatSafely(String content, float defaultValue) {
         if (content == null) return defaultValue;
         try {
@@ -230,7 +196,6 @@ public class Utils {
             return defaultValue;
         }
     }
-
     public static int parseIntSafely(String content, int defaultValue) {
         if (content == null) return defaultValue;
         try {
@@ -239,11 +204,9 @@ public class Utils {
             return defaultValue;
         }
     }
-
     public static boolean isNullOrEmpty(String exifMake) {
         return TextUtils.isEmpty(exifMake);
     }
-
     public static void waitWithoutInterrupt(Object object) {
         try {
             object.wait();
@@ -251,7 +214,6 @@ public class Utils {
             Log.w(TAG, "unexpected interrupt: " + object);
         }
     }
-
     public static boolean handleInterrruptedException(Throwable e) {
         // A helper to deal with the interrupt exception
         // If an interrupt detected, we will setup the bit again.
@@ -262,7 +224,6 @@ public class Utils {
         }
         return false;
     }
-
     /**
      * @return String with special XML characters escaped.
      */
@@ -281,7 +242,6 @@ public class Utils {
         }
         return sb.toString();
     }
-
     public static String getUserAgent(Context context) {
         PackageInfo packageInfo;
         try {
@@ -300,14 +260,12 @@ public class Utils {
                 Build.VERSION.RELEASE,
                 Build.VERSION.INCREMENTAL);
     }
-
     public static String[] copyOf(String[] source, int newSize) {
         String[] result = new String[newSize];
         newSize = Math.min(source.length, newSize);
         System.arraycopy(source, 0, result, 0, newSize);
         return result;
     }
-
     // Mask information for debugging only. It returns <code>info.toString()</code> directly
     // for debugging build (i.e., 'eng' and 'userdebug') and returns a mask ("****")
     // in release build to protect the information (e.g. for privacy issue).
@@ -317,7 +275,6 @@ public class Utils {
         int length = Math.min(s.length(), MASK_STRING.length());
         return IS_DEBUG_BUILD ? s : MASK_STRING.substring(0, length);
     }
-
     // This method should be ONLY used for debugging.
     public static void debug(String message, Object ... args) {
         Log.v(DEBUG_TAG, String.format(message, args));

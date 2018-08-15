@@ -1,19 +1,14 @@
-
 package psycho.euphoria.common;
-
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.text.TextUtils;
-
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-
 public final class EntrySchema {
     @SuppressWarnings("unused")
     private static final String TAG = "EntrySchema";
-
     public static final int TYPE_STRING = 0;
     public static final int TYPE_BOOLEAN = 1;
     public static final int TYPE_SHORT = 2;
@@ -24,20 +19,16 @@ public final class EntrySchema {
     public static final int TYPE_BLOB = 7;
     private static final String SQLITE_TYPES[] = {
             "TEXT", "INTEGER", "INTEGER", "INTEGER", "INTEGER", "REAL", "REAL", "NONE" };
-
     private static final String FULL_TEXT_INDEX_SUFFIX = "_fulltext";
-
     private final String mTableName;
     private final ColumnInfo[] mColumnInfo;
     private final String[] mProjection;
     private final boolean mHasFullTextIndex;
-
     public EntrySchema(Class<? extends Entry> clazz) {
         // Get table and column metadata from reflection.
         ColumnInfo[] columns = parseColumnInfo(clazz);
         mTableName = parseTableName(clazz);
         mColumnInfo = columns;
-
         // Cache the list of projection columns and check for full-text columns.
         String[] projection = {};
         boolean hasFullTextIndex = false;
@@ -54,19 +45,15 @@ public final class EntrySchema {
         mProjection = projection;
         mHasFullTextIndex = hasFullTextIndex;
     }
-
     public String getTableName() {
         return mTableName;
     }
-
     public ColumnInfo[] getColumnInfo() {
         return mColumnInfo;
     }
-
     public String[] getProjection() {
         return mProjection;
     }
-
     public int getColumnIndex(String columnName) {
         for (ColumnInfo column : mColumnInfo) {
             if (column.name.equals(columnName)) {
@@ -75,16 +62,13 @@ public final class EntrySchema {
         }
         return -1;
     }
-
     public ColumnInfo getColumn(String columnName) {
         int index = getColumnIndex(columnName);
         return (index < 0) ? null : mColumnInfo[index];
     }
-
     private void logExecSql(SQLiteDatabase db, String sql) {
         db.execSQL(sql);
     }
-
     public <T extends Entry> T cursorToObject(Cursor cursor, T object) {
         try {
             for (ColumnInfo column : mColumnInfo) {
@@ -126,12 +110,10 @@ public final class EntrySchema {
             throw new RuntimeException(e);
         }
     }
-
     private void setIfNotNull(Field field, Object object, Object value)
             throws IllegalAccessException {
         if (value != null) field.set(object, value);
     }
-
     /**
      * Converts the ContentValues to the object. The ContentValues may not
      * contain values for all the fields in the object.
@@ -173,7 +155,6 @@ public final class EntrySchema {
             throw new RuntimeException(e);
         }
     }
-
     public void objectToValues(Entry object, ContentValues values) {
         try {
             for (ColumnInfo column : mColumnInfo) {
@@ -210,7 +191,6 @@ public final class EntrySchema {
             throw new RuntimeException(e);
         }
     }
-
     public String toDebugString(Entry entry) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -227,7 +207,6 @@ public final class EntrySchema {
             throw new RuntimeException(e);
         }
     }
-
     public String toDebugString(Entry entry, String... columnNames) {
         try {
             StringBuilder sb = new StringBuilder();
@@ -244,11 +223,9 @@ public final class EntrySchema {
             throw new RuntimeException(e);
         }
     }
-
     public Cursor queryAll(SQLiteDatabase db) {
         return db.query(mTableName, mProjection, null, null, null, null, null);
     }
-
     public boolean queryWithId(SQLiteDatabase db, long id, Entry entry) {
         Cursor cursor = db.query(mTableName, mProjection, "_id=?",
                 new String[] {Long.toString(id)}, null, null, null);
@@ -260,7 +237,6 @@ public final class EntrySchema {
         cursor.close();
         return success;
     }
-
     public long insertOrReplace(SQLiteDatabase db, Entry entry) {
         ContentValues values = new ContentValues();
         objectToValues(entry, values);
@@ -271,16 +247,13 @@ public final class EntrySchema {
         entry.id = id;
         return id;
     }
-
     public boolean deleteWithId(SQLiteDatabase db, long id) {
         return db.delete(mTableName, "_id=?", new String[] { Long.toString(id) }) == 1;
     }
-
     public void createTables(SQLiteDatabase db) {
         // Wrapped class must have a @Table.Definition.
         String tableName = mTableName;
         Utils.assertTrue(tableName != null);
-
         // Add the CREATE TABLE statement for the main table.
         StringBuilder sql = new StringBuilder("CREATE TABLE ");
         sql.append(tableName);
@@ -311,7 +284,6 @@ public final class EntrySchema {
         sql.append(");");
         logExecSql(db, sql.toString());
         sql.setLength(0);
-
         // Create indexes for all indexed columns.
         for (ColumnInfo column : mColumnInfo) {
             // Create an index on the indexed columns.
@@ -329,7 +301,6 @@ public final class EntrySchema {
                 sql.setLength(0);
             }
         }
-
         if (mHasFullTextIndex) {
             // Add an FTS virtual table if using full-text search.
             String ftsTableName = tableName + FULL_TEXT_INDEX_SUFFIX;
@@ -348,7 +319,6 @@ public final class EntrySchema {
             sql.append(");");
             logExecSql(db, sql.toString());
             sql.setLength(0);
-
             // Build an insert statement that will automatically keep the FTS
             // table in sync.
             StringBuilder insertSql = new StringBuilder("INSERT OR REPLACE INTO ");
@@ -369,7 +339,6 @@ public final class EntrySchema {
             }
             insertSql.append(");");
             String insertSqlString = insertSql.toString();
-
             // Add an insert trigger.
             sql.append("CREATE TRIGGER ");
             sql.append(tableName);
@@ -380,7 +349,6 @@ public final class EntrySchema {
             sql.append("END;");
             logExecSql(db, sql.toString());
             sql.setLength(0);
-
             // Add an update trigger.
             sql.append("CREATE TRIGGER ");
             sql.append(tableName);
@@ -391,7 +359,6 @@ public final class EntrySchema {
             sql.append("END;");
             logExecSql(db, sql.toString());
             sql.setLength(0);
-
             // Add a delete trigger.
             sql.append("CREATE TRIGGER ");
             sql.append(tableName);
@@ -404,7 +371,6 @@ public final class EntrySchema {
             sql.setLength(0);
         }
     }
-
     public void dropTables(SQLiteDatabase db) {
         String tableName = mTableName;
         StringBuilder sql = new StringBuilder("DROP TABLE IF EXISTS ");
@@ -412,7 +378,6 @@ public final class EntrySchema {
         sql.append(';');
         logExecSql(db, sql.toString());
         sql.setLength(0);
-
         if (mHasFullTextIndex) {
             sql.append("DROP TABLE IF EXISTS ");
             sql.append(tableName);
@@ -420,40 +385,33 @@ public final class EntrySchema {
             sql.append(';');
             logExecSql(db, sql.toString());
         }
-
     }
-
     public void deleteAll(SQLiteDatabase db) {
         StringBuilder sql = new StringBuilder("DELETE FROM ");
         sql.append(mTableName);
         sql.append(";");
         logExecSql(db, sql.toString());
     }
-
     private String parseTableName(Class<? extends Object> clazz) {
         // Check for a table annotation.
         Entry.Table table = clazz.getAnnotation(Entry.Table.class);
         if (table == null) {
             return null;
         }
-
         // Return the table name.
         return table.value();
     }
-
     private ColumnInfo[] parseColumnInfo(Class<? extends Object> clazz) {
         ArrayList<ColumnInfo> columns = new ArrayList<ColumnInfo>();
         while (clazz != null) {
             parseColumnInfo(clazz, columns);
             clazz = clazz.getSuperclass();
         }
-
         // Return a list.
         ColumnInfo[] columnList = new ColumnInfo[columns.size()];
         columns.toArray(columnList);
         return columnList;
     }
-
     private void parseColumnInfo(Class<? extends Object> clazz, ArrayList<ColumnInfo> columns) {
         // Gather metadata from each annotated field.
         Field[] fields = clazz.getDeclaredFields(); // including non-public fields
@@ -462,7 +420,6 @@ public final class EntrySchema {
             Field field = fields[i];
             Entry.Column info = ((AnnotatedElement) field).getAnnotation(Entry.Column.class);
             if (info == null) continue;
-
             // Determine the field type.
             int type;
             Class<?> fieldType = field.getType();
@@ -486,17 +443,14 @@ public final class EntrySchema {
                 throw new IllegalArgumentException(
                         "Unsupported field type for column: " + fieldType.getName());
             }
-
             // Add the column to the array.
             int index = columns.size();
             columns.add(new ColumnInfo(info.value(), type, info.indexed(), info.unique(),
                     info.fullText(), info.defaultValue(), field, index));
         }
     }
-
     public static final class ColumnInfo {
         private static final String ID_KEY = "_id";
-
         public final String name;
         public final int type;
         public final boolean indexed;
@@ -505,7 +459,6 @@ public final class EntrySchema {
         public final String defaultValue;
         public final Field field;
         public final int projectionIndex;
-
         public ColumnInfo(String name, int type, boolean indexed, boolean unique,
                 boolean fullText, String defaultValue, Field field, int projectionIndex) {
             this.name = name.toLowerCase();
@@ -516,10 +469,8 @@ public final class EntrySchema {
             this.defaultValue = defaultValue;
             this.field = field;
             this.projectionIndex = projectionIndex;
-
             field.setAccessible(true); // in order to set non-public fields
         }
-
         public boolean isId() {
             return ID_KEY.equals(name);
         }

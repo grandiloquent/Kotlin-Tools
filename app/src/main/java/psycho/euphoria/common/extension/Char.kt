@@ -1,5 +1,4 @@
 package psycho.euphoria.common.extension
-
 fun Char.isValidFatFilenameChar(): Boolean {
     if (this.toInt() in 0x00..0x1f) {
         return false

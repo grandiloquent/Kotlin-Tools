@@ -1,51 +1,30 @@
 package psycho.euphoria.download
-
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.os.Environment
-import psycho.euphoria.common.App
 import java.io.File
-
 class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(context,
         File(Environment.getExternalStorageDirectory(), DATANAME).absolutePath,
         null,
         VERSION) {
-
     override fun onCreate(database: SQLiteDatabase) {
         val sb = StringBuilder()
-
-
-
         sb.append("CREATE TABLE `tasks` (\r\n")
-
         sb.append("\t`_id`\tINTEGER,\r\n")
-
         sb.append("\t`finished`\tINTEGER NOT NULL,\r\n")
-
         sb.append("\t`uri`\tTEXT NOT NULL UNIQUE,\r\n")
-
         sb.append("\t`filename`\tTEXT NOT NULL UNIQUE,\r\n")
-
         sb.append("\t`failed`\tINTEGER,\r\n")
-
         sb.append("\t`create_time`\tINTEGER,\r\n")
-
         sb.append("\t`etag`\tTEXT,\r\n")
-
         sb.append("\t`current_bytes`\tINTEGER,\r\n")
-
         sb.append("\t`total_bytes`\tINTEGER,\r\n")
-
         sb.append("\tPRIMARY KEY(`_id`)\r\n")
-
         sb.append(");\n")
-
         database.execSQL(sb.toString())
-
     }
-
     fun insert(uri: String,
                filename: String,
                failed: Int = 0,
@@ -62,7 +41,6 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         contentValues.put(COLUMN_URI, uri)
         writableDatabase.insertWithOnConflict(TABLE_NAME_TASKS, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE)
     }
-
     fun listTasks(): MutableList<Request> {
         val list = mutableListOf<Request>()
         //
@@ -78,7 +56,6 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
                         0L,// cursor.getLong(5),
                         cursor.getInt(6),
                         0
-
                 )
                 list.add(downloadInfo)
             }
@@ -86,9 +63,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
             cursor.close()
         }
         return list
-
     }
-
     fun update(_id: Long,
                uri: String? = null,
                filename: String? = null,
@@ -107,7 +82,6 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
             contentValues.put(COLUMN_URI, uri)
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$_id"), SQLiteDatabase.CONFLICT_IGNORE)
     }
-
     fun update(downloadInfo: Request) {
         val  contentValues = ContentValues()
         contentValues.put(COLUMN_CURRENT_BYTES, downloadInfo.currentBytes)
@@ -117,12 +91,9 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         contentValues.put(COLUMN_TOTAL_BYTES, downloadInfo.totalBytes)
         contentValues.put(COLUMN_URI, downloadInfo.uri)
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("${downloadInfo.id}"), SQLiteDatabase.CONFLICT_IGNORE)
-
     }
-
     override fun onUpgrade(p0: SQLiteDatabase?, p1: Int, p2: Int) {
     }
-
     companion object {
         private const val VERSION = 1
         private const val DATANAME = "donwload_task.db"
@@ -136,9 +107,7 @@ class DownloadTaskProvider(context: Context = App.instance) : SQLiteOpenHelper(c
         private const val COLUMN_CURRENT_BYTES = "current_bytes"
         private const val COLUMN_TOTAL_BYTES = "total_bytes"
         private const val COLUMN_ETAG = "etag"
-
         private var instance: DownloadTaskProvider? = null
-
         fun getInstance(): DownloadTaskProvider {
             return instance ?: synchronized(this) {
                 DownloadTaskProvider().also {

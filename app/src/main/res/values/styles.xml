@@ -1,17 +1,12 @@
 <resources>
-
     <style name="TextAppearance" parent="@android:style/TextAppearance">
         <item name="android:textColor">?android:attr/textColorPrimary</item>
     </style>
-
     <style name="TextAppearance.Regular">
-
     </style>
-
     <style name="TextAppearance.Regular.Body1">
         <item name="android:textSize">14sp</item>
     </style>
-
     <declare-styleable name="MeterNumberPicker">
         <attr name="mnp_min" format="integer" />
         <attr name="mnp_max" format="integer" />
@@ -24,7 +19,6 @@
         <attr name="mnp_paddingHorizontal" format="dimension" />
         <attr name="mnp_paddingVertical" format="dimension" />
     </declare-styleable>
-
     <declare-styleable name="MeterView">
         <attr name="mv_numberOfFirst" format="integer" />
         <attr name="mv_numberOfSecond" format="integer" />
@@ -33,7 +27,6 @@
         <attr name="mv_pickerStyle" format="reference" />
         <attr name="mv_enabled" format="boolean" />
     </declare-styleable>
-
     <style name="MyBorderlessBackgroundStyle">
         <item name="android:background">?attr/selectableItemBackground</item>
     </style>
@@ -41,43 +34,35 @@
         <item name="colorControlNormal">@android:color/white</item>
         <item name="android:textColorSecondary">@android:color/white</item>
     </style>
-
     <style name="ExoMediaButton">
         <item name="android:background">?android:attr/selectableItemBackground</item>
         <item name="android:layout_width">@dimen/exo_media_button_width</item>
         <item name="android:layout_height">@dimen/exo_media_button_height</item>
     </style>
-
     <style name="ExoMediaButton.Previous">
         <item name="android:src">@drawable/exo_controls_previous</item>
         <item name="android:contentDescription">@string/exo_controls_previous_description</item>
     </style>
-
     <style name="ExoMediaButton.Next">
         <item name="android:src">@drawable/exo_controls_next</item>
         <item name="android:contentDescription">@string/exo_controls_next_description</item>
     </style>
-
     <style name="ExoMediaButton.FastForward">
         <item name="android:src">@drawable/exo_controls_fastforward</item>
         <item name="android:contentDescription">@string/exo_controls_fastforward_description</item>
     </style>
-
     <style name="ExoMediaButton.Rewind">
         <item name="android:src">@drawable/exo_controls_rewind</item>
         <item name="android:contentDescription">@string/exo_controls_rewind_description</item>
     </style>
-
     <style name="ExoMediaButton.Play">
         <item name="android:src">@drawable/exo_controls_play</item>
         <item name="android:contentDescription">@string/exo_controls_play_description</item>
     </style>
-
     <style name="ExoMediaButton.Pause">
         <item name="android:src">@drawable/exo_controls_pause</item>
         <item name="android:contentDescription">@string/exo_controls_pause_description</item>
     </style>
-
     <style name="ExoMediaButton.Shuffle">
         <item name="android:src">@drawable/exo_controls_shuffle</item>
         <item name="android:contentDescription">@string/exo_controls_shuffle_description</item>

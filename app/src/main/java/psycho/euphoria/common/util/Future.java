@@ -1,5 +1,4 @@
 package psycho.euphoria.common.util;
-
 // This Future differs from the java.util.concurrent.Future in these aspects:
 //
 // - Once cancel() is called, isCancelled() always returns true. It is a sticky

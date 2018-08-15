@@ -1,18 +1,13 @@
 package psycho.euphoria.tools.commons
-
 import android.graphics.Point
 import android.text.format.DateFormat
 import java.io.File
 import java.math.RoundingMode
 import java.text.DecimalFormat
 import java.util.*
-
 fun ClosedRange<Char>.randomString(lenght: Int) = (1..lenght).map { (Random().nextInt(endInclusive.toInt() - start.toInt()) + start.toInt()).toChar() }.joinToString("")
 fun ClosedRange<Int>.random() = Random().nextInt((endInclusive + 1) - start) + start
 fun Point.formatAsResolution() = "$x x $y ${getMPx()}"
-
-
-
 fun Int.getFormattedDuration(): String {
     val sb = StringBuilder(8)
     val hours = this / 3600
@@ -30,17 +25,14 @@ fun Long.formatDate(): String {
     cal.timeInMillis = this
     return DateFormat.format("dd.MM.yyyy kk:mm", cal).toString()
 }
-
 fun Int.formatNumberWithLocale(): String {
     return String.format(Locale.getDefault(), "%d", this)
 }
-
 fun Point.getMPx(): String {
     val px = x * y / 1000000.toFloat()
     val rounded = Math.round(px * 10) / 10.toFloat()
     return "(${rounded}MP)"
 }
-
 fun getPaths(file: File): ArrayList<String> {
     val paths = arrayListOf<String>(file.absolutePath)
     if (file.isDirectory) {

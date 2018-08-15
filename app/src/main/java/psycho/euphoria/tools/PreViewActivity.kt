@@ -1,17 +1,11 @@
 package psycho.euphoria.tools
-
 import android.Manifest
 import android.app.Activity
 import android.os.Build
 import android.os.Bundle
-
 class PreViewActivity : Activity() {
-
-
     private fun initialize() {
-
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -23,11 +17,9 @@ class PreViewActivity : Activity() {
             ), REQUEST_PERMISSIONS_CODE);
         } else initialize()
     }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         initialize()
     }
-
     companion object {
         private const val REQUEST_PERMISSIONS_CODE = 1;
     }

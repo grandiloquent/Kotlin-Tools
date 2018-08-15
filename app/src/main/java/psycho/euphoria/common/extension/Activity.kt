@@ -1,5 +1,4 @@
 package psycho.euphoria.common.extension
-
 import android.Manifest.permission
 import android.annotation.SuppressLint
 import android.app.Activity
@@ -30,21 +29,17 @@ import psycho.euphoria.tools.BuildConfig
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.CustomTextView
 import java.io.File
-
 private const val STRING_NO_APP_FOUND = "No valid app found"
 private const val STRING_OPEN_WITH = "Open with"
 private const val STRING_AN_ERROR_OCCURRED = "An error occurred: %s"
 private const val STRING_MAXIMUM_SHARE_REACHED = "You cannot share this much content at once"
 private const val STRING_SHARE_VIA = "Share via"
 private const val STRING_UNKNOWN_ERROR_OCCURRED = "An unknown error occurred"
-
-
 fun Activity.isActivityDestroyed() = isJellyBeanMr1Plus && isDestroyed
 fun Activity.copyToClipboard(text: String) {
     val clip = ClipData.newPlainText("commons", text)
     Services.clipboardManager.primaryClip = clip
 }
-
 @SuppressLint("NewApi")
 fun Activity.getColorCompat(resId: Int): Int {
     return if (isMPlus)
@@ -52,7 +47,6 @@ fun Activity.getColorCompat(resId: Int): Int {
     else
         resources.getColor(resId)
 }
-
 fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
     val uri = try {
         ensurePublicUri(path, applicationId)
@@ -66,7 +60,6 @@ fun Activity.getFinalUriFromPath(path: String, applicationId: String): Uri? {
     }
     return uri
 }
-
 fun Activity.isShowingSAFDialog(path: String, treeUri: String, requestCode: Int): Boolean {
     return if (needsStupidWritePermissions(path) && (treeUri.isEmpty() || !hasProperStoredTreeUri())) {
         runOnUiThread {
@@ -89,12 +82,10 @@ fun Activity.isShowingSAFDialog(path: String, treeUri: String, requestCode: Int)
         false
     }
 }
-
 @SuppressLint("NewApi")
 fun Activity.launchActivity(klass: Class<*>) {
     startActivity(Intent(this, klass))
 }
-
 fun Activity.maybeRequestReadExternalStoragePermission(vararg uris: Uri): Boolean {
     if (Build.VERSION.SDK_INT < 23) {
         return false
@@ -110,14 +101,11 @@ fun Activity.maybeRequestReadExternalStoragePermission(vararg uris: Uri): Boolea
     }
     return false
 }
-
 fun Activity.openPath(path: String, forceChooser: Boolean, openAsText: Boolean = false) {
     val mimeType = if (openAsText) "text/plain" else ""
     openPathIntent(path, forceChooser, BuildConfig.APPLICATION_ID, mimeType)
 }
-
 fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: String, forceMimeType: String = "") {
-
     val newUri = getFinalUriFromPath(path, applicationId) ?: return
     val mimeType = if (forceMimeType.isNotEmpty()) forceMimeType else getUriMimeType(path, newUri)
     Intent().apply {
@@ -129,20 +117,15 @@ fun Activity.openPathIntent(path: String, forceChooser: Boolean, applicationId: 
             try {
                 startActivity(if (forceChooser) chooser else this)
             } catch (e: NullPointerException) {
-
                 showErrorToast(e)
             }
         } else {
             if (!tryGenericMimeType(this, mimeType, newUri)) {
-
                 toast(STRING_NO_APP_FOUND)
-
             }
         }
     }
-
 }
-
 fun Activity.setupDialogStuff(view: View, dialog: AlertDialog, titleId: Int = 0, callback: (() -> Unit)? = null) {
     if (isActivityDestroyed()) {
         return
@@ -172,7 +155,6 @@ fun Activity.setupDialogStuff(view: View, dialog: AlertDialog, titleId: Int = 0,
     }
     callback?.invoke()
 }
-
 fun Activity.sharePathIntent(path: String, applicationId: String) {
     Thread {
         val newUri = getFinalUriFromPath(path, applicationId) ?: return@Thread
@@ -197,15 +179,12 @@ fun Activity.sharePathIntent(path: String, applicationId: String) {
         }
     }.start()
 }
-
 fun Activity.showErrorToast(msg: String, length: Int = Toast.LENGTH_LONG) {
     toast(String.format(STRING_AN_ERROR_OCCURRED, message))
 }
-
 fun Activity.showErrorToast(exception: Exception, length: Int = Toast.LENGTH_LONG) {
     showErrorToast(exception.toString(), length)
 }
-
 fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boolean {
     var genericMimeType = mimeType.getGenericMimeType()
     if (genericMimeType.isEmpty()) {
@@ -219,7 +198,6 @@ fun Activity.tryGenericMimeType(intent: Intent, mimeType: String, uri: Uri): Boo
         false
     }
 }
-
 fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: Boolean = false) {
     if (!forceChooser && path.endsWith(".apk", true)) {
         val uri = if (isNPlus) {
@@ -241,7 +219,6 @@ fun Activity.tryOpenPathIntent(path: String, forceChooser: Boolean, openAsText: 
         openPath(path, forceChooser, openAsText)
     }
 }
-
 fun Context.updateLastModified(path: String, lastModified: Long) {
     val values = ContentValues().apply {
         put(MediaStore.MediaColumns.DATE_MODIFIED, lastModified / 1000)
@@ -255,7 +232,6 @@ fun Context.updateLastModified(path: String, lastModified: Long) {
     } catch (ignored: Exception) {
     }
 }
-
 fun CustomActivity.createDirectorySync(directory: String): Boolean {
     if (getDoesFilePathExist(directory)) {
         return true
@@ -267,7 +243,6 @@ fun CustomActivity.createDirectorySync(directory: String): Boolean {
     }
     return File(directory).mkdirs()
 }
-
 fun CustomActivity.deleteFile(file: File, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     if (Looper.myLooper() == Looper.getMainLooper()) {
         Thread {
@@ -277,7 +252,6 @@ fun CustomActivity.deleteFile(file: File, allowDeleteFolder: Boolean = false, ca
         deleteFileBg(file, allowDeleteFolder, callback)
     }
 }
-
 fun CustomActivity.deleteFileBg(file: File, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     val path = file.path
     val file = File(path)
@@ -303,7 +277,6 @@ fun CustomActivity.deleteFileBg(file: File, allowDeleteFolder: Boolean = false, 
         }
     }
 }
-
 fun CustomActivity.deleteFiles(files: ArrayList<File>, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     if (Looper.myLooper() == Looper.getMainLooper()) {
         Thread {
@@ -313,7 +286,6 @@ fun CustomActivity.deleteFiles(files: ArrayList<File>, allowDeleteFolder: Boolea
         deleteFilesBg(files, allowDeleteFolder, callback)
     }
 }
-
 fun CustomActivity.deleteFilesBg(files: ArrayList<File>, allowDeleteFolder: Boolean = false, callback: ((wasSuccess: Boolean) -> Unit)? = null) {
     if (files.isEmpty()) {
         runOnUiThread {
@@ -337,7 +309,6 @@ fun CustomActivity.deleteFilesBg(files: ArrayList<File>, allowDeleteFolder: Bool
         }
     }
 }
-
 fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((success: Boolean) -> Unit)? = null) {
     if (needsStupidWritePermissions(newPath)) {
         handleSAFDialog(newPath) {
@@ -387,7 +358,6 @@ fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((succ
             }
         }
     } else if (File(oldPath).renameTo(File(newPath).buildUniqueFile())) {
-
         if (File(newPath).isDirectory) {
             deleteFromMediaStore(oldPath)
             rescanPaths(arrayListOf(newPath)) {
@@ -412,7 +382,6 @@ fun CustomActivity.renameFile(oldPath: String, newPath: String, callback: ((succ
         }
     }
 }
-
 private fun deleteRecursively(file: File): Boolean {
     if (file.isDirectory) {
         val files = file.listFiles() ?: return file.delete()

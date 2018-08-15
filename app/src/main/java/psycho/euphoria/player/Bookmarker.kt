@@ -1,15 +1,11 @@
 package psycho.euphoria.player
-
 import android.content.Context
 import android.util.Log
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.DataInputStream
 import java.io.DataOutputStream
-
-
 class Bookmarker(private val context: Context) {
-
     fun setBookmark(path: String, bookmark: Long) {
         try {
             val cache = CacheManager.getCahce(context,
@@ -25,13 +21,10 @@ class Bookmarker(private val context: Context) {
                 flush()
                 cache?.insert(path.hashCode().toLong(), bos.toByteArray())
             }
-
-
         } catch (t: Throwable) {
             Log.e(TAG, "setBookmark failed", t)
         }
     }
-
     fun getBookmark(path: String): Long? {
         try {
             val cache = CacheManager.getCahce(context,
@@ -52,13 +45,11 @@ class Bookmarker(private val context: Context) {
 //            return null
 //        }
             return bookmark
-
         } catch (t: Throwable) {
             Log.e(TAG, "getBookmark failed", t)
         }
         return null
     }
-
     companion object {
         private const val BOOKMARK_CACHE_FILE = "bookmark"
         private const val BOOKMARK_CACHE_MAX_BYTES = 10 * 1024

@@ -1,5 +1,4 @@
 package psycho.euphoria.player;
-
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.Resources;
@@ -15,19 +14,16 @@ import com.google.android.exoplayer2.text.TextOutput;
 import com.google.android.exoplayer2.util.Util;
 import java.util.ArrayList;
 import java.util.List;
-
 /**
  * A view for displaying subtitle {@link Cue}s.
  */
 public final class SubtitleView extends View implements TextOutput {
-
   /**
    * The default fractional text size.
    *
    * @see #setFractionalTextSize(float, boolean)
    */
   public static final float DEFAULT_TEXT_SIZE_FRACTION = 0.0533f;
-
   /**
    * The default bottom padding to apply when {@link Cue#line} is {@link Cue#DIMEN_UNSET}, as a
    * fraction of the viewport height.
@@ -35,9 +31,7 @@ public final class SubtitleView extends View implements TextOutput {
    * @see #setBottomPaddingFraction(float)
    */
   public static final float DEFAULT_BOTTOM_PADDING_FRACTION = 0.08f;
-
   private final List<SubtitlePainter> painters;
-
   private List<Cue> cues;
   private @Cue.TextSizeType int textSizeType;
   private float textSize;
@@ -45,11 +39,9 @@ public final class SubtitleView extends View implements TextOutput {
   private boolean applyEmbeddedFontSizes;
   private CaptionStyleCompat style;
   private float bottomPaddingFraction;
-
   public SubtitleView(Context context) {
     this(context, null);
   }
-
   public SubtitleView(Context context, AttributeSet attrs) {
     super(context, attrs);
     painters = new ArrayList<>();
@@ -60,12 +52,10 @@ public final class SubtitleView extends View implements TextOutput {
     style = CaptionStyleCompat.DEFAULT;
     bottomPaddingFraction = DEFAULT_BOTTOM_PADDING_FRACTION;
   }
-
   @Override
   public void onCues(List<Cue> cues) {
     setCues(cues);
   }
-
   /**
    * Sets the cues to be displayed by the view.
    *
@@ -84,7 +74,6 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   /**
    * Set the text size to a given unit and value.
    * <p>
@@ -105,7 +94,6 @@ public final class SubtitleView extends View implements TextOutput {
         Cue.TEXT_SIZE_TYPE_ABSOLUTE,
         TypedValue.applyDimension(unit, size, resources.getDisplayMetrics()));
   }
-
   /**
    * Sets the text size to one derived from {@link CaptioningManager#getFontScale()}, or to a
    * default size before API level 19.
@@ -114,7 +102,6 @@ public final class SubtitleView extends View implements TextOutput {
     float fontScale = Util.SDK_INT >= 19 && !isInEditMode() ? getUserCaptionFontScaleV19() : 1f;
     setFractionalTextSize(DEFAULT_TEXT_SIZE_FRACTION * fontScale);
   }
-
   /**
    * Sets the text size to be a fraction of the view's remaining height after its top and bottom
    * padding have been subtracted.
@@ -126,7 +113,6 @@ public final class SubtitleView extends View implements TextOutput {
   public void setFractionalTextSize(float fractionOfHeight) {
     setFractionalTextSize(fractionOfHeight, false);
   }
-
   /**
    * Sets the text size to be a fraction of the height of this view.
    *
@@ -143,7 +129,6 @@ public final class SubtitleView extends View implements TextOutput {
             : Cue.TEXT_SIZE_TYPE_FRACTIONAL,
         fractionOfHeight);
   }
-
   private void setTextSize(@Cue.TextSizeType int textSizeType, float textSize) {
     if (this.textSizeType == textSizeType && this.textSize == textSize) {
       return;
@@ -153,7 +138,6 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   /**
    * Sets whether styling embedded within the cues should be applied. Enabled by default.
    * Overrides any setting made with {@link SubtitleView#setApplyEmbeddedFontSizes}.
@@ -170,7 +154,6 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   /**
    * Sets whether font sizes embedded within the cues should be applied. Enabled by default.
    * Only takes effect if {@link SubtitleView#setApplyEmbeddedStyles} is set to true.
@@ -185,7 +168,6 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   /**
    * Sets the caption style to be equivalent to the one returned by
    * {@link CaptioningManager#getUserStyle()}, or to a default style before API level 19.
@@ -194,7 +176,6 @@ public final class SubtitleView extends View implements TextOutput {
     setStyle(Util.SDK_INT >= 19 && !isInEditMode()
         ? getUserCaptionStyleV19() : CaptionStyleCompat.DEFAULT);
   }
-
   /**
    * Sets the caption style.
    *
@@ -208,7 +189,6 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   /**
    * Sets the bottom padding fraction to apply when {@link Cue#line} is {@link Cue#DIMEN_UNSET},
    * as a fraction of the view's remaining height after its top and bottom padding have been
@@ -226,13 +206,11 @@ public final class SubtitleView extends View implements TextOutput {
     // Invalidate to trigger drawing.
     invalidate();
   }
-
   @Override
   public void dispatchDraw(Canvas canvas) {
     int cueCount = (cues == null) ? 0 : cues.size();
     int rawTop = getTop();
     int rawBottom = getBottom();
-
     // Calculate the bounds after padding is taken into account.
     int left = getLeft() + getPaddingLeft();
     int top = rawTop + getPaddingTop();
@@ -244,14 +222,12 @@ public final class SubtitleView extends View implements TextOutput {
     }
     int rawViewHeight = rawBottom - rawTop;
     int viewHeightMinusPadding = bottom - top;
-
     float defaultViewTextSizePx =
         resolveTextSize(textSizeType, textSize, rawViewHeight, viewHeightMinusPadding);
     if (defaultViewTextSizePx <= 0) {
       // Text has no height.
       return;
     }
-
     for (int i = 0; i < cueCount; i++) {
       Cue cue = cues.get(i);
       float textSizePx =
@@ -271,7 +247,6 @@ public final class SubtitleView extends View implements TextOutput {
           bottom);
     }
   }
-
   private float resolveTextSizeForCue(
       Cue cue, int rawViewHeight, int viewHeightMinusPadding, float defaultViewTextSizePx) {
     if (cue.textSizeType == Cue.TYPE_UNSET || cue.textSize == Cue.DIMEN_UNSET) {
@@ -281,7 +256,6 @@ public final class SubtitleView extends View implements TextOutput {
         resolveTextSize(cue.textSizeType, cue.textSize, rawViewHeight, viewHeightMinusPadding);
     return defaultCueTextSizePx > 0 ? defaultCueTextSizePx : defaultViewTextSizePx;
   }
-
   private float resolveTextSize(
       @Cue.TextSizeType int textSizeType,
       float textSize,
@@ -299,19 +273,16 @@ public final class SubtitleView extends View implements TextOutput {
         return Cue.DIMEN_UNSET;
     }
   }
-
   @TargetApi(19)
   private float getUserCaptionFontScaleV19() {
     CaptioningManager captioningManager =
         (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     return captioningManager.getFontScale();
   }
-
   @TargetApi(19)
   private CaptionStyleCompat getUserCaptionStyleV19() {
     CaptioningManager captioningManager =
         (CaptioningManager) getContext().getSystemService(Context.CAPTIONING_SERVICE);
     return CaptionStyleCompat.createFromCaptionStyle(captioningManager.getUserStyle());
   }
-
 }

@@ -1,5 +1,4 @@
 package psycho.euphoria.download
-
 import android.app.Service
 import android.content.Intent
 import android.os.Handler
@@ -13,20 +12,16 @@ import psycho.euphoria.common.extension.createNotificationChannel
 import psycho.euphoria.common.extension.formatSize
 import psycho.euphoria.common.extension.getFormattedDuration
 import psycho.euphoria.tools.R
-
 class DownloadService : Service() {
-
     private val mLock = java.lang.Object()
     private val mActiveNotifies = HashMap<String, Long>()
     private val mStringBuilder = StringBuilder(8)
     private var mUpdateThread: HandlerThread? = null
     private var mUpdateHandler: Handler? = null
     private var mRequestQueue: RequestQueue? = null
-
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
-
     override fun onCreate() {
         super.onCreate()
         mUpdateThread = HandlerThread("${TAG}-Thread")
@@ -51,40 +46,32 @@ class DownloadService : Service() {
             true
         })
         Services.context = this.applicationContext
-
         createNotificationChannel(CHANNEL_ACTIVE, resources.getString(R.string.download_running))
         mRequestQueue = RequestQueue(3)
     }
-
     private fun startDownload() {
         val tasks = DownloadTaskProvider.getInstance().listTasks()
         Log.e(TAG, "startDownload ${tasks.size}")
-
         for (task in tasks) {
             task.requestCompleteListener = object : Request.RequestCompleteListener {
                 override fun onNoUsableReceived(request: Request) {
-
                 }
-
                 override fun onNotifySpeed(taskState: TaskState) {
                     //Log.e(TAG, "onNotifySpeed ${taskState}")
                     val msg = mUpdateHandler?.obtainMessage(MSG_UPDATE_NOTIFICATION, taskState)
                     mUpdateHandler?.sendMessage(msg)
                     //Log.e(TAG, "onNotifySpeed $taskState")
                 }
-
                 override fun onNotifyCompleted(id: Long) {
                     val msg = mUpdateHandler?.obtainMessage(MSG_COMPLETE_NOTIFICATION)
                     msg?.arg1 = id.toInt()
                     mUpdateHandler?.sendMessage(msg)
                 }
-
             }
             mRequestQueue?.add(task)
         }
         mRequestQueue?.start()
     }
-
     override fun onDestroy() {
         super.onDestroy()
         /**
@@ -159,7 +146,6 @@ class DownloadService : Service() {
             Log.e(TAG, "onDestroy", e)
         }
     }
-
     private fun makeNotification(id: Long,
                                  speed: Long,
                                  current: Long,
@@ -177,9 +163,7 @@ class DownloadService : Service() {
         builder.setWhen(firstShow)
         builder.setOnlyAlertOnce(true)
         builder.setContentTitle(speed.formatSize())
-
         Log.e(TAG, "makeNotification $id $speed $current $total")
-
         if (total > 0L) {
             builder.setProgress(100, ((current * 100) / total).toInt(), false)
         } else {
@@ -187,12 +171,9 @@ class DownloadService : Service() {
         }
         builder.setContentText("${(getRemainingMillis(total, current, speed) / 1000).toInt().getFormattedDuration(mStringBuilder)} (${current.formatSize()}/${total.formatSize()})")
         mStringBuilder.setLength(0)
-
         notificationManager.notify(tag, 0, builder.build())
     }
-
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-
         startDownload()
         /**
          * Constant to return from {@link #onStartCommand}: if this service's
@@ -211,7 +192,6 @@ class DownloadService : Service() {
          */
         return START_STICKY
     }
-
     companion object {
         private const val MSG_UPDATE_NOTIFICATION = 1
         private const val MSG_COMPLETE_NOTIFICATION = 2
@@ -221,5 +201,4 @@ class DownloadService : Service() {
             return ((total - current) * 1000) / speed;
         }
     }
-
 }

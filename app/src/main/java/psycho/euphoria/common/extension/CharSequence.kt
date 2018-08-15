@@ -1,8 +1,6 @@
 package psycho.euphoria.common.extension
-
 fun CharSequence?.eq(b: CharSequence?): Boolean {
     if (this == b) return true
-
     this?.let {
         val length = it.length
         if (b != null && length == b.length) {
@@ -17,5 +15,4 @@ fun CharSequence?.eq(b: CharSequence?): Boolean {
         }
     }
     return false
-
 }

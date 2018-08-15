@@ -1,5 +1,4 @@
 package psycho.euphoria.common.extension
-
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -7,7 +6,6 @@ import android.util.Patterns
 import psycho.euphoria.common.*
 import java.io.File
 import java.util.HashMap
-
 fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
 fun String.isImageSlow() = isImageFast() || getMimeType().startsWith("image")
 fun String.isArchiveFast() = archiveExtensions.any { endsWith(it, true) }
@@ -18,16 +16,11 @@ fun String.isGif() = endsWith(".gif", true)
 fun String.isRawFast() = rawExtensions.any { endsWith(it, true) }
 fun String.isAudioFast() = audioExtensions.any { endsWith(it, true) }
 fun String.getFilenameExtension() = substring(lastIndexOf(".") + 1)
-
 fun String.deleteRecursively() = File(this).walkBottomUp().fold(true) { res, it -> (it.delete() || !it.exists()) && res }
-
 fun String.getParentFilePath() = substringBeforeLast('/')
-
-
 fun String.triggerScanFile(context: Context = Services.context) {
     val file = File(this)
     if (!file.exists()) return
-
     val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
     val uri = Uri.fromFile(file)
     mediaScanIntent.data = uri
@@ -637,7 +630,6 @@ fun String.getMimeType(): String {
     }
     return typesMap[getFilenameExtension().toLowerCase()] ?: ""
 }
-
 fun String.listVideoFiles(): List<File>? {
     val dir = File(this)
     if (dir.exists()) {
@@ -645,7 +637,6 @@ fun String.listVideoFiles(): List<File>? {
     }
     return null
 }
-
 fun String.getParentPath(): String {
     var parent = removeSuffix("/${getFilenameFromPath()}")
     if (parent == "otg:") {
@@ -664,20 +655,16 @@ fun String.generateFileNameFromUri(parent: File): File {
 fun String.getGenericMimeType(): String {
     if (!contains("/"))
         return this
-
     val type = substring(0, indexOf("/"))
     return "$type/*"
 }
 fun String.convertToSeconds(): Int {
-
     val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
-
     return if (strings.size > 1) {
         Integer.parseInt(strings[0]) * 60 + Integer.parseInt(strings[1])
     } else 0
 }
 /*
-
 inline fun <T, R> Iterable<T>.fold(initial: R, operation: (acc: R, T) -> R): R {
     var accumulator = initial
     for (element in this) accumulator = operation(accumulator, element)
@@ -694,13 +681,10 @@ inline fun <T, R> List<T>.foldRight(initial: R, operation: (T, acc: R) -> R): R 
     return accumulator
 }
 fun main(args: Array<String>) {
-
 	val total = listOf(1, 2, 3, 4, 5).fold(0, { total, next -> total + next })
 	println("total: " + total)
-
 	val mul = listOf(1, 2, 3, 4, 5).fold(1, { mul, next -> mul * next })
 	println("mul: " + mul)
-
 	val productList = listOf(
 			Product("A", 100),
 			Product("B", 200),
@@ -708,11 +692,9 @@ fun main(args: Array<String>) {
 			Product("D", 400),
 			Product("E", 500)
 	)
-
 	val quantity = productList.map { it.quantity }.fold(0, { total, next -> total + next })
 	println("quantity: " + quantity)
 }
-
 total: 15
 mul: 120
 quantity: 1500

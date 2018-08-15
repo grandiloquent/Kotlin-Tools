@@ -1,11 +1,9 @@
 package psycho.euphoria.player
-
 import android.content.Context
 import android.preference.PreferenceManager
 import android.util.Log
 import psycho.euphoria.common.BlobCache
 import java.io.IOException
-
 object CacheManager {
     private val CACHE_MAP = HashMap<String, BlobCache>()
     private var OLD_CHECK_DONE = false
@@ -17,7 +15,6 @@ object CacheManager {
         try {
             n = prefer.getInt(KEY_CACHE_UP_TO_DATE, 0)
         } catch (t: Throwable) {
-
         }
         if (n != 0) return
         prefer.edit().putInt(KEY_CACHE_UP_TO_DATE, 1).apply()
@@ -27,7 +24,6 @@ object CacheManager {
         BlobCache.deleteFiles("$prefix/rev_geocoding")
         BlobCache.deleteFiles("$prefix/bookmark")
     }
-
     fun getCahce(context: Context, filename: String, maxEntries: Int, maxBytes: Int, version: Int): BlobCache? {
         synchronized(CACHE_MAP) {
             if (!OLD_CHECK_DONE) {
@@ -50,4 +46,3 @@ object CacheManager {
         }
     }
 }
-

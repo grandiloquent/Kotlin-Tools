@@ -1,5 +1,4 @@
 package psycho.euphoria.player
-
 import android.app.Activity
 import android.content.res.Configuration
 import android.graphics.Color
@@ -34,14 +33,10 @@ import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.round
-
-
 class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         Player.EventListener, VideoListener, PlaybackPreparer, View.OnLayoutChangeListener,
         View.OnTouchListener,
         TextOutput {
-
-
     private val mBookmarker = Bookmarker(this)
     private val mControlDispatcher = DefaultControlDispatcher()
     private val mStringBuilder = StringBuilder()
@@ -70,8 +65,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
     private var mSeekPosition = 0L
     private lateinit var mTextureView: TextureView
     //private val mTracker = Tracker("PlayerActivity")
-
-
     private fun bindActions() {
         //mTracker.e("[bindActions]")
         exo_play.setOnClickListener { it ->
@@ -103,7 +96,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         exo_rew.setOnClickListener { rewind() }
         root_view.setOnTouchListener(this)
     }
-
     private fun deleteVideo(path: String?) {
         //mTracker.e("[deleteVideo]")
         mPlayer?.let {
@@ -134,7 +126,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             it.seekTo(index, C.TIME_UNSET)
         }
     }
-
     private fun fastForward() {
         //mTracker.e("[fastForward]")
         mPlayer?.apply {
@@ -144,7 +135,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
         }
     }
-
     private fun generateMediaSource(uri: Uri): MediaSource? {
         //mTracker.e("[generateMediaSource]")
         val files = uri.path.getParentFilePath().listVideoFiles()
@@ -176,10 +166,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         return null
     }
-
     private fun buildSubtitleMediaSource(file: File): SingleSampleMediaSource? {
         val subtitleFile = file.changeExtension("srt")
-
         //Log.e(TAG, "[buildSubtitleMediaSource] ${subtitleFile.absolutePath}")
         if (subtitleFile.exists()) {
             return SingleSampleMediaSource.Factory(FileDataSourceFactory()).createMediaSource(subtitleFile.toUri(),
@@ -187,7 +175,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         return null
     }
-
     private fun getCurrentUri(): String? {
         //mTracker.e("[getCurrentUri]")
         mFiles?.let {
@@ -196,7 +183,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         return null
     }
-
     private fun hide() {
         //mTracker.e("[hide]")
         if (controller.visibility == View.VISIBLE) {
@@ -211,19 +197,16 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
 //            }
         }
     }
-
     private fun hideController() {
         //mTracker.e("[hideController]")
         mHanlder.postDelayed(mHideAction, mShowTimeoutMs)
     }
-
     private fun initialize() {
         //mTracker.e("[initialize]")
         bindActions()
         mScreenWidth = widthPixels
         mScreenHeight = heightPixels
     }
-
     private fun initializePlayer() {
         //mTracker.e("[initializePlayer]")
         hideController()
@@ -236,7 +219,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                     addVideoListener(this@PlayerActivity)
                 }
                 it.textComponent?.addTextOutput(this)
-
                 // val testMp4 = File(File(Environment.getExternalStorageDirectory(), "1"), "1.mp4")
                 val mediaSource = generateMediaSource(intent.data)
                 mMediaSource = mediaSource
@@ -248,7 +230,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         updateAll()
     }
-
     private fun isPlaying(): Boolean {
         //mTracker.e("[isPlaying]")
         mPlayer?.let {
@@ -257,7 +238,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                     && it.playWhenReady
         } ?: run { return false }
     }
-
     // Jump to the next video in the playlist
     private fun next() {
         //mTracker.e("[next]")
@@ -272,7 +252,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             }
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         //mTracker.e("[onCreate]")
         Services.context = this.applicationContext
@@ -288,27 +267,22 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                     "android.permission.WRITE_EXTERNAL_STORAGE"), 100)
         } else initialize()
     }
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         //mTracker.e("[onCreateOptionsMenu]")
         menuInflater.inflate(R.menu.menu_video, menu)
         return super.onCreateOptionsMenu(menu)
     }
-
     override fun onCues(cues: MutableList<Cue>?) {
         Log.e(TAG, "[onCues] ${cues?.size}")
         exo_subtitles.setCues(cues)
     }
-
     override fun onLayoutChange(view: View, p1: Int, p2: Int, p3: Int, p4: Int, p5: Int, p6: Int, p7: Int, p8: Int) {
         //mTracker.e("[onLayoutChange]")
         applyTextureViewRotation(view as TextureView, mTextureViewRotation)
     }
-
     override fun onLoadingChanged(change: Boolean) {
         //mTracker.e("[onLoadingChanged]")
     }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         //mTracker.e("[onOptionsItemSelected]")
         when (item.itemId) {
@@ -317,28 +291,23 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         return super.onOptionsItemSelected(item)
     }
-
     override fun onPause() {
         //mTracker.e("[onPause]")
         super.onPause()
         C.atMost(23, { releasePlayer() }, {})
     }
-
     override fun onPlaybackParametersChanged(p0: PlaybackParameters?) {
         //mTracker.e("[onPlaybackParametersChanged]")
     }
-
     override fun onPlayerError(error: ExoPlaybackException) {
         //mTracker.e("[onPlayerError]")
         exo_error_message.text = error.message
     }
-
     override fun onPlayerStateChanged(p0: Boolean, p1: Int) {
         //mTracker.e("[onPlayerStateChanged]")
         updatePlayPauseButton()
         updateProgress()
     }
-
     override fun onPositionDiscontinuity(p0: Int) {
         //mTracker.e("[onPositionDiscontinuity]")
         mPlayer?.let {
@@ -347,49 +316,40 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         updateProgress()
         updateNavigation()
     }
-
     override fun onRenderedFirstFrame() {
         //mTracker.e("[onRenderedFirstFrame]")
     }
-
     override fun onRepeatModeChanged(p0: Int) {
         //mTracker.e("[onRepeatModeChanged]")
         updateNavigation()
     }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         //mTracker.e("[onRequestPermissionsResult]")
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         initialize()
     }
-
     override fun onResume() {
         //mTracker.e("[onResume]")
         super.onResume()
         C.atMost(23, { if (mPlayer == null) initializePlayer() }, {})
     }
-
     override fun onScrubMove(timeBar: TimeBar, position: Long) {
         //mTracker.e("[onScrubMove]")
     }
-
     override fun onScrubStart(timeBar: TimeBar, position: Long) {
         //mTracker.e("[onScrubStart]")
         mHanlder.removeCallbacks(mHideAction)
         mScrubbing = true
     }
-
     override fun onScrubStop(timeBar: TimeBar, position: Long, canceled: Boolean) {
         //mTracker.e("[onScrubStop]")
         mScrubbing = false
         seekToTimeBarPosition(position)
         hideController()
     }
-
     override fun onSeekProcessed() {
         //mTracker.e("[onSeekProcessed]")
     }
-
     override fun onShuffleModeEnabledChanged(p0: Boolean) {
         //mTracker.e("[onShuffleModeEnabledChanged]")
         /**
@@ -399,26 +359,22 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
          */
         updateNavigation()
     }
-
     override fun onStart() {
         //mTracker.e("[onStart]")
         super.onStart()
         C.more(23, { initializePlayer() }, {})
     }
-
     override fun onStop() {
         //mTracker.e("[onStop]")
         super.onStop()
         C.more(23, { releasePlayer() }, {})
     }
-
     override fun onTimelineChanged(p0: Timeline?, p1: Any?, p2: Int) {
         //mTracker.e("[onTimelineChanged]")
         updateProgress()
         updateNavigation()
         seekToLastedState()
     }
-
     override fun onTouch(view: View?, event: MotionEvent): Boolean {
         //mTracker.e("[onTouch]")
         val x = event.x.toInt()
@@ -474,12 +430,10 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         return true
     }
-
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {
         //mTracker.e("[onTracksChanged]")
         seekToLastedState()
     }
-
     override fun onVideoSizeChanged(width: Int, height: Int, unappliedRotationDegrees: Int, pixelWidthHeightRatio: Float) {
         //mTracker.e("[onVideoSizeChanged]")
         var ratio = if (height == 0 || width == 0) 1f else (width * pixelWidthHeightRatio) / height
@@ -497,11 +451,9 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         exo_content_frame.videoAspectRatio = ratio
         //exo_content_frame.setAspectRatio(ratio)
     }
-
     override fun preparePlayback() {
         //mTracker.e("[preparePlayback]")
     }
-
     // Jump to the previous video of the playlist
     private fun previous() {
         //mTracker.e("[previous]")
@@ -519,7 +471,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             }
         }
     }
-
     private fun releasePlayer() {
         //mTracker.e("[releasePlayer]")
         updateStartPosition()
@@ -535,7 +486,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             mMediaSource = null
         }
     }
-
     private fun renameVideo(path: String?) {
         mPlayer?.let {
             val path = path ?: return
@@ -553,7 +503,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             }
         }
     }
-
     private fun requestPlayPauseFocus() {
         //mTracker.e("[requestPlayPauseFocus]")
         val playing = isPlaying()
@@ -563,7 +512,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             exo_pause.requestFocus()
         }
     }
-
     private fun rewind() {
         //mTracker.e("[rewind]")
         mPlayer?.apply {
@@ -578,7 +526,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             playbackParameters = PlaybackParameters(targetSpeed, targetSpeed)
         }
     }
-
     private fun seekTo(windowIndex: Int, position: Long) {
         //mTracker.e("[seekTo]")
         mPlayer?.let {
@@ -586,14 +533,12 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             if (!dispatched) updateProgress()
         }
     }
-
     private fun seekTo(position: Long) {
         //mTracker.e("[seekTo]")
         mPlayer?.apply {
             seekTo(currentWindowIndex, position)
         }
     }
-
     private fun seekToLastedState() {
         getCurrentUri()?.let {
             supportActionBar?.title = it.getFilenameFromPath()
@@ -604,7 +549,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             }
         }
     }
-
     private fun seekToTimeBarPosition(position: Long) {
         //mTracker.e("[seekToTimeBarPosition]")
         mPlayer?.let {
@@ -630,7 +574,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             seekTo(windowIndex, positionMs)
         }
     }
-
     private fun setButtonEnabled(enabled: Boolean, view: View?) {
         //mTracker.e("[setButtonEnabled]")
         view?.apply {
@@ -639,7 +582,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             visibility = View.VISIBLE
         }
     }
-
     private fun show() {
         //mTracker.e("[show]")
         if (controller.visibility != View.VISIBLE) {
@@ -664,14 +606,12 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         }
         hideController()
     }
-
     private fun updateAll() {
         //mTracker.e("[updateAll]")
         updatePlayPauseButton()
         updateProgress()
         updateNavigation()
     }
-
     private fun updateNavigation() {
         //mTracker.e("[updateNavigation]")
         if (controller.visibility != View.VISIBLE) return
@@ -694,7 +634,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         setButtonEnabled(isSeekable, exo_rew)
         exo_progress.isEnabled = isSeekable
     }
-
     private fun updatePlayPauseButton() {
         //mTracker.e("[updatePlayPauseButton]")
         var requestFocus = false
@@ -705,7 +644,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         requestFocus = requestFocus or (!playing && exo_pause.isFocused)
         if (requestFocus) requestPlayPauseFocus()
     }
-
     private fun updateProgress() {
         //mTracker.e("[updateProgress]")
         if (controller.visibility != View.VISIBLE) return
@@ -749,7 +687,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             }
         }
     }
-
     private fun updateStartPosition() {
         //mTracker.e("[updateStartPosition]")
         mPlayer?.apply {
@@ -758,7 +695,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             mStartWindow = currentWindowIndex
         }
     }
-
     companion object {
         private const val MAX_SEEK_DELTA = 30000L
         private const val MAX_POSITION_FOR_SEEK_TO_PREVIOUS = 3000
@@ -769,9 +705,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             Format.createTextSampleFormat(null, MimeTypes.APPLICATION_SUBRIP,
                     Format.NO_VALUE, "en")
         }
-
         private fun applyTextureViewRotation(textureView: TextureView, textureViewRotation: Int) {
-
             val textureViewWidth = textureView.width.toFloat()
             val textureViewHeight = textureView.height.toFloat()
             if (textureViewWidth == 0f || textureViewHeight == 0f || textureViewRotation == 0) {

@@ -1,14 +1,9 @@
 package psycho.euphoria.tools.commons
-
-
-
 class LongSparseLongArray(initialCapacity: Int) : Cloneable {
     private var mKeys: LongArray
     private var mValues: LongArray
     private var mSize: Int = 0
-
     constructor() : this(10)
-
     init {
         if (initialCapacity == 0) {
             mKeys = LongArray(0)
@@ -19,7 +14,6 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
         }
         mSize = 0
     }
-
     public override fun clone(): LongSparseLongArray {
         var clone: LongSparseLongArray? = null
         try {
@@ -27,16 +21,12 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
             clone.mKeys = mKeys.clone()
             clone.mValues = mValues.clone()
         } catch (cnse: CloneNotSupportedException) {
-
         }
-
         return clone!!
     }
-
     operator fun get(key: Long): Long {
         return get(key, 0)
     }
-
     operator fun get(key: Long, valueIfKeyNotFound: Long): Long {
         val i = binarySearch(mKeys, mSize, key)
         return if (i < 0) {
@@ -45,20 +35,17 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
             mValues[i]
         }
     }
-
     fun delete(key: Long) {
         val i = binarySearch(mKeys, mSize, key)
         if (i >= 0) {
             removeAt(i)
         }
     }
-
     fun removeAt(index: Int) {
         System.arraycopy(mKeys, index + 1, mKeys, index, mSize - (index + 1))
         System.arraycopy(mValues, index + 1, mValues, index, mSize - (index + 1))
         mSize--
     }
-
     fun put(key: Long, value: Long) {
         var i = binarySearch(mKeys, mSize, key)
         if (i >= 0) {
@@ -70,34 +57,27 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
             mSize++
         }
     }
-
     fun size(): Int {
         return mSize
     }
-
     fun keyAt(index: Int): Long {
         return mKeys[index]
     }
-
     fun valueAt(index: Int): Long {
         return mValues[index]
     }
-
     fun indexOfKey(key: Long): Int {
         return binarySearch(mKeys, mSize, key)
     }
-
     fun indexOfValue(value: Long): Int {
         for (i in 0 until mSize)
             if (mValues[i] == value)
                 return i
         return -1
     }
-
     fun clear() {
         mSize = 0
     }
-
     fun append(key: Long, value: Long) {
         if (mSize != 0 && key <= mKeys[mSize - 1]) {
             put(key, value)
@@ -107,7 +87,6 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
         mValues = append(mValues, mSize, value)
         mSize++
     }
-
     override fun toString(): String {
         if (size() <= 0) {
             return "{}"
@@ -128,5 +107,3 @@ class LongSparseLongArray(initialCapacity: Int) : Cloneable {
         return buffer.toString()
     }
 }
-
-

@@ -5,19 +5,15 @@
     android:background="#333"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
-
     <ImageView
         android:id="@+id/video_preview"
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
-
     <TextureView
         android:id="@+id/video_surface"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_centerInParent="true" />
-
-
     <ImageView
         android:id="@+id/video_play_outline"
         android:layout_width="@dimen/play_outline_size_big"
@@ -26,15 +22,11 @@
         android:background="@drawable/circle_black_background_with_inset"
         android:padding="26dp"
         android:src="@mipmap/ic_play" />
-
-
-
     <RelativeLayout
         android:id="@+id/video_time_holder"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true">
-
         <TextView
             android:id="@+id/video_curr_time"
             style="@style/MyBorderlessBackgroundStyle"
@@ -49,7 +41,6 @@
             android:paddingRight="@dimen/activity_margin"
             android:textColor="@android:color/white"
             tools:text="00:00" />
-
         <psycho.euphoria.tools.commons.CustomSeekBar
             android:id="@+id/video_seekbar"
             android:layout_width="match_parent"
@@ -60,7 +51,6 @@
             android:layout_toStartOf="@+id/video_duration"
             android:paddingBottom="@dimen/activity_margin"
             android:paddingTop="@dimen/activity_margin" />
-
         <TextView
             android:id="@+id/video_duration"
             style="@style/MyBorderlessBackgroundStyle"
@@ -75,6 +65,5 @@
             android:paddingRight="@dimen/activity_margin"
             android:textColor="@android:color/white"
             tools:text="00:00" />
-
     </RelativeLayout>
 </RelativeLayout>

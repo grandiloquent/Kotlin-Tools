@@ -1,5 +1,4 @@
 package psycho.euphoria.common.extension
-
 import psycho.euphoria.common.C
 import psycho.euphoria.common.C.TIME_END_OF_SOURCE
 import psycho.euphoria.common.C.TIME_UNSET
@@ -7,11 +6,7 @@ import java.text.DecimalFormat
 import java.util.*
 import kotlin.math.max
 import kotlin.math.min
-
-
 fun Long.contrain(minValue: Long, maxValue: Long) = max(minValue, min(this, maxValue))
-
-
 fun Long.formatSize(): String {
     if (this <= 0)
         return "0 B"
@@ -19,16 +14,13 @@ fun Long.formatSize(): String {
     val digitGroups = (Math.log10(toDouble()) / Math.log10(1024.0)).toInt()
     return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
 }
-
 fun Long.usToMs(): Long {
     return if (this == TIME_UNSET || this == TIME_END_OF_SOURCE) this else this / 1000
 }
-
 fun Long.clamp(min: Long, max: Long): Long {
     if (this > max) return max
     return if (this < min) min else this
 }
-
 fun Long.getStringForTime(builder: StringBuilder, formatter: Formatter): String {
     var timeMs = this
     if (timeMs == C.TIME_UNSET) {
@@ -44,7 +36,6 @@ fun Long.getStringForTime(builder: StringBuilder, formatter: Formatter): String 
     else
         formatter.format("%02d:%02d", minutes, seconds).toString()
 }
-
 /**
  * Returns the difference between two arguments, or a third argument if the result overflows.
  *

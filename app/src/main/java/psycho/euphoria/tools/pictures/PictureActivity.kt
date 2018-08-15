@@ -1,5 +1,4 @@
 package psycho.euphoria.tools.pictures
-
 import android.content.Context
 import android.graphics.drawable.Drawable
 import android.os.Bundle
@@ -13,11 +12,9 @@ import android.view.ViewGroup
 import com.github.chrisbanes.photoview.PhotoView
 import psycho.euphoria.common.KEY_PATH
 import psycho.euphoria.tools.R
-
 import psycho.euphoria.tools.listImagesRecursively
 import psycho.euphoria.tools.share
 import java.io.File
-
 class PictureActivity : AppCompatActivity() {
     private var mFileAdapter: FileAdapter? = null
     private lateinit var mViewPager: ViewPager
@@ -35,31 +32,26 @@ class PictureActivity : AppCompatActivity() {
             mViewPager.currentItem = files.indexOf(f)
         }
     }
-
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
         menu?.apply {
             add(0, MENU_SHARE, 0, "分享图片")
         }
         return super.onCreateOptionsMenu(menu)
     }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             MENU_SHARE -> mFileAdapter?.getItem(mViewPager.currentItem)?.share(this)
         }
         return true
     }
-
     companion object {
         private const val MENU_SHARE = 1
     }
-
     class FileAdapter(private val context: Context, val files: List<File>) : PagerAdapter() {
         override fun getCount(): Int = files.size
         fun getItem(position: Int): File {
             return files[position]
         }
-
         override fun instantiateItem(container: ViewGroup, position: Int): View {
             val photoView = PhotoView(context)
             try {
@@ -69,11 +61,9 @@ class PictureActivity : AppCompatActivity() {
             container.addView(photoView, ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT)
             return photoView
         }
-
         override fun destroyItem(container: ViewGroup, position: Int, obj: Any) {
             container.removeView(obj as View)
         }
-
         override fun isViewFromObject(view: View, obj: Any): Boolean {
             return view == obj
         }

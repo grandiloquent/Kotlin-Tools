@@ -1,8 +1,5 @@
 package psycho.euphoria.tools.commons
-
-
 import android.support.v4.provider.DocumentFile
-
 fun DocumentFile.getItemSize(countHiddenItems: Boolean): Long {
     return if (isDirectory) {
         getDirectorySize(this, countHiddenItems)
@@ -10,7 +7,6 @@ fun DocumentFile.getItemSize(countHiddenItems: Boolean): Long {
         length()
     }
 }
-
 private fun getDirectorySize(dir: DocumentFile, countHiddenItems: Boolean): Long {
     var size = 0L
     if (dir.exists()) {
@@ -28,7 +24,6 @@ private fun getDirectorySize(dir: DocumentFile, countHiddenItems: Boolean): Long
     }
     return size
 }
-
 fun DocumentFile.getFileCount(countHiddenItems: Boolean): Int {
     return if (isDirectory) {
         getDirectoryFileCount(this, countHiddenItems)
@@ -36,7 +31,6 @@ fun DocumentFile.getFileCount(countHiddenItems: Boolean): Int {
         1
     }
 }
-
 private fun getDirectoryFileCount(dir: DocumentFile, countHiddenItems: Boolean): Int {
     var count = 0
     if (dir.exists()) {

@@ -1,5 +1,4 @@
 package psycho.euphoria.player;
-
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
@@ -23,24 +22,19 @@ import android.util.Log;
 import com.google.android.exoplayer2.text.CaptionStyleCompat;
 import com.google.android.exoplayer2.text.Cue;
 import com.google.android.exoplayer2.util.Util;
-
 /**
  * Paints subtitle {@link Cue}s.
  */
 /* package */ final class SubtitlePainter {
-
   private static final String TAG = "SubtitlePainter";
-
   /**
    * Ratio of inner padding to font size.
    */
   private static final float INNER_PADDING_RATIO = 0.125f;
-
   /**
    * Temporary rectangle used for computing line bounds.
    */
   private final RectF lineBounds = new RectF();
-
   // Styled dimensions.
   private final float cornerRadius;
   private final float outlineWidth;
@@ -48,10 +42,8 @@ import com.google.android.exoplayer2.util.Util;
   private final float shadowOffset;
   private final float spacingMult;
   private final float spacingAdd;
-
   private final TextPaint textPaint;
   private final Paint paint;
-
   // Previous input variables.
   private CharSequence cueText;
   private Alignment cueTextAlignment;
@@ -80,14 +72,12 @@ import com.google.android.exoplayer2.util.Util;
   private int parentTop;
   private int parentRight;
   private int parentBottom;
-
   // Derived drawing variables.
   private StaticLayout textLayout;
   private int textLeft;
   private int textTop;
   private int textPaddingX;
   private Rect bitmapRect;
-
   @SuppressWarnings("ResourceType")
   public SubtitlePainter(Context context) {
     int[] viewAttr = {android.R.attr.lineSpacingExtra, android.R.attr.lineSpacingMultiplier};
@@ -95,7 +85,6 @@ import com.google.android.exoplayer2.util.Util;
     spacingAdd = styledAttributes.getDimensionPixelSize(0, 0);
     spacingMult = styledAttributes.getFloat(1, 1);
     styledAttributes.recycle();
-
     Resources resources = context.getResources();
     DisplayMetrics displayMetrics = resources.getDisplayMetrics();
     int twoDpInPx = Math.round((2f * displayMetrics.densityDpi) / DisplayMetrics.DENSITY_DEFAULT);
@@ -103,16 +92,13 @@ import com.google.android.exoplayer2.util.Util;
     outlineWidth = twoDpInPx;
     shadowRadius = twoDpInPx;
     shadowOffset = twoDpInPx;
-
     textPaint = new TextPaint();
     textPaint.setAntiAlias(true);
     textPaint.setSubpixelText(true);
-
     paint = new Paint();
     paint.setAntiAlias(true);
     paint.setStyle(Style.FILL);
   }
-
   /**
    * Draws the provided {@link Cue} into a canvas with the specified styling.
    * <p>
@@ -175,7 +161,6 @@ import com.google.android.exoplayer2.util.Util;
       drawLayout(canvas, isTextCue);
       return;
     }
-
     this.cueText = cue.text;
     this.cueTextAlignment = cue.textAlignment;
     this.cueBitmap = cue.bitmap;
@@ -200,7 +185,6 @@ import com.google.android.exoplayer2.util.Util;
     this.parentTop = cueBoxTop;
     this.parentRight = cueBoxRight;
     this.parentBottom = cueBoxBottom;
-
     if (isTextCue) {
       setupTextLayout();
     } else {
@@ -208,14 +192,11 @@ import com.google.android.exoplayer2.util.Util;
     }
     drawLayout(canvas, isTextCue);
   }
-
   private void setupTextLayout() {
     int parentWidth = parentRight - parentLeft;
     int parentHeight = parentBottom - parentTop;
-
     textPaint.setTextSize(textSizePx);
     int textPaddingX = (int) (textSizePx * INNER_PADDING_RATIO + 0.5f);
-
     int availableWidth = parentWidth - textPaddingX * 2;
     if (cueSize != Cue.DIMEN_UNSET) {
       availableWidth = (int) (availableWidth * cueSize);
@@ -224,7 +205,6 @@ import com.google.android.exoplayer2.util.Util;
       Log.w(TAG, "Skipped drawing subtitle cue (insufficient space)");
       return;
     }
-
     // Remove embedded styling or font size if requested.
     CharSequence cueText;
     if (applyEmbeddedFontSizes && applyEmbeddedStyles) {
@@ -244,7 +224,6 @@ import com.google.android.exoplayer2.util.Util;
       }
       cueText = newCueText;
     }
-
     Alignment textAlignment = cueTextAlignment == null ? Alignment.ALIGN_CENTER : cueTextAlignment;
     textLayout = new StaticLayout(cueText, textPaint, availableWidth, textAlignment, spacingMult,
         spacingAdd, true);
@@ -258,7 +237,6 @@ import com.google.android.exoplayer2.util.Util;
       textWidth = availableWidth;
     }
     textWidth += textPaddingX * 2;
-
     int textLeft;
     int textRight;
     if (cuePosition != Cue.DIMEN_UNSET) {
@@ -272,13 +250,11 @@ import com.google.android.exoplayer2.util.Util;
       textLeft = (parentWidth - textWidth) / 2;
       textRight = textLeft + textWidth;
     }
-
     textWidth = textRight - textLeft;
     if (textWidth <= 0) {
       Log.w(TAG, "Skipped drawing subtitle cue (invalid horizontal positioning)");
       return;
     }
-
     int textTop;
     if (cueLine != Cue.DIMEN_UNSET) {
       int anchorPosition;
@@ -304,7 +280,6 @@ import com.google.android.exoplayer2.util.Util;
     } else {
       textTop = parentBottom - textHeight - (int) (parentHeight * bottomPaddingFraction);
     }
-
     // Update the derived drawing variables.
     this.textLayout = new StaticLayout(cueText, textPaint, textWidth, textAlignment, spacingMult,
         spacingAdd, true);
@@ -312,7 +287,6 @@ import com.google.android.exoplayer2.util.Util;
     this.textTop = textTop;
     this.textPaddingX = textPaddingX;
   }
-
   private void setupBitmapLayout() {
     int parentWidth = parentRight - parentLeft;
     int parentHeight = parentBottom - parentTop;
@@ -327,7 +301,6 @@ import com.google.android.exoplayer2.util.Util;
         : cuePositionAnchor == Cue.ANCHOR_TYPE_MIDDLE ? (anchorY - (height / 2)) : anchorY);
     bitmapRect = new Rect(x, y, x + width, y + height);
   }
-
   private void drawLayout(Canvas canvas, boolean isTextCue) {
     if (isTextCue) {
       drawTextLayout(canvas);
@@ -335,23 +308,19 @@ import com.google.android.exoplayer2.util.Util;
       drawBitmapLayout(canvas);
     }
   }
-
   private void drawTextLayout(Canvas canvas) {
     StaticLayout layout = textLayout;
     if (layout == null) {
       // Nothing to draw.
       return;
     }
-
     int saveCount = canvas.save();
     canvas.translate(textLeft, textTop);
-
     if (Color.alpha(windowColor) > 0) {
       paint.setColor(windowColor);
       canvas.drawRect(-textPaddingX, 0, layout.getWidth() + textPaddingX, layout.getHeight(),
           paint);
     }
-
     if (Color.alpha(backgroundColor) > 0) {
       paint.setColor(backgroundColor);
       float previousBottom = layout.getLineTop(0);
@@ -375,7 +344,6 @@ import com.google.android.exoplayer2.util.Util;
         }
       }
     }
-
     if (edgeType == CaptionStyleCompat.EDGE_TYPE_OUTLINE) {
       textPaint.setStrokeJoin(Join.ROUND);
       textPaint.setStrokeWidth(outlineWidth);
@@ -396,19 +364,15 @@ import com.google.android.exoplayer2.util.Util;
       layout.draw(canvas);
       textPaint.setShadowLayer(shadowRadius, offset, offset, colorDown);
     }
-
     textPaint.setColor(foregroundColor);
     textPaint.setStyle(Style.FILL);
     layout.draw(canvas);
     textPaint.setShadowLayer(0, 0, 0, 0);
-
     canvas.restoreToCount(saveCount);
   }
-
   private void drawBitmapLayout(Canvas canvas) {
     canvas.drawBitmap(cueBitmap, null, bitmapRect, null);
   }
-
   /**
    * This method is used instead of {@link TextUtils#equals(CharSequence, CharSequence)} because the
    * latter only checks the text of each sequence, and does not check for equality of styling that
@@ -419,5 +383,4 @@ import com.google.android.exoplayer2.util.Util;
     // equals methods, so we perform one explicitly here.
     return first == second || (first != null && first.equals(second));
   }
-
 }

@@ -1,5 +1,4 @@
 package psycho.euphoria.file
-
 import android.Manifest
 import android.app.Activity
 import android.app.AlertDialog
@@ -24,17 +23,11 @@ import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
 import psycho.euphoria.player.SplitVideo
 import java.io.File
-
-
 class FileActivity : CustomActivity() {
-
-
     private var mFileAdapter: FileAdapter? = null
     private var mRecentDirectory = Environment.getExternalStorageDirectory().absolutePath
     private var mSortOrder = SORT_BY_NAME
     private lateinit var mOptionMenu: Menu
-
-
     private fun deleteFiles() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
@@ -48,7 +41,6 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     private fun initialize() {
         setContentView(R.layout.activity_file)
         setSupportActionBar(toolbar)
@@ -62,13 +54,11 @@ class FileActivity : CustomActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
-
         pull_refresh_view.setOnRefreshListener {
             refreshRecyclerView()
             pull_refresh_view.setRefreshing(false)
         }
     }
-
     private fun initializeRecyclerView() {
         recycler_view.run {
             setHasFixedSize(true)
@@ -76,14 +66,12 @@ class FileActivity : CustomActivity() {
             registerForContextMenu(this)
         }
     }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
         super.onActivityResult(requestCode, resultCode, resultData)
         if (requestCode == REQUEST_VIDEO_CODE && resultCode == Activity.RESULT_OK) {
             refreshRecyclerView()
         }
     }
-
     override fun onBackPressed() {
         mFileAdapter?.let {
             if (it.selectedItemCount > 0) {
@@ -99,7 +87,6 @@ class FileActivity : CustomActivity() {
             mRecentDirectory = parent.absolutePath
         }
     }
-
     private fun onClickFile(path: String) {
         when {
             path.isVideoFast() -> {
@@ -127,7 +114,6 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mSortOrder = Services.prefer.int(STATE_SORT_ORDER)
@@ -142,14 +128,12 @@ class FileActivity : CustomActivity() {
         } else
             initialize()
     }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         mOptionMenu = menu
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
         return super.onCreateOptionsMenu(menu)
     }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_storage -> {
@@ -193,22 +177,18 @@ class FileActivity : CustomActivity() {
         }
         return super.onOptionsItemSelected(item)
     }
-
     override fun onPause() {
         Services.prefer.putInt(STATE_SORT_ORDER, mSortOrder)
         Services.prefer.putString(STATE_RECENT_DIRECTORY, mRecentDirectory)
         super.onPause()
     }
-
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         initialize()
     }
-
     private fun refreshRecyclerView() {
         refreshRecyclerView(mRecentDirectory)
     }
-
     private fun refreshRecyclerView(path: String) {
         File(path).listFileItems(mSortOrder)?.let {
             if (mFileAdapter == null) {
@@ -231,15 +211,12 @@ class FileActivity : CustomActivity() {
                         override fun OnItemSelected(selectedPosition: Int, itemSelectedCount: Int, allItemCount: Int) {
                             updateOptionMenuVisible()
                         }
-
                         override fun OnItemDeselected(deselectedPosition: Int, itemSelectedCount: Int, allItemCount: Int) {
                             updateOptionMenuVisible()
                         }
-
                         override fun OnSelectAll(itemSelectedCount: Int, allItemCount: Int) {
                             updateOptionMenuVisible()
                         }
-
                         override fun OnDeselectAll(itemSelectedCount: Int, allItemCount: Int) {
                             updateOptionMenuVisible()
                         }
@@ -250,7 +227,6 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     private fun renameFile(fileItem: FileItem) {
         dialog(this, fileItem.name, getString(R.string.menu_rename_file), true) {
             if (!it.isNullOrBlank()) {
@@ -266,7 +242,6 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     private fun scanFile() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
@@ -275,13 +250,11 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     private fun selectAll() {
         mFileAdapter?.apply {
             selectAll()
         }
     }
-
     private fun showSortingDialog() {
         val adapter = ArrayAdapter<String>(this, R.layout.item_sorting, R.id.text_view)
         adapter.add(getString(R.string.menu_sort_by_name))
@@ -297,14 +270,12 @@ class FileActivity : CustomActivity() {
                 }.create()
         dialog.show()
     }
-
     private fun sortBy(sortOrder: Int) {
         // Sort the file list in the specified way
         this.mSortOrder = sortOrder
         // Refresh display after sorting
         refreshRecyclerView()
     }
-
     private fun splitVideo(path: String) {
         dialog(this, "0.00 1.00", getString(R.string.menu_split_video)) {
             if (it != null) {
@@ -322,7 +293,6 @@ class FileActivity : CustomActivity() {
             }
         }
     }
-
     private fun updateOptionMenuVisible() {
         val count = mFileAdapter?.selectedItemCount ?: 0
         if (count > 1) {
@@ -366,15 +336,11 @@ class FileActivity : CustomActivity() {
         }
         toolbar.postInvalidate()
     }
-
     companion object {
         private const val REQUEST_PERMISSION_CODE = 100
         private const val REQUEST_VIDEO_CODE = 1
-
         private const val STATE_SORT_ORDER = "sort_order"
         private const val STATE_RECENT_DIRECTORY = "recent_directory"
-
         const val PREFER_SD_CARD_PATH = "sd_card_path"
     }
-
 }

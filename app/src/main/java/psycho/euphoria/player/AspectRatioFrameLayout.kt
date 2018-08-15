@@ -1,13 +1,10 @@
 package psycho.euphoria.player
-
 import android.content.Context
 import android.util.AttributeSet
 import android.util.Log
 import android.widget.FrameLayout
 import kotlin.math.abs
-
 class AspectRatioFrameLayout : FrameLayout {
-
     var listener: AspectRatioListener? = null
     var videoAspectRatio = 0f
         set(value) {
@@ -24,12 +21,9 @@ class AspectRatioFrameLayout : FrameLayout {
             }
         }
     private val mDispatcher = AspectRatioUpdatedDispatcher()
-
-
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         if (videoAspectRatio <= 0f) return
@@ -61,12 +55,10 @@ class AspectRatioFrameLayout : FrameLayout {
             else -> {
             }
         }
-
         mDispatcher.scheduleUpdate(videoAspectRatio, vr, true)
         //Log.e(TAG, "mw => ${mw} \nmh => ${mh} \nvr => ${vr} \naspectDeformation => ${aspectDeformation} \nwidthMeasureSpec => ${widthMeasureSpec} \nheightMeasureSpec => ${heightMeasureSpec} \n")
         super.onMeasure(MeasureSpec.makeMeasureSpec(mw, MeasureSpec.EXACTLY), MeasureSpec.makeMeasureSpec(mh, MeasureSpec.EXACTLY))
     }
-
     companion object {
         private const val TAG = "AspectRatioFrameLayout"
         const val RESIZE_MODE_FILL = 3
@@ -76,14 +68,11 @@ class AspectRatioFrameLayout : FrameLayout {
         const val RESIZE_MODE_ZOOM = 4
         private const val MAX_ASPECT_RATIO_DEFORMATION_FRACTION = 0.01f
     }
-
     private inner class AspectRatioUpdatedDispatcher : Runnable {
         private var mIsScheuled = false
         private var mTargetRatio = 0f
         private var mNaturalRatio = 0f
         private var mAspectRatioMisMatch = false
-
-
         fun scheduleUpdate(targetRatio: Float, naturalRatio: Float, aspectRatioMisMatch: Boolean) {
             mTargetRatio = targetRatio
             mNaturalRatio = naturalRatio
@@ -93,17 +82,13 @@ class AspectRatioFrameLayout : FrameLayout {
                 post(this)
             }
         }
-
         override fun run() {
             mIsScheuled = false
             listener?.apply {
                 onAspectRatioUpdated(mTargetRatio, mNaturalRatio, mAspectRatioMisMatch)
             }
-
-
         }
     }
-
     interface AspectRatioListener {
         fun onAspectRatioUpdated(targetRatio: Float, naturalRatio: Float, ratioMismatch: Boolean)
     }

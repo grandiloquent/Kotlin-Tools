@@ -1,5 +1,4 @@
 package psycho.euphoria.tools
-
 import android.annotation.TargetApi
 import android.content.Context
 import android.graphics.Canvas
@@ -20,7 +19,6 @@ import psycho.euphoria.common.extension.sp2px
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
-
 class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context, attributeSet) {
     private val mAdjustScroller: Scroller
     private val mFlingScroller: Scroller
@@ -99,7 +97,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
             field = v
             invalidate()
         }
-
     init {
         mTextPaint = Paint().apply {
             isAntiAlias = true
@@ -119,10 +116,8 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         minValue = DEFAULT_MIN_VALUE
         minHeight = context.dp2px(DEFAULT_MIN_HEIGHT_DP).toInt()
         minWidth = context.dp2px(DEFAULT_MIN_WIDTH_DP).toInt()
-
         // Log.e(TAG, "configuration => ${configuration} \nmTextPaint => ${mTextPaint} \nmFlingScroller => ${mFlingScroller} \nmAdjustScroller => ${mAdjustScroller} \nmMinimumFlingVelocity => ${mMinimumFlingVelocity} \nmMaximumFlingVelocity => ${mMaximumFlingVelocity} \nvalue => ${value} \ntextColor => ${textColor} \ntextSize => ${textSize} \npaddingVertical => ${paddingVertical} \npaddingHorizontal => ${paddingHorizontal} \nmaxValue => ${maxValue} \nminValue => ${minValue} \n")
     }
-
     private fun adjust(adjustedValueOffset: Int) {
         if (adjustedValueOffset != mCurrentValueOffset) {
             if (mCurrentScrollOffset < 0) {
@@ -135,36 +130,30 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         mCurrentValueOffset = 0
         mAdjustScroller.startScroll(0, mCurrentScrollOffset, 0, -mCurrentScrollOffset, ADJUSTMENT_DURATION_MILLIS)
     }
-
     private fun calculateAdjustedValueOffset(rawScrollOffset: Int): Int {
         val mCurrentValueOffset = rawScrollOffset / measuredHeight
         return (mCurrentValueOffset + 0.5 * if (mCurrentValueOffset < 0) -1.0 else 1.0).toInt()
     }
-
     private fun calculateAdjustedValueOffset(): Int {
         return if (abs(mCurrentScrollOffset) < measuredHeight / 2)
             mCurrentValueOffset
         else
             mCurrentValueOffset + if (mCurrentScrollOffset < 0) -1 else 1
     }
-
     private fun calculateCurrentOffsets(rawScrollOffset: Int) {
         mCurrentValueOffset = rawScrollOffset / measuredHeight
         mCurrentScrollOffset = abs(rawScrollOffset) - abs(mCurrentValueOffset) * measuredHeight
         mCurrentScrollOffset *= if (rawScrollOffset < 0) -1 else 1
     }
-
     private fun calculateTextHeight(): Int {
         val bounds = Rect()
         mTextPaint.getTextBounds("0", 0, 1, bounds)
         textHeight = bounds.height()
         return textHeight
     }
-
     private fun calculateTextHeightWithInternalPadding(): Int {
         return calculateTextHeight() + paddingVertical * 2
     }
-
     private fun calculateTextWidth(): Int {
         var maxDigitWidth = 0f
         for (i in 0..9) {
@@ -181,11 +170,9 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         return (numberOfDigits * maxDigitWidth).toInt()
     }
-
     private fun calculateTextWidthWithInternalPadding(): Int {
         return calculateTextWidth() + paddingHorizontal * 2
     }
-
     override fun computeScroll() {
         var scroller = mFlingScroller
         if (scroller.isFinished) {
@@ -217,7 +204,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         invalidate()
     }
-
     private fun fling(velocity: Int) {
         if (velocity > 0) {
             mScrollerLastY = 0
@@ -227,19 +213,15 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
             mFlingScroller.fling(0, mScrollerLastY, 0, velocity, 0, 0, 0, Integer.MAX_VALUE)
         }
     }
-
     private fun formatNumberWithLocale(value: Int): String {
         return String.format(Locale.getDefault(), "%d", value)
     }
-
     fun getMaxValue(): Int {
         return maxValue
     }
-
     fun getMinValue(): Int {
         return minValue
     }
-
     private fun getValue(offset: Int): Int {
         var offset = offset
         offset %= maxValue - minValue
@@ -250,8 +232,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         return value + offset
     }
-
-
     private fun measureHeight(heightMeasureSpec: Int): Int {
         val specMode = View.MeasureSpec.getMode(heightMeasureSpec)
         val specSize = View.MeasureSpec.getSize(heightMeasureSpec)
@@ -263,7 +243,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         return result
     }
-
     private fun measureWidth(widthMeasureSpec: Int): Int {
         val specMode = View.MeasureSpec.getMode(widthMeasureSpec)
         val specSize = View.MeasureSpec.getSize(widthMeasureSpec)
@@ -275,7 +254,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         return result
     }
-
     override fun onDraw(canvas: Canvas) {
         super.onDraw(canvas)
         val x = ((right - left) / 2).toFloat()
@@ -287,13 +265,11 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         canvas.drawText(getValue(mCurrentValueOffset).toString() + "", x, currentValueStart.toFloat(), mTextPaint)
         canvas.drawText(getValue(mCurrentValueOffset - 1).toString() + "", x, nextValueStart.toFloat(), mTextPaint)
     }
-
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val widthSize = measureWidth(widthMeasureSpec)
         val heightSize = measureHeight(heightMeasureSpec)
         setMeasuredDimension(widthSize, heightSize)
     }
-
     override fun onTouchEvent(event: MotionEvent): Boolean {
         if (!isEnabled) {
             return false
@@ -339,7 +315,6 @@ class NumberPicker(context: Context, attributeSet: AttributeSet?) : View(context
         }
         return true
     }
-
     companion object {
         private const val DEFAULT_MIN_HEIGHT_DP = 20.0f
         private const val DEFAULT_MIN_WIDTH_DP = 14.0f
@@ -361,8 +336,6 @@ class MeterView : LinearLayout {
     private var secondColor = DEFAULT_RED_COLOR
     private var enabled = DEFAULT_ENABLED
     private var pickerStyleId = -1
-
-
     var value: Int
         get() {
             var result = 0
@@ -386,24 +359,19 @@ class MeterView : LinearLayout {
                 picker.value = number
             }
         }
-
     constructor(context: Context) : super(context) {
         init(context, null)
     }
-
     constructor(context: Context, attrs: AttributeSet?) : super(context, attrs) {
         init(context, attrs)
     }
-
     constructor(context: Context, attrs: AttributeSet?, defStyleAttr: Int) : super(context, attrs, defStyleAttr) {
         init(context, attrs)
     }
-
     @TargetApi(Build.VERSION_CODES.LOLLIPOP)
     constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int, defStyleRes: Int) : super(context, attrs, defStyleAttr, defStyleRes) {
         init(context, attrs)
     }
-
     private fun init(context: Context, attrs: AttributeSet?) {
         orientation = LinearLayout.HORIZONTAL
         if (attrs != null) {
@@ -418,7 +386,6 @@ class MeterView : LinearLayout {
         }
         populate(context)
     }
-
     private fun populate(context: Context) {
         for (i in 0 until numberOfFirst + numberOfSecond) {
             val meterNumberPicker = createPicker(context)
@@ -429,30 +396,24 @@ class MeterView : LinearLayout {
             addView(meterNumberPicker, lp)
         }
     }
-
     private fun createPicker(context: Context): NumberPicker {
         return NumberPicker(context,null)
     }
-
     override fun isEnabled(): Boolean {
         return enabled
     }
-
     override fun setEnabled(enabled: Boolean) {
         this.enabled = enabled
     }
-
     override fun onInterceptTouchEvent(ev: MotionEvent): Boolean {
         return !enabled || super.onInterceptTouchEvent(ev)
     }
-
     fun setNumbersOf(numberOfFirst: Int, numberOfSecond: Int) {
         this.numberOfFirst = numberOfFirst
         this.numberOfSecond = numberOfSecond
         removeAllViews()
         init(context, null)
     }
-
     companion object {
         private val DEFAULT_NUMBER_OF_BLACK = 5
         private val DEFAULT_NUMBER_OF_RED = 0

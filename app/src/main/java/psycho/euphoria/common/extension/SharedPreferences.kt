@@ -1,7 +1,5 @@
 package psycho.euphoria.common.extension
-
 import android.content.SharedPreferences
-
 fun SharedPreferences.int(key: String, defaultValue: Int = 0): Int {
     return getInt(key, defaultValue)
 }

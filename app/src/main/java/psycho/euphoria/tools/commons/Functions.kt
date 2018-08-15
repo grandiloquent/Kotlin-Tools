@@ -1,5 +1,4 @@
 package psycho.euphoria.tools.commons
-
 import android.app.AlertDialog
 import android.app.Notification
 import android.app.NotificationManager
@@ -20,11 +19,9 @@ import java.io.File
 import java.io.FileFilter
 import java.util.*
 import java.util.concurrent.*
-
 fun DisplayMetrics.dpToPx(dp: Int): Int {
     return (dp * density + 0.5f).toInt()
 }
-
 fun append(array: LongArray, currentSize: Int, element: Long): LongArray {
     var array = array
     assert(currentSize <= array.size)
@@ -36,7 +33,6 @@ fun append(array: LongArray, currentSize: Int, element: Long): LongArray {
     array[currentSize] = element
     return array
 }
-
 fun binarySearch(array: LongArray, size: Int, value: Long): Int {
     var lo = 0
     var hi = size - 1
@@ -53,7 +49,6 @@ fun binarySearch(array: LongArray, size: Int, value: Long): Int {
     }
     return lo.inv()  // value not present
 }
-
 fun binarySearch(array: IntArray, size: Int, value: Int): Int {
     var lo = 0
     var hi = size - 1
@@ -70,7 +65,6 @@ fun binarySearch(array: IntArray, size: Int, value: Int): Int {
     }
     return lo.inv()  // value not present
 }
-
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 fun closeQuietly(closeable: AutoCloseable?) {
     if (closeable != null) {
@@ -82,7 +76,6 @@ fun closeQuietly(closeable: AutoCloseable?) {
         }
     }
 }
-
 fun dialog(context: Context, content: String?, title: String?, isForFileName: Boolean = false, positiveListener: (Editable?) -> Unit) {
     val editText = EditText(context)
     editText.maxLines = 1
@@ -92,7 +85,6 @@ fun dialog(context: Context, content: String?, title: String?, isForFileName: Bo
             val pos = it.lastIndexOf('.')
             if (pos > -1) {
                 editText.setSelection(0, pos)
-
             }
         }
     }
@@ -104,14 +96,10 @@ fun dialog(context: Context, content: String?, title: String?, isForFileName: Bo
                 dialog.dismiss()
                 positiveListener(editText.text)
             }.create()
-
     //  Show the input keyboard for user
     dialog.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
     dialog.show()
-
-
 }
-
 fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
     val dir = File(path)
     if (!dir.isDirectory) return
@@ -130,7 +118,6 @@ fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
         for (file in files) {
             val matchValue = chinese.find(file.name)
             if (matchValue != null && map.containsKey(matchValue.value)) {
-
                 val ext = if (file.extension.isBlank()) "mp4" else file.extension
                 val targetFile = File(file.parentFile, matchValue.value + map[matchValue.value] + "." + ext)
                 if (context.needsStupidWritePermissions(targetFile.absolutePath)) {
@@ -140,13 +127,11 @@ fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
                 } else {
                     file.renameTo(targetFile)
                 }
-
                 map.set(matchValue.value, map[matchValue.value]?.plus(1) ?: 1)
             }
         }
     }
 }
-
 fun getExecutor(): ExecutorService {
     val maxConcurrent = 3
     val executor = object : ThreadPoolExecutor(
@@ -174,11 +159,9 @@ fun getExecutor(): ExecutorService {
     executor.allowCoreThreadTimeOut(true)
     return executor
 }
-
 fun growSize(currentSize: Int): Int {
     return if (currentSize <= 4) 8 else currentSize * 2
 }
-
 fun insert(array: LongArray, currentSize: Int, index: Int, element: Long): LongArray {
     assert(currentSize <= array.size)
     if (currentSize + 1 <= array.size) {
@@ -192,19 +175,15 @@ fun insert(array: LongArray, currentSize: Int, index: Int, element: Long): LongA
     System.arraycopy(array, index, newArray, index + 1, array.size - index)
     return newArray
 }
-
 fun isDrmConvertNeeded(mimetype: String?): Boolean {
     return MIMETYPE_DRM_MESSAGE.equals(mimetype)
 }
-
 fun isStatusCompleted(status: Int): Boolean {
     return status >= 200 && status < 300 || status >= 400 && status < 600
 }
-
 fun isStatusError(status: Int): Boolean {
     return status >= 400 && status < 600
 }
-
 fun listFilesRecursive(startDir: File, exclude: String): List<File> {
     val files = ArrayList<File>()
     val dirs = LinkedList<File>();
@@ -227,11 +206,9 @@ fun listFilesRecursive(startDir: File, exclude: String): List<File> {
     }
     return files;
 }
-
 fun NotificationManager.postNotification(id: Long, notification: Notification) {
     notify(id.toInt(), notification)
 }
-
 fun sanitizeMimeType(mimeType: String?): String? {
     if (mimeType != null) {
         var m = mimeType.trim().toLowerCase(Locale.ENGLISH)
@@ -242,11 +219,9 @@ fun sanitizeMimeType(mimeType: String?): String? {
     }
     return null
 }
-
 inline fun then(a: () -> Boolean, b: () -> Unit, c: () -> Unit) {
     if (a()) b() else c()
 }
-
 inline fun thenOr(funtions: Array<Pair<() -> Boolean, () -> Unit>>, final: () -> Unit) {
     for ((a, b) in funtions) {
         if (a()) {

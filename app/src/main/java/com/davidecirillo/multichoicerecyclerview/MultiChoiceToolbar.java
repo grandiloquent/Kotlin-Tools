@@ -1,5 +1,4 @@
 package com.davidecirillo.multichoicerecyclerview;
-
 import android.content.res.TypedArray;
 import android.support.annotation.PluralsRes;
 import android.support.annotation.StringRes;
@@ -7,11 +6,8 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.TypedValue;
 import android.view.View;
-
 import psycho.euphoria.tools.R;
-
 public class MultiChoiceToolbar {
-
     private AppCompatActivity mAppCompatActivity;
     private Toolbar mToolbar;
     private String mDefaultToolbarTitle;
@@ -25,7 +21,6 @@ public class MultiChoiceToolbar {
     private int mIcon;
     private View.OnClickListener mIconAction;
     private Listener mListener;
-
     private MultiChoiceToolbar(Builder builder) {
         this.mAppCompatActivity = builder.mAppCompatActivity;
         this.mToolbar = builder.mToolbar;
@@ -39,11 +34,9 @@ public class MultiChoiceToolbar {
         this.mIcon = builder.mIcon;
         this.mIconAction = builder.mIconAction;
     }
-
     void setToolbarListener(Listener listener) {
         mListener = listener;
     }
-
     /**
      * Builder class for MultiChoiceToolbar
      */
@@ -54,7 +47,6 @@ public class MultiChoiceToolbar {
         private @PluralsRes
         int mSelectedQuantityTitle = Constants.INVALID_RES;
         private String mSelectedToolbarTitle = "";
-
         // Colours
         private int mDefaultPrimaryColor = 0;
         private int mDefaultPrimaryColorDark = 0;
@@ -62,13 +54,11 @@ public class MultiChoiceToolbar {
         private int mMultiPrimaryColorDark = 0;
         private int mIcon;
         private View.OnClickListener mIconAction;
-
         public Builder(AppCompatActivity appCompatActivity,
                        Toolbar toolbar) {
             this.mAppCompatActivity = appCompatActivity;
             this.mToolbar = toolbar;
         }
-
         /**
          * Set the colours when the toolbar is the default one
          *
@@ -81,7 +71,6 @@ public class MultiChoiceToolbar {
             this.mDefaultPrimaryColorDark = defaultPrimaryColorDark;
             return this;
         }
-
         /**
          * Set the colours when the toolbar is the multi choice one
          *
@@ -94,7 +83,6 @@ public class MultiChoiceToolbar {
             this.mMultiPrimaryColorDark = multiPrimaryColorDark;
             return this;
         }
-
         /**
          * Set the titles for the differente state of the toolbar default/multiChoice
          *
@@ -108,7 +96,6 @@ public class MultiChoiceToolbar {
             this.mSelectedToolbarTitle = selectedTitle;
             return this;
         }
-
         /**
          * Set the titles for the different states of the toolbar default/multiChoice
          *
@@ -121,7 +108,6 @@ public class MultiChoiceToolbar {
             this.mSelectedQuantityTitle = selectedQuantityTitle;
             return this;
         }
-
         /**
          * Set the titles for the different states of the toolbar default/multiChoice
          *
@@ -136,7 +122,6 @@ public class MultiChoiceToolbar {
             this.mSelectedQuantityTitle = selectedQuantityTitle;
             return this;
         }
-
         /**
          * Set the default icon that will be shown when is not in multi choice mode.
          * If not set there will be no icon.
@@ -150,7 +135,6 @@ public class MultiChoiceToolbar {
             mIconAction = action;
             return this;
         }
-
         public MultiChoiceToolbar build() {
             if (mDefaultPrimaryColor == 0 || mDefaultPrimaryColorDark == 0) {
                 mDefaultPrimaryColor = getDefaultColorFromContext(new int[]{R.attr.colorPrimary});
@@ -158,7 +142,6 @@ public class MultiChoiceToolbar {
             }
             return new MultiChoiceToolbar(this);
         }
-
         private int getDefaultColorFromContext(int[] colorRes) {
             TypedValue typedValue = new TypedValue();
             TypedArray a = mAppCompatActivity.obtainStyledAttributes(typedValue.data, colorRes);
@@ -167,58 +150,44 @@ public class MultiChoiceToolbar {
             return color;
         }
     }
-
     /* Getters */
-
     AppCompatActivity getAppCompatActivity() {
         return mAppCompatActivity;
     }
-
     public Toolbar getToolbar() {
         return mToolbar;
     }
-
     String getDefaultToolbarTitle() {
         return mDefaultToolbarTitle;
     }
-
     @PluralsRes
     int getSelectedToolbarQuantityTitle() {
         return mSelectedQuantityTitle;
     }
-
     String getSelectedToolbarTitle() {
         return mSelectedToolbarTitle;
     }
-
     int getDefaultPrimaryColor() {
         return mDefaultPrimaryColor;
     }
-
     int getDefaultPrimaryColorDark() {
         return mDefaultPrimaryColorDark;
     }
-
     int getMultiPrimaryColor() {
         return mMultiPrimaryColor;
     }
-
     int getMultiPrimaryColorDark() {
         return mMultiPrimaryColorDark;
     }
-
     public int getIcon() {
         return mIcon;
     }
-
     View.OnClickListener getIconAction() {
         return mIconAction;
     }
-
     Listener getToolbarListener() {
         return mListener;
     }
-
     /*
      * Listener
      * */

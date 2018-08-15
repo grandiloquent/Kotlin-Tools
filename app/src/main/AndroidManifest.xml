@@ -1,19 +1,15 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="psycho.euphoria.tools">
-
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.INTERNET" />
-
-
     <application
         android:name="psycho.euphoria.common.App"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.AppCompat.Light">
-
         <activity
             android:name="psycho.euphoria.file.FileActivity"
             android:theme="@style/Theme.AppCompat.Light.NoActionBar">
@@ -22,24 +18,17 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity android:name="psycho.euphoria.player.PlayerActivity">
-
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="rtsp" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="http" />
                 <data android:scheme="https" />
                 <data android:scheme="content" />
@@ -56,10 +45,8 @@
             <intent-filter>
                 <!-- HTTP live support -->
                 <action android:name="android.intent.action.VIEW" />
-
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-
                 <data android:scheme="http" />
                 <data android:scheme="https" />
                 <data android:mimeType="audio/x-mpegurl" />
@@ -70,19 +57,13 @@
         </activity>
         <activity
             android:name=".pictures.PictureActivity"
-
             android:theme="@style/Theme.AppCompat.Light" />
         <activity android:name="psycho.euphoria.download.DownloadActivity" />
-
         <service android:name=".music.MediaPlaybackService" />
-
         <service
             android:name="psycho.euphoria.download.DownloadService"
             android:label="@string/activity_download_title" />
-
-
         <activity android:name=".TranslatorActivity" />
-
         <provider
             android:name="android.support.v4.content.FileProvider"
             android:authorities="${applicationId}.fileprovider"
@@ -92,8 +73,5 @@
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/provider_paths" />
         </provider>
-
     </application>
-
-
 </manifest>

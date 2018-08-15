@@ -8,20 +8,17 @@
     android:clickable="true"
     android:focusable="true"
     android:foreground="@drawable/selector">
-
     <RelativeLayout
         android:id="@+id/item_holder"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:paddingRight="@dimen/activity_margin">
-
         <psycho.euphoria.file.FastImageView
             android:id="@+id/item_icon"
             android:layout_width="@dimen/normal_icon_size"
             android:layout_height="@dimen/normal_icon_size"
             android:padding="@dimen/medium_margin"
             android:src="@drawable/ic_folder_48px" />
-
         <TextView
             android:id="@+id/item_name"
             android:layout_width="match_parent"
@@ -33,7 +30,6 @@
             android:paddingLeft="@dimen/small_margin"
             android:paddingTop="@dimen/small_margin"
             tools:text="Directory" />
-
         <TextView
             android:id="@+id/item_details"
             android:layout_width="match_parent"

@@ -1,8 +1,6 @@
 package psycho.euphoria.common
-
 import android.os.Handler
 import android.util.Log
-
 class Tracker(private val tag: String) {
     private val mHandler = Handler()
     private val mCollection = ArrayList<String>()
@@ -21,20 +19,16 @@ class Tracker(private val tag: String) {
             }
             field = value
         }
-
     init {
         dump()
     }
-
     fun e(message: String) {
         if(enable)
         mCollection.add(message)
     }
-
     private fun dump() {
         mHandler.postDelayed(mDumpAction, 10000L)
     }
-
     override fun toString(): String {
         val sb = StringBuilder()
         var index = 0
@@ -43,6 +37,4 @@ class Tracker(private val tag: String) {
         }
         return sb.toString()
     }
-
-
 }

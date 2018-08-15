@@ -1,5 +1,4 @@
 package psycho.euphoria.file
-
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.graphics.drawable.Drawable
@@ -16,7 +15,6 @@ import kotlinx.android.synthetic.main.statusbar.*
 import psycho.euphoria.common.extension.*
 import psycho.euphoria.tools.R
 import java.io.File
-
 class FileAdapter(private val activity: AppCompatActivity,
                   private val files: ArrayList<FileItem>,
                   private val itemClick: (FileItem?) -> Unit
@@ -27,30 +25,20 @@ class FileAdapter(private val activity: AppCompatActivity,
     private val mPdfDrawble: Drawable = activity.resources.getDrawable(R.drawable.ic_file_pdf)
     private val mAudioDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_audio)
     private val mArchiveDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_archive)
-
-
     init {
-
-
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_file, TEXT_COLOR.toInt())
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_folder, TEXT_COLOR.toInt())
-
     }
-
     fun switchData(list: List<FileItem>) {
         files.clear()
         files.addAll(list)
         notifyDataSetChanged()
     }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-
         val view = LayoutInflater.from(activity).inflate(R.layout.item_file, parent, false)
         return ViewHolder(view)
     }
-
     override fun getItemCount(): Int = files.size
-
     override fun setActive(view: View, state: Boolean) {
         if (state) {
             view.item_holder.setBackgroundColor(activity.getColorCompat(R.color.color_primary))
@@ -58,49 +46,36 @@ class FileAdapter(private val activity: AppCompatActivity,
             view.item_holder.setBackgroundColor(Color.WHITE)
         }
     }
-
     override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
         return View.OnClickListener {
             itemClick(getItem(position))
         }
     }
-
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // Dont forget super this method
         super.onBindViewHolder(holder, position)
-
         holder.bindFileItem(files[position])
     }
-
     fun getItem(position: Int): FileItem {
         return files[position]
     }
-
     override fun getItemViewType(position: Int): Int {
         return super.getItemViewType(position)
     }
-
     override fun onViewRecycled(holder: ViewHolder) {
         holder.item_icon.drawble = null
     }
-
     companion object {
         private const val TEXT_COLOR = 0XFF333333
     }
-
     inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
-
             LayoutContainer {
-
         private var mFileItem: FileItem? = null
-
-
         init {
             //itemView.isLongClickable = true
             //itemView.setOnClickListener(this)
             //itemView.setOnLongClickListener(this)
         }
-
         fun bindFileItem(fileItem: FileItem) {
             mFileItem = fileItem
             with(fileItem) {
@@ -111,7 +86,6 @@ class FileAdapter(private val activity: AppCompatActivity,
                     item_details.text = "$count item"
                 } else {
                     item_details.text = size.formatSize()
-
                     if (name.isVideoFast() || name.endsWith(".apk", true)) {
                         ThumbnailManager.instance?.into(path, item_icon, mFileDrawble)
                     } else {
@@ -121,8 +95,6 @@ class FileAdapter(private val activity: AppCompatActivity,
                             else -> mFileDrawble
                         }
                     }
-
-
 //                    when {
 //                        name.endsWith(".pdf", true) -> item_icon.setImageDrawable(mPdfDrawble)
 //                        name.isArchiveFast() -> item_icon.setImageDrawable(mArchiveDrawable)
@@ -152,14 +124,9 @@ class FileAdapter(private val activity: AppCompatActivity,
 //                            item_icon.setImageDrawable(mFileDrawble)
 //                        }
                     //}
-
-
                     // Load images with Glide
-
-
                 }
             }
         }
     }
 }
-

@@ -1,6 +1,4 @@
-
 package psycho.euphoria.common;
-
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
@@ -8,20 +6,16 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 import psycho.euphoria.common.Entry.Table;
-
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
-
 public class FileCache implements Closeable {
     private static final int LRU_CAPACITY = 4;
     private static final int MAX_DELETE_COUNT = 16;
-
     private static final String TAG = "FileCache";
     private static final String TABLE_NAME = FileEntry.SCHEMA.getTableName();
     private static final String FILE_PREFIX = "download";
     private static final String FILE_POSTFIX = ".tmp";
-
     private static final String QUERY_WHERE =
             FileEntry.Columns.HASH_CODE + "=? AND " + FileEntry.Columns.CONTENT_URL + "=?";
     private static final String ID_WHERE = FileEntry.Columns.ID + "=?";
@@ -32,29 +26,23 @@ public class FileCache implements Closeable {
             FileEntry.Columns.CONTENT_URL, FileEntry.Columns.SIZE};
     private static final String FREESPACE_ORDER_BY =
             String.format("%s ASC", FileEntry.Columns.LAST_ACCESS);
-
     private final LruCache<String, CacheEntry> mEntryMap =
             new LruCache<String, CacheEntry>(LRU_CAPACITY);
-
     private File mRootDir;
     private long mCapacity;
     private boolean mInitialized = false;
     private long mTotalBytes;
-
     private DatabaseHelper mDbHelper;
-
     public static final class CacheEntry {
         private long id;
         public String contentUrl;
         public File cacheFile;
-
         private CacheEntry(long id, String contentUrl, File cacheFile) {
             this.id = id;
             this.contentUrl = contentUrl;
             this.cacheFile = cacheFile;
         }
     }
-
     public static void deleteFiles(Context context, File rootDir, String dbName) {
         try {
             context.getDatabasePath(dbName).delete();
@@ -69,21 +57,17 @@ public class FileCache implements Closeable {
             Log.w(TAG, "cannot reset database", t);
         }
     }
-
     public FileCache(Context context, File rootDir, String dbName, long capacity) {
         mRootDir = Utils.checkNotNull(rootDir);
         mCapacity = capacity;
         mDbHelper = new DatabaseHelper(context, dbName);
     }
-
     @Override
     public void close() {
         mDbHelper.close();
     }
-
     public void store(String downloadUrl, File file) {
         if (!mInitialized) initialize();
-
         Utils.assertTrue(file.getParentFile().equals(mRootDir));
         FileEntry entry = new FileEntry();
         entry.hashCode = Utils.crc64Long(downloadUrl);
@@ -109,21 +93,18 @@ public class FileCache implements Closeable {
             if (mTotalBytes > mCapacity) freeSomeSpaceIfNeed(MAX_DELETE_COUNT);
         }
     }
-
     public CacheEntry lookup(String downloadUrl) {
         if (!mInitialized) initialize();
         CacheEntry entry;
         synchronized (mEntryMap) {
             entry = mEntryMap.get(downloadUrl);
         }
-
         if (entry != null) {
             synchronized (this) {
                 updateLastAccess(entry.id);
             }
             return entry;
         }
-
         synchronized (this) {
             FileEntry file = queryDatabase(downloadUrl);
             if (file == null) return null;
@@ -145,7 +126,6 @@ public class FileCache implements Closeable {
             return entry;
         }
     }
-
     private FileEntry queryDatabase(String downloadUrl) {
         long hash = Utils.crc64Long(downloadUrl);
         String whereArgs[] = new String[] {String.valueOf(hash), downloadUrl};
@@ -162,28 +142,23 @@ public class FileCache implements Closeable {
             cursor.close();
         }
     }
-
     private void updateLastAccess(long id) {
         ContentValues values = new ContentValues();
         values.put(FileEntry.Columns.LAST_ACCESS, System.currentTimeMillis());
         mDbHelper.getWritableDatabase().update(TABLE_NAME,
                 values,  ID_WHERE, new String[] {String.valueOf(id)});
     }
-
     public File createFile() throws IOException {
         return File.createTempFile(FILE_PREFIX, FILE_POSTFIX, mRootDir);
     }
-
     private synchronized void initialize() {
         if (mInitialized) return;
-
         if (!mRootDir.isDirectory()) {
             mRootDir.mkdirs();
             if (!mRootDir.isDirectory()) {
                 throw new RuntimeException("cannot create: " + mRootDir.getAbsolutePath());
             }
         }
-
         Cursor cursor = mDbHelper.getReadableDatabase().query(
                 TABLE_NAME, PROJECTION_SIZE_SUM,
                 null, null, null, null, null);
@@ -193,12 +168,10 @@ public class FileCache implements Closeable {
             cursor.close();
         }
         if (mTotalBytes > mCapacity) freeSomeSpaceIfNeed(MAX_DELETE_COUNT);
-
         // Mark initialized when everything above went through. If an exception was thrown,
         // initialize() will be retried later.
         mInitialized = true;
     }
-
     private void freeSomeSpaceIfNeed(int maxDeleteFileCount) {
         Cursor cursor = mDbHelper.getReadableDatabase().query(
                 TABLE_NAME, FREESPACE_PROJECTION,
@@ -210,12 +183,10 @@ public class FileCache implements Closeable {
                 String path = cursor.getString(1);
                 String url = cursor.getString(2);
                 long size = cursor.getLong(3);
-
                 synchronized (mEntryMap) {
                     // if some one still uses it
                     if (mEntryMap.containsKey(url)) continue;
                 }
-
                 --maxDeleteFileCount;
                 if (new File(mRootDir, path).delete()) {
                     mTotalBytes -= size;
@@ -229,11 +200,9 @@ public class FileCache implements Closeable {
             cursor.close();
         }
     }
-
     @Table("files")
     private static class FileEntry extends Entry {
         public static final EntrySchema SCHEMA = new EntrySchema(FileEntry.class);
-
         public interface Columns extends Entry.Columns {
             public static final String HASH_CODE = "hash_code";
             public static final String CONTENT_URL = "content_url";
@@ -241,22 +210,16 @@ public class FileCache implements Closeable {
             public static final String SIZE = "size";
             public static final String LAST_ACCESS = "last_access";
         }
-
         @Column(value = Columns.HASH_CODE, indexed = true)
         public long hashCode;
-
         @Column(Columns.CONTENT_URL)
         public String contentUrl;
-
         @Column(Columns.FILENAME)
         public String filename;
-
         @Column(Columns.SIZE)
         public long size;
-
         @Column(value = Columns.LAST_ACCESS, indexed = true)
         public long lastAccess;
-
         @Override
         public String toString() {
             return new StringBuilder()
@@ -266,18 +229,14 @@ public class FileCache implements Closeable {
                     .append("filename").append(filename).toString();
         }
     }
-
     private final class DatabaseHelper extends SQLiteOpenHelper {
         public static final int DATABASE_VERSION = 1;
-
         public DatabaseHelper(Context context, String dbName) {
             super(context, dbName, null, DATABASE_VERSION);
         }
-
         @Override
         public void onCreate(SQLiteDatabase db) {
             FileEntry.SCHEMA.createTables(db);
-
             // delete old files
             for (File file : mRootDir.listFiles()) {
                 if (!file.delete()) {
@@ -285,7 +244,6 @@ public class FileCache implements Closeable {
                 }
             }
         }
-
         @Override
         public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
             //reset everything

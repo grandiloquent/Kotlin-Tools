@@ -1,7 +1,5 @@
 package psycho.euphoria.common.extension
-
 import java.net.HttpURLConnection
-
 object HttpStatus {
     const val HTTP_ACCEPTED = 202
     const val HTTP_BAD_GATEWAY = 502
@@ -42,7 +40,6 @@ object HttpStatus {
     const val HTTP_USE_PROXY = 305
     const val HTTP_VERSION = 505
 }
-
 var HttpURLConnection.acceptEncoding: String
     get() = getHeaderField("Accept-Encoding")
     set(value) = addRequestProperty("Accept-Encoding", value)

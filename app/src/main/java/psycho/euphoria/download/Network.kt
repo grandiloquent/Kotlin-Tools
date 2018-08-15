@@ -1,5 +1,4 @@
 package psycho.euphoria.download
-
 import android.text.format.DateUtils.SECOND_IN_MILLIS
 import android.util.Log
 import psycho.euphoria.common.extension.*
@@ -15,7 +14,6 @@ import java.io.RandomAccessFile
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
 import java.net.URL
-
 class Network {
     private var mSpeedSampleStart = 0L
     private var mSpeedSampleBytes = 0L
@@ -39,7 +37,6 @@ class Network {
                 while (bytes >= 0) {
                     output.write(buffer, 0, bytes)
                     request.currentBytes += bytes
-
                     updateProgress(request)
                     bytes = input.read(buffer)
                     if (request.currentBytes > request.totalBytes) {
@@ -49,7 +46,6 @@ class Network {
             }
         }
     }
-
     private fun addRequest(httpURLConnection: HttpURLConnection?, request: Request) {
         Log.e(TAG, "[addRequest] ${request.id}")
         httpURLConnection?.let {
@@ -66,7 +62,6 @@ class Network {
             it.connection = "close"
         }
     }
-
     private fun parseHeaders(httpURLConnection: HttpURLConnection?, request: Request) {
         Log.e(TAG, "[parseHeaders]")
         httpURLConnection?.let {
@@ -80,7 +75,6 @@ class Network {
             }
         }
     }
-
     private fun updateProgress(request: Request) {
         //Log.e(TAG,"[updateProgress]")
         val now = System.currentTimeMillis()
@@ -108,7 +102,6 @@ class Network {
             request.writeDatabase()
         }
     }
-
     fun performRequest(request: Request) {
         Log.e(TAG, "[performRequest]")
         var url = URL(request.uri)
@@ -171,7 +164,6 @@ class Network {
             httpURLConnection?.disconnect()
         }
     }
-
     companion object {
         private const val MIN_PROGRESS_STEP = 65536
         private const val MIN_PROGRESS_TIME = 2000L

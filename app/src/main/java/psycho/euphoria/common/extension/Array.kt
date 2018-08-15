@@ -1,7 +1,5 @@
 package psycho.euphoria.common.extension
-
 import java.util.*
-
 fun <T> Array<T>?.dump(): String? {
     if (this != null && this.isEmpty()) {
         val sb = StringBuilder()
@@ -11,9 +9,7 @@ fun <T> Array<T>?.dump(): String? {
         return sb.toString()
     } else
         return null
-
 }
-
 fun IntArray?.dump(): String? {
     if (this != null && this.isEmpty()) {
         val sb = StringBuilder()
@@ -23,7 +19,6 @@ fun IntArray?.dump(): String? {
         return sb.toString()
     } else
         return null
-
 }
 /**
  * Returns the index of the largest element in {@code array} that is less than (or optionally

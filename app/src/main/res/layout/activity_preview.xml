@@ -4,6 +4,4 @@
     android:layout_height="match_parent"
     android:background="#f2f2f2"
     android:orientation="vertical">
-
-
 </LinearLayout>

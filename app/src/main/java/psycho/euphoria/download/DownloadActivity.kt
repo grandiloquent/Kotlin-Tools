@@ -1,5 +1,4 @@
 package psycho.euphoria.download
-
 import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
@@ -17,18 +16,12 @@ import psycho.euphoria.common.extension.toast
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File
-
 class DownloadActivity: AppCompatActivity() {
-
     private lateinit var mLayoutManager: RecyclerView.LayoutManager
     private lateinit var mAdapter: DownloadListAdapter
-
     private lateinit var mOnPrimaryClipChangedListener: ClipboardManager.OnPrimaryClipChangedListener
-
     private lateinit var mClipboardManager: ClipboardManager
-
     private lateinit var mItemTouchHelper: ItemTouchHelper
-
     private fun addDownloadTask() {
         dialog(this, "", resources.getString(R.string.menu_add_download_task)) { value ->
             value?.let {
@@ -36,23 +29,17 @@ class DownloadActivity: AppCompatActivity() {
             }
         }
     }
-
     override fun onStart() {
         super.onStart()
     }
-
     private fun initialize() {
         setContentView(R.layout.activity_download)
         mLayoutManager = LinearLayoutManager(this)
-
-
-
         mAdapter = DownloadListAdapter(DownloadTaskProvider.getInstance().listTasks(), fun(v) {
             Tracker.e("DownloadListAdapter", "downloadInfo => ${v.id}")
         }, fun(v) {
             //mItemTouchHelper.startDrag(v)
         })
-
         recycler_view.apply {
             setHasFixedSize(true)
             adapter = mAdapter
@@ -70,22 +57,15 @@ class DownloadActivity: AppCompatActivity() {
                 }
             }
         }
-
-
-
-
         mItemTouchHelper = ItemTouchHelper(
                 object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.LEFT
                         or ItemTouchHelper.RIGHT) {
                     override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean {
-
                         return true
                     }
-
                     override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
                         return super.getMovementFlags(recyclerView, viewHolder)
                     }
-
                     override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
                         Tracker.e("onSwiped", "direction => $direction")
                         viewHolder?.let {
@@ -95,28 +75,23 @@ class DownloadActivity: AppCompatActivity() {
                             mAdapter.removeAt(it)
                         }
                     }
-
                 })
         Tracker.e("onCreate", "attach ItemTouchHelper to recyclerView")
         mItemTouchHelper.attachToRecyclerView(recycler_view)
     }
-
     private fun insertDownloadTask(url: String) {
         if (!url.isBlank() && url.isValidURL()) {
             DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, Environment.getExternalStorageDirectory()))
             refreshRecyclerView()
         }
     }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initialize()
         // Ensure that the same object registers and releases the event listener for the clipboard change, otherwise the memory will leak
         mClipboardManager = clipboardManager
         mClipboardManager.addPrimaryClipChangedListener(mOnPrimaryClipChangedListener)
-
     }
-
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         with(menu) {
             add(0, MENU_ADD_DOWNLOAD, 0, resources.getString(R.string.menu_add_download_task))
@@ -124,13 +99,10 @@ class DownloadActivity: AppCompatActivity() {
         }
         return super.onCreateOptionsMenu(menu)
     }
-
-
     override fun onDestroy() {
         mClipboardManager.removePrimaryClipChangedListener(mOnPrimaryClipChangedListener)
         super.onDestroy()
     }
-
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             MENU_ADD_DOWNLOAD -> addDownloadTask()
@@ -139,20 +111,16 @@ class DownloadActivity: AppCompatActivity() {
         }
         return true
     }
-
     private fun refreshRecyclerView() {
         mAdapter.switchData(DownloadTaskProvider.getInstance().listTasks())
     }
-
     private fun startDownload() {
         val intent = Intent(this, DownloadService::class.java)
         startService(intent)
     }
-
     companion object {
         private const val MENU_ADD_DOWNLOAD = 1
         private const val MENU_START_DOWNLOAD = 2
-
         fun generateFileNameFromURL(url: String, directory: File): String {
             if (url.isBlank()) {
                 var file = File(directory, ('a'..'z').randomString(6))
@@ -169,6 +137,5 @@ class DownloadActivity: AppCompatActivity() {
                 return File(directory, fileName).absolutePath
             }
         }
-
     }
 }

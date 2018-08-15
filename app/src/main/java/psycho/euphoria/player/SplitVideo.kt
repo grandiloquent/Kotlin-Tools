@@ -1,5 +1,4 @@
 package psycho.euphoria.player
-
 import android.os.AsyncTask
 import android.os.Environment
 import android.util.Log
@@ -12,13 +11,9 @@ import psycho.euphoria.tools.commons.Tracker
 import java.io.File
 import java.io.FileOutputStream
 import java.util.*
-
-
 class SplitVideo(private val path: String) : AsyncTask<Double, Void, Void>() {
     private var videoTime: Double = 0.toDouble()
     private var set: Boolean = false
-
-
     private fun correctTimeToSyncSample(track: Track, cutHere: Double, next: Boolean): Double {
         val timeOfSyncSamples = DoubleArray(track.syncSamples.size)
         var currentSample: Long = 0
@@ -44,7 +39,6 @@ class SplitVideo(private val path: String) : AsyncTask<Double, Void, Void>() {
         }
         return timeOfSyncSamples[timeOfSyncSamples.size - 1]
     }
-
     override fun doInBackground(vararg doubles: Double?): Void? {
         val file = File(Environment.getExternalStorageDirectory(), File(path).name)
         try {
@@ -52,15 +46,11 @@ class SplitVideo(private val path: String) : AsyncTask<Double, Void, Void>() {
                 if (it.size > 1)
                     performSplit(it[0]!!, it[1]!!, path, file.absolutePath)
             }
-
         } catch (e: Exception) {
             Tracker.e("doInBackground", e.message ?: "")
         }
-
-
         return null
     }
-
     private fun performSplit(startTime: Double, endTime: Double, videoPath: String, outputPath: String): Boolean {
         var startTime = startTime
         var endTime = endTime

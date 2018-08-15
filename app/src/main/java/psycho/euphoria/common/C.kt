@@ -1,7 +1,5 @@
 package psycho.euphoria.common
-
 import android.os.Build
-
 val audioExtensions: Array<String> get() = arrayOf(".mp3", ".wav", ".wma", ".ogg", ".m4a", ".opus", ".flac", ".aac")
 val photoExtensions: Array<String> get() = arrayOf(".jpg", ".png", ".jpeg", ".bmp", ".webp")
 val rawExtensions: Array<String> get() = arrayOf(".dng", ".orf", ".nef")
@@ -54,7 +52,6 @@ val isNPlus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
 val isNMr1Plus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.N_MR1
 val isOPlus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
 val isOMr1Plus = Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1
-
 val isLessBase = Build.VERSION.SDK_INT < Build.VERSION_CODES.BASE
 val isLessBase11 = Build.VERSION.SDK_INT < Build.VERSION_CODES.BASE_1_1
 val isLessCupcake = Build.VERSION.SDK_INT < Build.VERSION_CODES.CUPCAKE
@@ -82,7 +79,6 @@ val isLessM = Build.VERSION.SDK_INT < Build.VERSION_CODES.M
 val isLessN = Build.VERSION.SDK_INT < Build.VERSION_CODES.N
 val isLessNMr1 = Build.VERSION.SDK_INT < Build.VERSION_CODES.N_MR1
 val isLessO = Build.VERSION.SDK_INT < Build.VERSION_CODES.O
-
 /*
 BASE = 1
 BASE_1_1 = 2
@@ -118,17 +114,14 @@ object C {
     const val TIME_UNSET = Long.MIN_VALUE + 1
     const val INDEX_UNSET = -1
     const val TIME_END_OF_SOURCE = java.lang.Long.MIN_VALUE
-
     inline fun atLeast(sdk: Int, f1: () -> Unit, f2: () -> Unit) {
         if (Build.VERSION.SDK_INT >= sdk) f1()
         else f2.invoke()
     }
-
     inline fun atMost(sdk: Int, f1: () -> Unit, f2: () -> Unit) {
         if (Build.VERSION.SDK_INT <= sdk) f1()
         else f2.invoke()
     }
-
     inline fun more(sdk: Int, f1: () -> Unit, f2: () -> Unit) {
         if (Build.VERSION.SDK_INT > sdk) f1()
         else f2.invoke()

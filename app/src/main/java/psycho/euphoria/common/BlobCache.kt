@@ -1,5 +1,4 @@
 package psycho.euphoria.common
-
 import android.util.Log
 import java.io.Closeable
 import java.io.File
@@ -9,10 +8,7 @@ import java.nio.ByteOrder
 import java.nio.MappedByteBuffer
 import java.nio.channels.FileChannel
 import java.util.zip.Adler32
-
 class BlobCache {
-
-
     private val mAdler32 = Adler32()
     private val mBlobHeader = ByteArray(BLOB_HEADER_SIZE)
     private val mDataFile0: RandomAccessFile
@@ -34,9 +30,7 @@ class BlobCache {
     private var mMaxBytes = 0
     private var mMaxEntries = 0
     private var mSlotOffset = 0
-
     constructor(path: String, maxEntries: Int, maxBytes: Int, reset: Boolean) : this(path, maxEntries, maxBytes, reset, 0)
-
     constructor(path: String, maxEntries: Int, maxBytes: Int, reset: Boolean, version: Int) {
         mIndexFile = RandomAccessFile("$path.idx", "rw")
         mDataFile0 = RandomAccessFile("$path.0", "rw")
@@ -51,8 +45,6 @@ class BlobCache {
             throw IOException("unable to load index")
         }
     }
-
-
     fun checkSum(data: ByteArray): Int {
         mAdler32.reset()
         mAdler32.update(data)
@@ -158,7 +150,6 @@ class BlobCache {
                 file.seek(oldPosition)
             }
         }
-
         return false
     }
     fun insert(key: Long, data: ByteArray) {
@@ -419,14 +410,12 @@ class BlobCache {
         private const val MAGIC_DATA_FILE = 0xBD248510
         private const val MAGIC_INDEX_FILE = 0xB3273030
         private const val TAG = "BlobCache"
-
         fun readInt(buf: ByteArray, offset: Int): Int {
             return (buf[offset].toInt() and 0xff
                     or (buf[offset + 1].toInt() and 0xff shl 8)
                     or (buf[offset + 2].toInt() and 0xff shl 16)
                     or (buf[offset + 3].toInt() and 0xff shl 24))
         }
-
         fun readLong(buf: ByteArray, offset: Int): Long {
             var result = (buf[offset + 7].toInt() and 0xff).toLong()
             for (i in 6 downTo 0) {
@@ -434,7 +423,6 @@ class BlobCache {
             }
             return result
         }
-
         fun writeInt(buf: ByteArray, offset: Int, value: Int) {
             var value = value
             for (i in 0..3) {
@@ -442,7 +430,6 @@ class BlobCache {
                 value = value shr 8
             }
         }
-
         fun writeLong(buf: ByteArray, offset: Int, value: Long) {
             var value = value
             for (i in 0..7) {
@@ -450,35 +437,26 @@ class BlobCache {
                 value = value shr 8
             }
         }
-
         fun deleteFiles(path: String) {
             deleteFileSilently("$path.idx")
             deleteFileSilently("$path.0")
             deleteFileSilently("$path.1")
         }
-
         private fun deleteFileSilently(path: String) {
             try {
                 File(path).delete()
             } catch (t: Throwable) {
-
             }
-
         }
-
         fun closeSilently(c: Closeable?) {
-
             try {
                 c?.let {
                     it.close()
                 }
             } catch (t: Throwable) {
-
             }
-
         }
     }
-
     class LookupRequest {
         var key: Long = 0
         var buffer: ByteArray? = null

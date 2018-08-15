@@ -1,5 +1,4 @@
 package psycho.euphoria.common.extension
-
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentName
@@ -22,8 +21,6 @@ import psycho.euphoria.common.*
 import java.io.File
 import java.util.*
 import java.util.regex.Pattern
-
-
 fun Context.getDoesFilePathExist(path: String) = if (path.startsWith(OTG_PATH)) getOTGFastDocumentFile(path)?.exists()
         ?: false else File(path).exists()
 val Context.widthPixels get() = resources.displayMetrics.widthPixels
@@ -34,7 +31,6 @@ fun Context.isPathOnSD(path: String) = sdCardPath.isNotEmpty() && path.startsWit
 fun Context.dp2px(dp: Float): Float {
     return dp * Services.density;
 }
-
 private val physicalPaths = arrayListOf(
         "/storage/sdcard1",
         "/storage/extsdcard",
@@ -51,9 +47,6 @@ private val physicalPaths = arrayListOf(
         "/storage/usbdisk1",
         "/storage/usbdisk2"
 )
-
-
-
 fun Context.createNotificationChannel(channelId: String, channelName: String, channelImportance: Int = NotificationManager.IMPORTANCE_MIN) {
     /**
      * Creates a notification channel that notifications can be posted to.
