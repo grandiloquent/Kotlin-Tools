@@ -15,6 +15,7 @@ import kotlinx.android.synthetic.main.activity_file.*
 import kotlinx.android.synthetic.main.toolbar.*
 import psycho.euphoria.common.*
 import psycho.euphoria.common.extension.*
+import psycho.euphoria.common.ui.SwipeRefreshLayout
 import psycho.euphoria.download.DownloadActivity
 import psycho.euphoria.player.PlayerActivity
 import psycho.euphoria.tools.R
@@ -54,9 +55,11 @@ class FileActivity : CustomActivity() {
         toolbar.setNavigationOnClickListener { onBackPressed() }
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
-        pull_refresh_view.setOnRefreshListener {
-            refreshRecyclerView()
-            pull_refresh_view.setRefreshing(false)
+        pull_refresh_view.listener=object :SwipeRefreshLayout.OnRefreshListener{
+            override fun onRefresh() {
+                refreshRecyclerView()
+                pull_refresh_view.setRefreshing(false)
+            }
         }
     }
     private fun initializeRecyclerView() {
@@ -204,7 +207,7 @@ class FileActivity : CustomActivity() {
                         .setMultiChoiceColours(R.color.colorPrimaryMulti, R.color.colorPrimaryMulti)
                         .setDefaultIcon(R.drawable.ic_arrow_back_white_24px) { onBackPressed() }
                         .setTitles(getString(R.string.app_name), "item selected")
-                        .setDefaultColours(getColor(R.color.color_primary), getColor(R.color.color_primary))
+                        .setDefaultColours(Services.getColor(R.color.color_primary), Services.getColor(R.color.color_primary))
                 mFileAdapter?.apply {
                     setMultiChoiceToolbar(builder.build())
                     setMultiChoiceSelectionListener(object : MultiChoiceAdapter.Listener {

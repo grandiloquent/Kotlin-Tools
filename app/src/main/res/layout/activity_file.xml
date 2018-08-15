@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical">
     <include layout="@layout/toolbar" />
-  <android.support.v4.widget.SwipeRefreshLayout
+  <psycho.euphoria.common.ui.SwipeRefreshLayout
       android:id="@+id/pull_refresh_view"
       android:layout_width="match_parent"
       android:layout_height="match_parent">
@@ -14,5 +14,5 @@
           android:layout_width="match_parent"
           android:layout_height="match_parent"
           app:layoutManager="android.support.v7.widget.LinearLayoutManager" />
-  </android.support.v4.widget.SwipeRefreshLayout>
+  </psycho.euphoria.common.ui.SwipeRefreshLayout>
 </LinearLayout>
