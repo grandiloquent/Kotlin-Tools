@@ -1,5 +1,7 @@
-package psycho.euphoria.download
+package psycho.euphoria.launcher
+
 import android.util.Log
+
 class Request(
         val id: Long,
         var uri: String,
@@ -22,21 +24,26 @@ class Request(
         // Equal priorities are sorted by sequence number to provide FIFO ordering.
         return if (left === right) this.sequence - other.sequence else right.ordinal - left.ordinal
     }
+
     fun getPriority(): Priority {
         return Priority.NORMAL
     }
+
     fun cancel() {
         synchronized(mLock) {
             mCanceled = true
         }
     }
+
     fun finished(reason: String) {
     }
+
     fun isCanceled(): Boolean {
         synchronized(mLock) {
             return mCanceled
         }
     }
+
     fun notifyNoUsable() {
         var listener: RequestCompleteListener? = null
         synchronized(mLock) {
@@ -44,6 +51,7 @@ class Request(
         }
         listener?.onNoUsableReceived(this)
     }
+
     fun notifySpeed(speed: Long) {
         var listener: RequestCompleteListener? = null
         synchronized(mLock) {
@@ -52,6 +60,7 @@ class Request(
         // Log.e(TAG, "notifySpeed $speed")
         listener?.onNotifySpeed(TaskState(id, speed, currentBytes, totalBytes))
     }
+
     fun notifyCompleted() {
         var listener: RequestCompleteListener? = null
         synchronized(mLock) {
@@ -59,17 +68,31 @@ class Request(
         }
         listener?.onNotifyCompleted(id)
     }
+
+    fun notifyError(type: Int) {
+        Log.i(TAG, "[notifyError]:$type ")
+        var listener: RequestCompleteListener? = null
+        synchronized(mLock) {
+            listener = requestCompleteListener
+        }
+        listener?.onNotifyError(type)
+    }
+
     fun writeDatabase() {
         DownloadTaskProvider.getInstance().update(this)
     }
+
     companion object {
         private const val TAG = "Request"
     }
+
     interface RequestCompleteListener {
         fun onNoUsableReceived(request: Request)
         fun onNotifySpeed(taskState: TaskState)
         fun onNotifyCompleted(id: Long)
+        fun onNotifyError(type: Int)
     }
+
     enum class Priority {
         LOW,
         NORMAL,

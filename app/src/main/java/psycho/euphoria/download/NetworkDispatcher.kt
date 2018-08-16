@@ -1,4 +1,4 @@
-package psycho.euphoria.download
+package psycho.euphoria.launcher
 import android.os.Process
 import java.util.concurrent.BlockingQueue
 class NetworkDispatcher(private val queue: BlockingQueue<Request>,

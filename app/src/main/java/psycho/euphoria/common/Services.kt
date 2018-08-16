@@ -1,10 +1,10 @@
-package psycho.euphoria.common
+package psycho.euphoria.launcher
 
-import android.app.ActivityManager
-import android.app.Application
-import android.app.NotificationManager
+import android.annotation.SuppressLint
+import android.app.*
 import android.content.ClipboardManager
 import android.content.Context
+import android.content.Intent
 import android.graphics.Point
 import android.graphics.Rect
 import android.media.AudioManager
@@ -15,10 +15,15 @@ import android.view.ViewConfiguration
 import android.view.WindowManager
 import kotlin.properties.Delegates
 import android.graphics.drawable.Drawable
+import android.net.ConnectivityManager
+import android.net.NetworkInfo
 import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.ViewParent
+import android.widget.Toast
+import java.text.DecimalFormat
+import java.util.*
 
 class App : Application() {
     override fun onCreate() {
@@ -28,7 +33,7 @@ class App : Application() {
 }
 
 object Services {
-    private const val TAG = "Services"
+    const val TAG = "Services"
     private const val KEY_OTG_PARTITION = "otg_partition"
     private const val KEY_SD_CARD_PATH = "sd_card_path"
     private const val KEY_TREE_URI = "tree_uri"
@@ -62,7 +67,30 @@ object Services {
     var treeUri: String
         get() = prefer.getString(KEY_TREE_URI, "")
         set(value) = prefer.edit().putString(KEY_TREE_URI, value).apply()
+    val isNetworkValid: Boolean
+        get() {
+            try {
+                var networkInfo = connectivityManager.getNetworkInfo(0)
+                if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
+                    return true
+                } else {
+                    networkInfo = connectivityManager.getNetworkInfo(1)
+                    if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
+                        return true
+                    }
+                }
+            } catch (ignored: Exception) {
+            }
+            return false
+
+        }
     /*==================================*/
+    val connectivityManager by lazy {
+        if (Build.VERSION.SDK_INT >= 23)
+            context.getSystemService(ConnectivityManager::class.java)
+        else
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+    }
     val activityManager by lazy {
         if (Build.VERSION.SDK_INT >= 23)
             context.getSystemService(ActivityManager::class.java)
@@ -189,14 +217,15 @@ object Services {
         else
             context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
     }
-    val widthPixels by lazy {
-        context.resources.displayMetrics.widthPixels
-    }
     val handler by lazy {
         Handler(Looper.getMainLooper())
     }
-
     /*==================================*/
+
+    fun toast(message: String, length: Int = Toast.LENGTH_SHORT) {
+        Toast.makeText(context, message, length).show()
+    }
+
     fun dp2px(dp: Int): Int {
         return Math.round(dp.toFloat() * density)
     }
@@ -263,8 +292,175 @@ object Services {
     }
 }
 
-inline fun View.visible() {
+@SuppressLint("WrongConstant")
+fun Context.createNotificationChannel(channelId: String, channelName: String, channelImportance: Int = 1) {
+    //  public static final int IMPORTANCE_MIN = 1;
+    /**
+     * Creates a notification channel that notifications can be posted to.
+     *
+     * This can also be used to restore a deleted channel and to update an existing channel's
+     * name, description, and/or importance.
+     *
+     * <p>The name and description should only be changed if the locale changes
+     * or in response to the user renaming this channel. For example, if a user has a channel
+     * named 'John Doe' that represents messages from a 'John Doe', and 'John Doe' changes his name
+     * to 'John Smith,' the channel can be renamed to match.
+     *
+     * <p>The importance of an existing channel will only be changed if the new importance is lower
+     * than the current value and the user has not altered any settings on this channel.
+     *
+     * All other fields are ignored for channels that already exist.
+     *
+     * @param channel  the channel to create.  Note that the created channel may differ from this
+     *                 value. If the provided channel is malformed, a RemoteException will be
+     *                 thrown.
+     */
+    /**
+     * Creates a notification channel.
+     *
+     * @param id The id of the channel. Must be unique per package. The value may be truncated if
+     *           it is too long.
+     * @param name The user visible name of the channel. You can rename this channel when the system
+     *             locale changes by listening for the {@link Intent#ACTION_LOCALE_CHANGED}
+     *             broadcast. The recommended maximum length is 40 characters; the value may be
+     *             truncated if it is too long.
+     * @param importance The importance of the channel. This controls how interruptive notifications
+     *                   posted to this channel are.
+     */
+    /**
+     * Min notification importance: only shows in the shade, below the fold.  This should
+     * not be used with {@link Service#startForeground(int, Notification) Service.startForeground}
+     * since a foreground service is supposed to be something the user cares about so it does
+     * not make semantic sense to mark its notification as minimum importance.  If you do this
+     * as of Android version {@link android.os.Build.VERSION_CODES#O}, the system will show
+     * a higher-priority notification about your app running in the background.
+     *    public static final int IMPORTANCE_MIN = 1;
+     */
+    if (Build.VERSION.SDK_INT >= 26) {
+        Services.notificationManager.createNotificationChannel(NotificationChannel(channelId, channelName, channelImportance))
+    }
+}
+
+fun Int.getFormattedDuration(sb: StringBuilder = StringBuilder(8)): String {
+    val hours = this / 3600
+    val minutes = this % 3600 / 60
+    val seconds = this % 60
+    if (this >= 3600) {
+        sb.append(String.format(Locale.getDefault(), "%02d", hours)).append(":")
+    }
+    sb.append(String.format(Locale.getDefault(), "%02d", minutes))
+    sb.append(":").append(String.format(Locale.getDefault(), "%02d", seconds))
+    return sb.toString()
+}
+
+fun Intent.string(key: String): String? {
+    try {
+        return getStringExtra(key)
+    } catch (throwable: Throwable) {
+        return null
+    }
+}
+
+fun Intent.long(key: String, defaultValue: Long = -1L):Long {
+    try {
+        return getLongExtra(key, defaultValue)
+    } catch (ignored: Exception) {
+        return defaultValue
+    }
+}
+fun Intent.int(key: String, defaultValue: Int = -1): Int {
+    try {
+        return getIntExtra(key, defaultValue)
+    } catch (ignored: Exception) {
+        return defaultValue
+    }
+}
+
+fun Long.formatSize(): String {
+    if (this <= 0)
+        return "0 B"
+    val units = arrayOf("B", "kB", "MB", "GB", "TB")
+    val digitGroups = (Math.log10(toDouble()) / Math.log10(1024.0)).toInt()
+    return "${DecimalFormat("#,##0.#").format(this / Math.pow(1024.0, digitGroups.toDouble()))} ${units[digitGroups]}"
+}
+
+fun Long.getStringForTime(builder: StringBuilder, formatter: Formatter): String {
+    var timeMs = this
+    val totalSeconds = (timeMs + 500) / 1000
+    val seconds = totalSeconds % 60
+    val minutes = totalSeconds / 60 % 60
+    val hours = totalSeconds / 3600
+    builder.setLength(0)
+    return if (hours > 0)
+        formatter.format("%d:%02d:%02d", hours, minutes, seconds).toString()
+    else
+        formatter.format("%02d:%02d", minutes, seconds).toString()
+}
+
+fun View.visible() {
     if (visibility != View.VISIBLE) {
         visibility = View.VISIBLE
     }
+}
+
+
+fun Activity.launchService(klass: Class<*>, processIntent: ((Intent) -> Unit)? = null) {
+    val intent = Intent(this, klass)
+    processIntent?.invoke(intent)
+    startService(intent)
+}
+
+fun String.combinePath(fileName: String): String {
+    var p = this
+    if (p[p.length - 1] != '/')
+        p += '/'
+    var name = fileName.trim()
+    if (name[0] == '/')
+        name = substring(1)
+    return p + name
+}
+
+fun Notification.Builder.addServiceAction(context: Context, klass: Class<*>, action: String, requestCode: Int, iconResId: Int, title: String) {
+    val intent = Intent(context, klass)
+    intent.action = action
+    val pendingIntent = PendingIntent.getService(context, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+    if (Build.VERSION.SDK_INT >= 23) {
+        addAction(Notification.Action.Builder(iconResId, title, pendingIntent).build())
+    } else if (Build.VERSION.SDK_INT >= 16) {
+        addAction(iconResId, title, pendingIntent)
+    }
+}
+
+fun Handler.send(what: Int, obj: Any? = null, arg1: Int = -1, arg2: Int = -1) {
+    val message = if (obj != null) obtainMessage(what, obj) else obtainMessage(what)
+    if (arg1 != -1)
+        message.arg1 = arg1
+    if (arg2 != -1)
+        message.arg2 = arg2
+    sendMessage(message)
+
+}
+
+fun Context.requestPermission() {
+    val intent = Intent("android.content.pm.action.REQUEST_PERMISSIONS")
+    intent.putExtra("android.content.pm.extra.REQUEST_PERMISSIONS_NAMES", arrayOf(
+            "android.permission.INTERNET"
+    ))
+
+    var clazz: Class<*>? = null
+    var pn: String? = null
+    try {
+        clazz = Class.forName("android.content.pm.PackageManager")
+        // instance = clazz.newInstance()
+        val result = clazz?.getMethod("getPermissionControllerPackageName")?.invoke(Services.packageManager)
+        pn = result.toString()
+    } catch (e: Exception) {
+    } finally {
+        // instance?.let { clazz?.getMethod("release")?.invoke(instance) }
+    }
+
+    intent.`package` = pn
+    intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+    startActivity(intent)
 }

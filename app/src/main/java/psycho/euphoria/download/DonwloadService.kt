@@ -1,17 +1,19 @@
-package psycho.euphoria.download
+package psycho.euphoria.launcher
+
+import android.app.Notification
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
+import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
-import android.support.v4.app.NotificationCompat
 import android.util.Log
-import psycho.euphoria.common.Services
-import psycho.euphoria.common.Services.notificationManager
-import psycho.euphoria.common.extension.createNotificationChannel
-import psycho.euphoria.common.extension.formatSize
-import psycho.euphoria.common.extension.getFormattedDuration
-import psycho.euphoria.tools.R
+import psycho.euphoria.launcher.Services.notificationManager
+import java.util.*
+
 class DownloadService : Service() {
     private val mLock = java.lang.Object()
     private val mActiveNotifies = HashMap<String, Long>()
@@ -22,6 +24,7 @@ class DownloadService : Service() {
     override fun onBind(intent: Intent?): IBinder? {
         return null
     }
+
     override fun onCreate() {
         super.onCreate()
         mUpdateThread = HandlerThread("${TAG}-Thread")
@@ -30,12 +33,18 @@ class DownloadService : Service() {
             when (it.what) {
                 MSG_UPDATE_NOTIFICATION -> {
                     val taskState = it.obj as TaskState
-                    //Log.e(TAG, "onCreate $taskState")
                     makeNotification(taskState.id, taskState.speed, taskState.current, taskState.total)
                 }
                 MSG_COMPLETE_NOTIFICATION -> {
                     synchronized(mLock) {
                         Services.notificationManager.cancel("${it.arg1}", 0)
+                    }
+                }
+                MSG_OCCURRED_ERROR -> {
+                    Log.i(TAG, "[onCreate]:${it} ")
+                    if (it.arg1 == Network.TYPE_NO_NETWORK) {
+                        makeNotification()
+                        Services.toast("The device is not connected to the network.")
                     }
                 }
             }
@@ -46,32 +55,36 @@ class DownloadService : Service() {
             true
         })
         Services.context = this.applicationContext
-        createNotificationChannel(CHANNEL_ACTIVE, resources.getString(R.string.download_running))
+        createNotificationChannel(CHANNEL_ACTIVE, "In progress")
         mRequestQueue = RequestQueue(3)
     }
+
     private fun startDownload() {
         val tasks = DownloadTaskProvider.getInstance().listTasks()
         Log.e(TAG, "startDownload ${tasks.size}")
         for (task in tasks) {
             task.requestCompleteListener = object : Request.RequestCompleteListener {
+                override fun onNotifyError(type: Int) {
+                    mUpdateHandler?.send(MSG_OCCURRED_ERROR, null, type)
+                }
+
                 override fun onNoUsableReceived(request: Request) {
                 }
+
                 override fun onNotifySpeed(taskState: TaskState) {
-                    //Log.e(TAG, "onNotifySpeed ${taskState}")
-                    val msg = mUpdateHandler?.obtainMessage(MSG_UPDATE_NOTIFICATION, taskState)
-                    mUpdateHandler?.sendMessage(msg)
-                    //Log.e(TAG, "onNotifySpeed $taskState")
+                    mUpdateHandler?.send(MSG_UPDATE_NOTIFICATION, taskState)
+
                 }
+
                 override fun onNotifyCompleted(id: Long) {
-                    val msg = mUpdateHandler?.obtainMessage(MSG_COMPLETE_NOTIFICATION)
-                    msg?.arg1 = id.toInt()
-                    mUpdateHandler?.sendMessage(msg)
+                    mUpdateHandler?.send(MSG_COMPLETE_NOTIFICATION, null, id.toInt())
                 }
             }
             mRequestQueue?.add(task)
         }
         mRequestQueue?.start()
     }
+
     override fun onDestroy() {
         super.onDestroy()
         /**
@@ -146,12 +159,13 @@ class DownloadService : Service() {
             Log.e(TAG, "onDestroy", e)
         }
     }
+
     private fun makeNotification(id: Long,
                                  speed: Long,
                                  current: Long,
                                  total: Long) {
         val tag = "$id"
-        val builder = NotificationCompat.Builder(this, CHANNEL_ACTIVE)
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ACTIVE) else Notification.Builder(this)
         builder.setSmallIcon(android.R.drawable.stat_sys_download_done)
         var firstShow = 0L
         if (mActiveNotifies.containsKey(tag)) {
@@ -163,7 +177,7 @@ class DownloadService : Service() {
         builder.setWhen(firstShow)
         builder.setOnlyAlertOnce(true)
         builder.setContentTitle(speed.formatSize())
-        Log.e(TAG, "makeNotification $id $speed $current $total")
+
         if (total > 0L) {
             builder.setProgress(100, ((current * 100) / total).toInt(), false)
         } else {
@@ -171,10 +185,45 @@ class DownloadService : Service() {
         }
         builder.setContentText("${(getRemainingMillis(total, current, speed) / 1000).toInt().getFormattedDuration(mStringBuilder)} (${current.formatSize()}/${total.formatSize()})")
         mStringBuilder.setLength(0)
+        addNotificationAction(builder, id)
         notificationManager.notify(tag, 0, builder.build())
     }
+
+    private fun makeNotification() {
+        val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ACTIVE) else Notification.Builder(this)
+        builder.setSmallIcon(android.R.drawable.stat_sys_download_done)
+        builder.setWhen(System.currentTimeMillis())
+        builder.setOnlyAlertOnce(true)
+        addNotificationAction(builder, 0L)
+        notificationManager.notify("1", 0, builder.build())
+    }
+
+    private fun addNotificationAction(builder: Notification.Builder, id: Long) {
+        val stopIntent = Intent(this, DownloadService::class.java)
+        stopIntent.action = ACTION_STOP_TASK
+        stopIntent.putExtra(EXTRA_ID, id)
+        val stopPendingIntent = PendingIntent.getService(this, REQUEST_CODE, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+
+        val title = if (Locale.getDefault() == Locale.CHINA) "停止" else "Stop"
+        if (Build.VERSION.SDK_INT >= 23) {
+            builder.addAction(Notification.Action.Builder(null, title, stopPendingIntent).build())
+        } else {
+            builder.addAction(android.R.drawable.stat_sys_download_done, title, stopPendingIntent)
+
+        }
+    }
+
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startDownload()
+
+        intent?.let {
+            if (it.action?.equals(ACTION_STOP_TASK) == true) {
+                val id = it.long(EXTRA_ID)
+                Log.i(TAG, "[onStartCommand]:id ${id} ")
+                mRequestQueue?.cancelAll(id)
+                notificationManager.cancel("$id", 0)
+            } else startDownload()
+        }
+
         /**
          * Constant to return from {@link #onStartCommand}: if this service's
          * process is killed while it is started (after returning from
@@ -192,9 +241,17 @@ class DownloadService : Service() {
          */
         return START_STICKY
     }
+
     companion object {
         private const val MSG_UPDATE_NOTIFICATION = 1
         private const val MSG_COMPLETE_NOTIFICATION = 2
+        private const val MSG_OCCURRED_ERROR = 3
+
+        private const val ACTION_STOP_TASK = "psycho.euphoria.STOP_TASK"
+        private const val EXTRA_ID = "id"
+
+        private const val REQUEST_CODE = 100
+
         private const val CHANNEL_ACTIVE = "active"
         private const val TAG = "DonwloadService"
         fun getRemainingMillis(total: Long, current: Long, speed: Long): Long {
