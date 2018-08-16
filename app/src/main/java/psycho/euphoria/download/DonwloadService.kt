@@ -1,17 +1,16 @@
-package psycho.euphoria.launcher
+package psycho.euphoria.download
 
 import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
-import android.content.Intent.FLAG_ACTIVITY_NEW_TASK
-import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.util.Log
-import psycho.euphoria.launcher.Services.notificationManager
+import psycho.euphoria.common.*
+import psycho.euphoria.common.Services.notificationManager
 import java.util.*
 
 class DownloadService : Service() {

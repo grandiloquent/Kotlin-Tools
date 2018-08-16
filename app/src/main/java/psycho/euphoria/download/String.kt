@@ -1,2 +1,2 @@
-package psycho.euphoria.launcher
+package psycho.euphoria.download
 

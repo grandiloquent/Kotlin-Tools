@@ -1,4 +1,4 @@
-package psycho.euphoria.launcher
+package psycho.euphoria.common
 
 import android.annotation.SuppressLint
 import android.app.*
@@ -41,11 +41,29 @@ object Services {
     private const val KEY_TEXT_COLOR = "text_color"
     private const val KEY_BACKGROUND_COLOR = "background_color"
     private const val KEY_KEEP_LAST_MODIFIED = "keep_last_modified"
+
     var context: Context by Delegates.notNull<Context>()
-    // public static final int BASE = 1;
+
     var backgroundColor: Int
         get() = prefer.getInt(KEY_BACKGROUND_COLOR, 0XFF424242.toInt())
         set(backgroundColor) = prefer.edit().putInt(KEY_BACKGROUND_COLOR, backgroundColor).apply()
+    // public static final int BASE = 1;
+    val isNetworkValid: Boolean
+        get() {
+            try {
+                var networkInfo = connectivityManager.getNetworkInfo(0)
+                if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
+                    return true
+                } else {
+                    networkInfo = connectivityManager.getNetworkInfo(1)
+                    if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
+                        return true
+                    }
+                }
+            } catch (ignored: Exception) {
+            }
+            return false
+        }
     var keepLastModified: Boolean
         get() = prefer.getBoolean(KEY_KEEP_LAST_MODIFIED, true)
         set(keepLastModified) = prefer.edit().putBoolean(KEY_KEEP_LAST_MODIFIED, keepLastModified).apply()
@@ -67,23 +85,10 @@ object Services {
     var treeUri: String
         get() = prefer.getString(KEY_TREE_URI, "")
         set(value) = prefer.edit().putString(KEY_TREE_URI, value).apply()
-    val isNetworkValid: Boolean
-        get() {
-            try {
-                var networkInfo = connectivityManager.getNetworkInfo(0)
-                if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
-                    return true
-                } else {
-                    networkInfo = connectivityManager.getNetworkInfo(1)
-                    if (networkInfo?.state == NetworkInfo.State.CONNECTED) {
-                        return true
-                    }
-                }
-            } catch (ignored: Exception) {
-            }
-            return false
+    val widthPixels: Int
+        get() = context.resources.displayMetrics.widthPixels
 
-        }
+
     /*==================================*/
     val connectivityManager by lazy {
         if (Build.VERSION.SDK_INT >= 23)
@@ -361,13 +366,14 @@ fun Intent.string(key: String): String? {
     }
 }
 
-fun Intent.long(key: String, defaultValue: Long = -1L):Long {
+fun Intent.long(key: String, defaultValue: Long = -1L): Long {
     try {
         return getLongExtra(key, defaultValue)
     } catch (ignored: Exception) {
         return defaultValue
     }
 }
+
 fun Intent.int(key: String, defaultValue: Int = -1): Int {
     try {
         return getIntExtra(key, defaultValue)

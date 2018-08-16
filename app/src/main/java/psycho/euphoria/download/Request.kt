@@ -1,4 +1,4 @@
-package psycho.euphoria.launcher
+package psycho.euphoria.download
 
 import android.util.Log
 

@@ -1,7 +1,8 @@
-package psycho.euphoria.launcher
+package psycho.euphoria.download
 
 import android.text.format.DateUtils.SECOND_IN_MILLIS
 import android.util.Log
+import psycho.euphoria.common.Services
 
 import java.io.File
 import java.io.RandomAccessFile
