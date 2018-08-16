@@ -5,22 +5,21 @@ import android.app.*
 import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.graphics.Point
 import android.graphics.Rect
 import android.media.AudioManager
 import android.os.Build
 import android.preference.PreferenceManager
 import android.util.Log
-import android.view.ViewConfiguration
-import android.view.WindowManager
 import kotlin.properties.Delegates
 import android.graphics.drawable.Drawable
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
 import android.os.Handler
 import android.os.Looper
-import android.view.View
-import android.view.ViewParent
+import android.view.*
 import android.widget.Toast
 import java.text.DecimalFormat
 import java.util.*
@@ -70,6 +69,9 @@ object Services {
     var musicVolume: Int
         get() = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC)
         set(value) = audioManager.setStreamVolume(AudioManager.STREAM_MUSIC, value, 0)
+    val orientation: Int
+        get() = context.resources.configuration.orientation
+
     var OTGPartition: String
         get() = prefer.getString(KEY_OTG_PARTITION, "")
         set(OTGPartition) = prefer.edit().putString(KEY_OTG_PARTITION, OTGPartition).apply()
@@ -87,7 +89,6 @@ object Services {
         set(value) = prefer.edit().putString(KEY_TREE_URI, value).apply()
     val widthPixels: Int
         get() = context.resources.displayMetrics.widthPixels
-
 
     /*==================================*/
     val connectivityManager by lazy {
@@ -446,6 +447,34 @@ fun Handler.send(what: Int, obj: Any? = null, arg1: Int = -1, arg2: Int = -1) {
         message.arg2 = arg2
     sendMessage(message)
 
+}
+
+fun Activity.calculateScreenOrientation(): Int {
+    val displayRotation = getDisplayRotation()
+    var standard = displayRotation < 180
+    if (Services.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+        if (standard)
+            return ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        else return ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+    } else {
+        if (displayRotation == 90 || displayRotation == 270) {
+            standard = !standard
+        }
+
+        return if (standard) ActivityInfo.SCREEN_ORIENTATION_PORTRAIT else ActivityInfo.SCREEN_ORIENTATION_REVERSE_PORTRAIT
+
+    }
+}
+
+fun Activity.getDisplayRotation(): Int {
+    val rotation = windowManager.defaultDisplay.rotation
+    return when (rotation) {
+        Surface.ROTATION_0 -> 0
+        Surface.ROTATION_90 -> 90
+        Surface.ROTATION_180 -> 180
+        Surface.ROTATION_270 -> 270
+        else -> 0
+    }
 }
 
 fun Context.requestPermission() {

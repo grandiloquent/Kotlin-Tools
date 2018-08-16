@@ -75,7 +75,7 @@ fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
 fun serializeFileName(path: String) {
     val dir = File(path)
     if (!dir.exists() || !dir.isDirectory) return
-    val files = dir.listFiles(FilenameFilter { file, s -> file.isFile && s.endsWith(".mp4", true) })
+    val files = dir.listFiles { file, s -> file.isFile && s.endsWith(".mp4", true) }
     val regex = Regex("[0-9]{3}\\.mp4")
     var count = 0
     for (file in files) {
