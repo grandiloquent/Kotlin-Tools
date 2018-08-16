@@ -1,4 +1,5 @@
 package psycho.euphoria.common.extension
+
 import android.net.Uri
 import android.text.TextUtils
 import psycho.euphoria.common.SORT_BY_DATE_MODIFIED
@@ -8,12 +9,15 @@ import java.io.File
 import java.io.FileNotFoundException
 import java.io.FilenameFilter
 import java.util.ArrayList
+
 fun File.isVideo(): Boolean {
     return arrayOf(".mp4", ".flv").any { name.endsWith(it, true) }
 }
+
 fun File.listVideoFiles(): List<File>? {
-    return listFiles()?.filter { it.isFile && it.isVideo() }
+    return listFiles()?.filter { it.isFile && it.isVideo() }?.sortedBy { it.name }
 }
+
 fun File.changeExtension(ext: String): File {
     var e = ""
     if (ext[0] != '.') {
@@ -21,15 +25,18 @@ fun File.changeExtension(ext: String): File {
     }
     return File("${absolutePath.substringBeforeLast('.')}${e}${ext}")
 }
+
 fun File.toUri(): Uri {
     return Uri.fromFile(this)
 }
+
 fun File.buildUniqueFile(): File {
     val parent = parentFile
     val ext = extension
     val name = nameWithoutExtension
     return parent.buildUniqueFileWithExtension(name, ext)
 }
+
 fun File.buildUniqueFile(displayName: String): File {
     val name: String
     val ext: String?
@@ -44,9 +51,11 @@ fun File.buildUniqueFile(displayName: String): File {
     }
     return buildUniqueFileWithExtension(name, ext)
 }
+
 fun File.isImageVideoGif(): Boolean {
     return absolutePath.isImageFast() || absolutePath.isVideoFast() || absolutePath.isGif() || absolutePath.isRawFast()
 }
+
 fun File.listFileItems(sort: Int = SORT_BY_NAME, mIsNotShowHidden: Boolean = true): ArrayList<FileItem>? {
     if (!isDirectory) return null
     val files = if (mIsNotShowHidden) listFiles(FilenameFilter { file, s -> !s.startsWith(".") }) else listFiles()
@@ -69,6 +78,7 @@ fun File.listFileItems(sort: Int = SORT_BY_NAME, mIsNotShowHidden: Boolean = tru
     }
     return ls
 }
+
 fun File.buildUniqueFileWithExtension(name: String, ext: String?): File {
     var file = buildFile(this, name, ext)
     // If conflicting file, try adding counter suffix
@@ -81,6 +91,7 @@ fun File.buildUniqueFileWithExtension(name: String, ext: String?): File {
     }
     return file
 }
+
 private fun buildFile(parent: File, name: String, ext: String?): File {
     return if (TextUtils.isEmpty(ext)) {
         File(parent, name)
@@ -88,6 +99,7 @@ private fun buildFile(parent: File, name: String, ext: String?): File {
         File(parent, "$name.$ext")
     }
 }
+
 data class FileItem(val path: String,
                     val name: String,
                     val size: Long,
