@@ -170,7 +170,7 @@ class FileActivity : CustomActivity() {
                 serializeFileName(mRecentDirectory, this)
             }
             R.id.action_serialize_file_name100 -> {
-                serializeFileName(mRecentDirectory, this, 100)
+                serializeFileName(mRecentDirectory)
             }
             R.id.action_copy_filename -> {
                 mFileAdapter?.let {

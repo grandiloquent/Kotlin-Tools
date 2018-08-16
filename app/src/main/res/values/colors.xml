@@ -20,4 +20,10 @@
     <color name="default_background_color">@color/theme_dark_background_color</color>
     <color name="exo_edit_mode_background_color">#FFF4F3F0</color>
     <color name="exo_error_message_background_color">#AA000000</color>
+    <color name="rippleColorDark">@color/md_white_1000_20</color>
+    <color name="md_white_1000_20">#33FFFFFF</color>
+    <color name="rippleColorLight">@color/md_black_1000_12</color>
+    <color name="md_black_1000_12">#1F000000</color>
+    <color name="dialogLight">@color/md_white_1000</color>
+    <color name="md_white_1000">#FFFFFFFF</color>
 </resources>

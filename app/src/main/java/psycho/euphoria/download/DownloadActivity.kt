@@ -1,4 +1,5 @@
 package psycho.euphoria.download
+
 import android.content.ClipboardManager
 import android.content.Intent
 import android.os.Bundle
@@ -13,15 +14,21 @@ import kotlinx.android.synthetic.main.activity_download.*
 import psycho.euphoria.common.Services.clipboardManager
 import psycho.euphoria.common.extension.isValidURL
 import psycho.euphoria.common.extension.toast
+import psycho.euphoria.common.launchService
+import psycho.euphoria.download.DownloadListAdapter.Companion.MENU_STOP
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File
-class DownloadActivity: AppCompatActivity() {
+
+class DownloadActivity : AppCompatActivity() {
     private lateinit var mLayoutManager: RecyclerView.LayoutManager
     private lateinit var mAdapter: DownloadListAdapter
     private lateinit var mOnPrimaryClipChangedListener: ClipboardManager.OnPrimaryClipChangedListener
     private lateinit var mClipboardManager: ClipboardManager
     private lateinit var mItemTouchHelper: ItemTouchHelper
+    private lateinit var mTargetDirectory: File
+
+
     private fun addDownloadTask() {
         dialog(this, "", resources.getString(R.string.menu_add_download_task)) { value ->
             value?.let {
@@ -29,16 +36,19 @@ class DownloadActivity: AppCompatActivity() {
             }
         }
     }
-    override fun onStart() {
-        super.onStart()
-    }
     private fun initialize() {
+        mTargetDirectory = File(Environment.getExternalStorageDirectory(), "downloads")
+        if (!mTargetDirectory.exists()) mTargetDirectory.mkdir()
         setContentView(R.layout.activity_download)
         mLayoutManager = LinearLayoutManager(this)
         mAdapter = DownloadListAdapter(DownloadTaskProvider.getInstance().listTasks(), fun(v) {
             Tracker.e("DownloadListAdapter", "downloadInfo => ${v.id}")
-        }, fun(v) {
-            //mItemTouchHelper.startDrag(v)
+        }, object : DownloadListAdapter.OnMenuItemClickListener {
+            override fun onMenuItemClick(position: Int, item: MenuItem) {
+                when (item.itemId) {
+                    MENU_STOP -> stopRequest(position)
+                }
+            }
         })
         recycler_view.apply {
             setHasFixedSize(true)
@@ -81,7 +91,7 @@ class DownloadActivity: AppCompatActivity() {
     }
     private fun insertDownloadTask(url: String) {
         if (!url.isBlank() && url.isValidURL()) {
-            DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, Environment.getExternalStorageDirectory()))
+            DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, mTargetDirectory))
             refreshRecyclerView()
         }
     }
@@ -111,6 +121,9 @@ class DownloadActivity: AppCompatActivity() {
         }
         return true
     }
+    override fun onStart() {
+        super.onStart()
+    }
     private fun refreshRecyclerView() {
         mAdapter.switchData(DownloadTaskProvider.getInstance().listTasks())
     }
@@ -118,6 +131,14 @@ class DownloadActivity: AppCompatActivity() {
         val intent = Intent(this, DownloadService::class.java)
         startService(intent)
     }
+    private fun stopRequest(position: Int) {
+        val request = mAdapter.getItem(position)
+        launchService(DownloadService::class.java) {
+            it.putExtra(DownloadService.EXTRA_ID, request.id)
+            it.action = DownloadService.ACTION_STOP_TASK
+        }
+    }
+
     companion object {
         private const val MENU_ADD_DOWNLOAD = 1
         private const val MENU_START_DOWNLOAD = 2

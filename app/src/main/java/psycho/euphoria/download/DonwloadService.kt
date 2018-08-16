@@ -246,8 +246,8 @@ class DownloadService : Service() {
         private const val MSG_COMPLETE_NOTIFICATION = 2
         private const val MSG_OCCURRED_ERROR = 3
 
-        private const val ACTION_STOP_TASK = "psycho.euphoria.STOP_TASK"
-        private const val EXTRA_ID = "id"
+        const val ACTION_STOP_TASK = "psycho.euphoria.STOP_TASK"
+        const val EXTRA_ID = "id"
 
         private const val REQUEST_CODE = 100
 

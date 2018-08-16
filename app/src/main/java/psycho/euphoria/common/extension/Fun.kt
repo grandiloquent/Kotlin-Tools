@@ -1,4 +1,5 @@
 package psycho.euphoria.common.extension
+
 import android.app.AlertDialog
 import android.content.Context
 import android.os.Build
@@ -9,6 +10,8 @@ import android.view.WindowManager
 import android.widget.EditText
 import java.io.File
 import java.io.FileFilter
+import java.io.FilenameFilter
+
 fun isMarshmallowPlus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
 fun getInternalStoragePath() = Environment.getExternalStorageDirectory().absolutePath.trimEnd('/')
 fun dialog(context: Context, content: String?, title: String?, isForFileName: Boolean = false, positiveListener: (Editable?) -> Unit) {
@@ -35,6 +38,7 @@ fun dialog(context: Context, content: String?, title: String?, isForFileName: Bo
     dialog.window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_VISIBLE)
     dialog.show()
 }
+
 fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
     val dir = File(path)
     if (!dir.isDirectory) return
@@ -66,4 +70,22 @@ fun serializeFileName(path: String, context: Context, startValue: Int = 1) {
             }
         }
     }
+}
+
+fun serializeFileName(path: String) {
+    val dir = File(path)
+    if (!dir.exists() || !dir.isDirectory) return
+    val files = dir.listFiles(FilenameFilter { file, s -> file.isFile && s.endsWith(".mp4", true) })
+    val regex = Regex("[0-9]{3}\\.mp4")
+    var count = 0
+    for (file in files) {
+        if (regex.matches(file.name)) continue
+
+        var targetFileName = File(dir, (++count).toString().padStart(3, '0') + ".mp4")
+        while (targetFileName.exists()) {
+            targetFileName = File(dir, (++count).toString().padStart(3, '0') + ".mp4")
+        }
+        file.renameTo(targetFileName)
+    }
+
 }

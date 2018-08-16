@@ -143,7 +143,7 @@ class Network {
                 val buffer = ByteArray(8 * 1024)
                 var bytes = input.read(buffer)
                 while (bytes >= 0) {
-                    if (request.isCanceled()) return
+                    if (request.isCanceled()) throw Exception("User cancels download task")
                     output.write(buffer, 0, bytes)
                     request.currentBytes += bytes
                     updateProgress(request)

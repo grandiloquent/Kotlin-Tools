@@ -67,4 +67,8 @@
         <item name="android:src">@drawable/exo_controls_shuffle</item>
         <item name="android:contentDescription">@string/exo_controls_shuffle_description</item>
     </style>
+
+    <style name="TextAppearance.Regular.Caption">
+        <item name="android:textSize">12sp</item>
+    </style>
 </resources>
