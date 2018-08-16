@@ -621,26 +621,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
     private fun seekToTimeBarPosition(position: Long) {
         //mTracker.e("[seekToTimeBarPosition]")
         mPlayer?.let {
-            var windowIndex = 0
-            var positionMs = position
-            val timeline = it.currentTimeline
-            if (!timeline.isEmpty) {
-                val windowcount = timeline.windowCount
-                while (true) {
-                    val windowDurationMs = timeline.getWindow(windowIndex, mWindow).durationMs
-                    if (positionMs < windowDurationMs) {
-                        break
-                    } else if (windowIndex == windowcount - 1) {
-                        positionMs = windowDurationMs
-                        break
-                    }
-                    positionMs -= windowDurationMs
-                    windowIndex++
-                }
-            } else {
-                windowIndex = it.currentWindowIndex
-            }
-            seekTo(windowIndex, positionMs)
+            seekTo(it.currentWindowIndex, position)
         }
     }
 
