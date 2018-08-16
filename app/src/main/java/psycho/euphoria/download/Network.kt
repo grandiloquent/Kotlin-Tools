@@ -6,10 +6,7 @@ import psycho.euphoria.common.Services
 
 import java.io.File
 import java.io.RandomAccessFile
-import java.net.HttpURLConnection
-import java.net.MalformedURLException
-import java.net.URL
-import java.net.UnknownHostException
+import java.net.*
 
 class Network {
     private var mSpeedSampleStart = 0L
@@ -102,7 +99,8 @@ class Network {
             }
         } catch (malformedURLException: MalformedURLException) {
             handleError(request, TYPE_INVALID_URL, malformedURLException)
-
+        } catch (socketTimeoutException: SocketTimeoutException) {
+            handleError(request, TYPE_TIMEOUT)
         } catch (securityException: UnknownHostException) {
             handleError(request, TYPE_NO_NETWORK, securityException)
         } catch (ignored: Exception) {
@@ -120,6 +118,13 @@ class Network {
             }
             TYPE_NO_PERMISSION -> {
 
+            }
+            TYPE_TIMEOUT -> {
+                request.failedCount += 1
+                if (request.failedCount < 5) {
+                    performRequest(request)
+                    return
+                }
             }
             else -> {
             }
@@ -190,6 +195,7 @@ class Network {
         const val TYPE_NO_NETWORK = 0
         const val TYPE_NO_PERMISSION = 2
         const val TYPE_INVALID_URL = 3
+        const val TYPE_TIMEOUT = 5
 
         private const val MIN_PROGRESS_STEP = 65536
         private const val MIN_PROGRESS_TIME = 2000L

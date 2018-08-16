@@ -42,8 +42,10 @@ class DownloadService : Service() {
                 MSG_OCCURRED_ERROR -> {
                     Log.i(TAG, "[onCreate]:${it} ")
                     if (it.arg1 == Network.TYPE_NO_NETWORK) {
-                        makeNotification()
+
                         Services.toast("The device is not connected to the network.")
+                    }else{
+                        Services.toast("An error occurred during the download")
                     }
                 }
             }

@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_download.*
+import psycho.euphoria.common.extension.getFilenameFromPath
 import psycho.euphoria.tools.R
 import java.util.*
 
@@ -66,7 +67,7 @@ class DownloadListAdapter(private val downloads: MutableList<Request>,
 
         fun bindDownloadInfo(downloadInfo: Request) {
             with(downloadInfo) {
-                file_name.text = downloadInfo.fileName
+                file_name.text = downloadInfo.fileName.getFilenameFromPath()
                 itemView.setOnClickListener { itemClick(this) }
             }
         }
