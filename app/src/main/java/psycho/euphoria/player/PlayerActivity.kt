@@ -636,8 +636,9 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
 
     override fun onConfigurationChanged(newConfig: Configuration?) {
         super.onConfigurationChanged(newConfig)
-    Log.i(TAG, "[onConfigurationChanged]: ")
+        Log.i(TAG, "[onConfigurationChanged]: ")
     }
+
     private fun show() {
         //mTracker.e("[show]")
         if (controller.visibility != View.VISIBLE) {
@@ -654,15 +655,11 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
 
                 if (orientation == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) {
                     bottom += navigationBarHeight
-                    Log.i(TAG, "[show]: SCREEN_ORIENTATION_PORTRAIT")
                 } else if (orientation == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-                    Log.i(TAG, "[show]:SCREEN_ORIENTATION_LANDSCAPE")
                     right += navigationBarWidth
-
+                    Log.i(TAG, "[show]:$right ")
                 } else if (orientation == ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE) {
-                    Log.i(TAG, "[show]:SCREEN_ORIENTATION_REVERSE_LANDSCAPE")
                     left += navigationBarWidth
-
                 }
                 controller.setPadding(left, top, right, bottom)
                 //Log.e(TAG, "[show] $left $top $right $bottom")
