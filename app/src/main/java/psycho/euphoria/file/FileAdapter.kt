@@ -40,26 +40,7 @@ class FileAdapter(private val activity: AppCompatActivity,
         val result = DiffUtil.calculateDiff(callback)
         files.clear()
         files.addAll(list)
-        result.dispatchUpdatesTo(object : ListUpdateCallback {
-            override fun onChanged(position: Int, count: Int, payload: Any?) {
-                notifyItemRangeChanged(position, count, payload)
-            }
-
-            override fun onMoved(fromPosition: Int, toPosition: Int) {
-                notifyItemMoved(fromPosition , toPosition)
-
-            }
-
-            override fun onInserted(position: Int, count: Int) {
-                notifyItemRangeInserted(position , count)
-            }
-
-            override fun onRemoved(position: Int, count: Int) {
-                notifyItemRangeRemoved(position , count)
-
-            }
-
-        })
+        result.dispatchUpdatesTo(this)
 //        files.clear()
 //        files.addAll(list)
 //        notifyDataSetChanged()

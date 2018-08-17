@@ -165,9 +165,9 @@ fun Context.getFilePublicUri(file: File, applicationId: String): Uri {
     // if media content uri is null, get our custom uri like content://com.simplemobiletools.gallery.provider/external_files/emulated/0/DCIM/IMG_20171104_233915.jpg
     return if (file.isImageVideoGif()) {
         getMediaContentUri(file.absolutePath)
-                ?: FileProvider.getUriForFile(this, "$applicationId.provider", file)
+                ?: FileProvider.getUriForFile(this, "$applicationId.fileprovider", file)
     } else {
-        FileProvider.getUriForFile(this, "$applicationId.provider", file)
+        FileProvider.getUriForFile(this, "$applicationId.fileprovider", file)
     }
 }
 fun Context.getFileUri(path: String) = when {

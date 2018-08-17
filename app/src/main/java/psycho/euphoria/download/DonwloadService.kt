@@ -203,7 +203,8 @@ class DownloadService : Service() {
         val stopIntent = Intent(this, DownloadService::class.java)
         stopIntent.action = ACTION_STOP_TASK
         stopIntent.putExtra(EXTRA_ID, id)
-        val stopPendingIntent = PendingIntent.getService(this, REQUEST_CODE, stopIntent, PendingIntent.FLAG_UPDATE_CURRENT)
+        // REQUEST_CODE
+        val stopPendingIntent = PendingIntent.getService(this, id.toInt(), stopIntent, PendingIntent.FLAG_ONE_SHOT)
 
         val title = if (Locale.getDefault() == Locale.CHINA) "停止" else "Stop"
         if (Build.VERSION.SDK_INT >= 23) {
