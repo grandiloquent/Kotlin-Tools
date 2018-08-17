@@ -81,7 +81,7 @@ class DownloadActivity : AppCompatActivity() {
                         viewHolder?.let {
                             val downloadInfo = mAdapter.getItem(it.adapterPosition)
                             downloadInfo.finish = 1
-                            DownloadTaskProvider.getInstance().update(downloadInfo.id)
+                            DownloadTaskProvider.getInstance().update(downloadInfo)
                             mAdapter.removeAt(it)
                         }
                     }

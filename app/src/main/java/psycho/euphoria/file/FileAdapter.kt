@@ -42,20 +42,20 @@ class FileAdapter(private val activity: AppCompatActivity,
         files.addAll(list)
         result.dispatchUpdatesTo(object : ListUpdateCallback {
             override fun onChanged(position: Int, count: Int, payload: Any?) {
-                notifyItemRangeChanged(position + 1, count, payload)
+                notifyItemRangeChanged(position, count, payload)
             }
 
             override fun onMoved(fromPosition: Int, toPosition: Int) {
-                notifyItemMoved(fromPosition + 1, toPosition + 1)
+                notifyItemMoved(fromPosition , toPosition)
 
             }
 
             override fun onInserted(position: Int, count: Int) {
-                notifyItemRangeInserted(position + 1, count)
+                notifyItemRangeInserted(position , count)
             }
 
             override fun onRemoved(position: Int, count: Int) {
-                notifyItemRangeRemoved(position + 1, count)
+                notifyItemRangeRemoved(position , count)
 
             }
 

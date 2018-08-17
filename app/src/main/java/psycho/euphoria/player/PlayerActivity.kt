@@ -72,15 +72,6 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
     private var mTextureViewRotation = 0
     private var mVolume = 0
     private var mWindow = Timeline.Window()
-//    private var mOrientation = 0
-//    private val mOrientationEventListener = object : OrientationEventListener(this) {
-//        override fun onOrientationChanged(degress: Int) {
-//            mOrientation = degress
-//        }
-//
-//    }
-    //private val mTracker = Tracker("PlayerActivity")
-
 
     private fun bindActions() {
         //mTracker.e("[bindActions]")
@@ -639,6 +630,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         Log.i(TAG, "[onConfigurationChanged]: ")
     }
 
+    // If the phone does not have a physical key, calculate the size of the navigation bar
+    // Make sure the video is not obscured
     private fun show() {
         //mTracker.e("[show]")
         if (controller.visibility != View.VISIBLE) {
