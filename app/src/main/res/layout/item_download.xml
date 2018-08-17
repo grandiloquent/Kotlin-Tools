@@ -3,9 +3,10 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="fill_parent"
-    android:layout_height="?android:attr/listPreferredItemHeight"
+    android:layout_height="wrap_content"
     android:background="@drawable/list_item_selector_light">
 
+    <!--android:layout_height="?android:attr/listPreferredItemHeight"-->
 
     <TextView
         android:id="@+id/file_name"
@@ -32,7 +33,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
 
-
+        android:paddingBottom="12dp"
         android:paddingLeft="24dp"
         android:paddingRight="16dp"
         android:paddingTop="12dp"

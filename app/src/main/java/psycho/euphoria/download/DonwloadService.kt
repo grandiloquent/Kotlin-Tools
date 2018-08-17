@@ -44,7 +44,7 @@ class DownloadService : Service() {
                     if (it.arg1 == Network.TYPE_NO_NETWORK) {
 
                         Services.toast("The device is not connected to the network.")
-                    }else{
+                    } else {
                         Services.toast("An error occurred during the download")
                     }
                 }
@@ -57,10 +57,10 @@ class DownloadService : Service() {
         })
         Services.context = this.applicationContext
         createNotificationChannel(CHANNEL_ACTIVE, "In progress")
-        mRequestQueue = RequestQueue(3)
     }
 
     private fun startDownload() {
+        mRequestQueue = RequestQueue(3)
         val tasks = DownloadTaskProvider.getInstance().listTasks()
         Log.e(TAG, "startDownload ${tasks.size}")
         for (task in tasks) {

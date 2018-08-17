@@ -1,8 +1,10 @@
 package psycho.euphoria.file
-import android.content.pm.PackageManager
+
 import android.graphics.Color
 import android.graphics.drawable.Drawable
 import android.support.v7.app.AppCompatActivity
+import android.support.v7.util.DiffUtil
+import android.support.v7.util.ListUpdateCallback
 import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
@@ -11,10 +13,12 @@ import com.davidecirillo.multichoicerecyclerview.MultiChoiceAdapter
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_file.*
 import kotlinx.android.synthetic.main.item_file.view.*
-import kotlinx.android.synthetic.main.statusbar.*
-import psycho.euphoria.common.extension.*
+import psycho.euphoria.common.extension.formatSize
+import psycho.euphoria.common.extension.getColorCompat
+import psycho.euphoria.common.extension.isArchiveFast
+import psycho.euphoria.common.extension.isVideoFast
 import psycho.euphoria.tools.R
-import java.io.File
+
 class FileAdapter(private val activity: AppCompatActivity,
                   private val files: ArrayList<FileItem>,
                   private val itemClick: (FileItem?) -> Unit
@@ -25,19 +29,47 @@ class FileAdapter(private val activity: AppCompatActivity,
     private val mPdfDrawble: Drawable = activity.resources.getDrawable(R.drawable.ic_file_pdf)
     private val mAudioDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_audio)
     private val mArchiveDrawable: Drawable = activity.resources.getDrawable(R.drawable.ic_file_archive)
+
     init {
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_file, TEXT_COLOR.toInt())
         //context.resources.getColoredDrawableWithColor(R.mipmap.ic_folder, TEXT_COLOR.toInt())
     }
-    fun switchData(list: List<FileItem>) {
+
+    fun switchData(list: ArrayList<FileItem>) {
+        val callback = FileItemDifferenceCallback(files, list)
+        val result = DiffUtil.calculateDiff(callback)
         files.clear()
         files.addAll(list)
-        notifyDataSetChanged()
+        result.dispatchUpdatesTo(object : ListUpdateCallback {
+            override fun onChanged(position: Int, count: Int, payload: Any?) {
+                notifyItemRangeChanged(position + 1, count, payload)
+            }
+
+            override fun onMoved(fromPosition: Int, toPosition: Int) {
+                notifyItemMoved(fromPosition + 1, toPosition + 1)
+
+            }
+
+            override fun onInserted(position: Int, count: Int) {
+                notifyItemRangeInserted(position + 1, count)
+            }
+
+            override fun onRemoved(position: Int, count: Int) {
+                notifyItemRangeRemoved(position + 1, count)
+
+            }
+
+        })
+//        files.clear()
+//        files.addAll(list)
+//        notifyDataSetChanged()
     }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
         val view = LayoutInflater.from(activity).inflate(R.layout.item_file, parent, false)
         return ViewHolder(view)
     }
+
     override fun getItemCount(): Int = files.size
     override fun setActive(view: View, state: Boolean) {
         if (state) {
@@ -46,36 +78,45 @@ class FileAdapter(private val activity: AppCompatActivity,
             view.item_holder.setBackgroundColor(Color.WHITE)
         }
     }
+
     override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
         return View.OnClickListener {
             itemClick(getItem(position))
         }
     }
+
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // Dont forget super this method
         super.onBindViewHolder(holder, position)
         holder.bindFileItem(files[position])
     }
+
     fun getItem(position: Int): FileItem {
         return files[position]
     }
+
     override fun getItemViewType(position: Int): Int {
         return super.getItemViewType(position)
     }
+
     override fun onViewRecycled(holder: ViewHolder) {
         holder.item_icon.drawble = null
     }
+
     companion object {
         private const val TEXT_COLOR = 0XFF333333
     }
-    inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
+
+      inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
             LayoutContainer {
         private var mFileItem: FileItem? = null
+
         init {
             //itemView.isLongClickable = true
             //itemView.setOnClickListener(this)
             //itemView.setOnLongClickListener(this)
         }
+
         fun bindFileItem(fileItem: FileItem) {
             mFileItem = fileItem
             with(fileItem) {
@@ -87,7 +128,7 @@ class FileAdapter(private val activity: AppCompatActivity,
                 } else {
                     item_details.text = size.formatSize()
                     if (name.isVideoFast() || name.endsWith(".apk", true)) {
-                        ThumbnailManager.instance?.into(path, item_icon, mFileDrawble)
+                        ThumbnailManager.instance?.into(path, this@ViewHolder, mFileDrawble)
                     } else {
                         item_icon.drawble = when {
                             name.endsWith(".pdf", true) -> mPdfDrawble

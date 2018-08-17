@@ -5,10 +5,11 @@ import android.text.TextUtils
 import psycho.euphoria.common.SORT_BY_DATE_MODIFIED
 import psycho.euphoria.common.SORT_BY_NAME
 import psycho.euphoria.common.SORT_BY_SIZE
+import psycho.euphoria.file.FileItem
 import java.io.File
 import java.io.FileNotFoundException
 import java.io.FilenameFilter
-import java.util.ArrayList
+import java.util.*
 
 fun File.isVideo(): Boolean {
     return arrayOf(".mp4", ".flv").any { name.endsWith(it, true) }
@@ -100,8 +101,3 @@ private fun buildFile(parent: File, name: String, ext: String?): File {
     }
 }
 
-data class FileItem(val path: String,
-                    val name: String,
-                    val size: Long,
-                    val count: Int,
-                    val isDirectory: Boolean)

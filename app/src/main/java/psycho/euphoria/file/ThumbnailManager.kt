@@ -3,6 +3,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.drawable.Drawable
 import android.util.Log
+import kotlinx.android.synthetic.main.item_file.*
 import psycho.euphoria.common.FileCache
 import psycho.euphoria.common.Services
 import psycho.euphoria.common.extension.isVideoFast
@@ -11,16 +12,16 @@ import psycho.euphoria.common.util.ThreadPool
 import java.io.File
 import java.io.FileOutputStream
 class ThumbnailManager {
-    private val mFileCache = FileCache(Services.context, Services.context.externalCacheDir, DATABASE, 1024 * 1000)
+    private val mFileCache = FileCache(Services.context, Services.context.externalCacheDir, DATABASE, 1024 * 10000)
     private val mThreadPool = ThreadPool()
     constructor() {
         Log.e(TAG, "[constructor] ${Services.context.externalCacheDir}")
         //FileCache.deleteFiles(Services.context, Services.context.externalCacheDir, DATABASE)
     }
-    fun into(path: String, view: FastImageView?, defaultDrawable: Drawable) {
+    fun into(path: String, view: FileAdapter.ViewHolder?, defaultDrawable: Drawable) {
         mThreadPool.submit(ThumbJob(path), FutureListener<Drawable?> {
             //Log.e(TAG, "[into] from threadPool")
-            view?.drawble = it?.get() ?: defaultDrawable
+            view?.item_icon?.drawble = it?.get() ?: defaultDrawable
         })
     }
     companion object {
