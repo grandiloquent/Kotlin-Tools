@@ -3,6 +3,7 @@ package psycho.euphoria.download
 import android.text.format.DateUtils.SECOND_IN_MILLIS
 import android.util.Log
 import psycho.euphoria.common.Services
+import psycho.euphoria.common.extension.getFilenameFromPath
 
 import java.io.File
 import java.io.RandomAccessFile
@@ -16,7 +17,8 @@ class Network {
     private var mLastUpdateTime = 0L
 
     private fun addRequest(httpURLConnection: HttpURLConnection?, request: Request) {
-        Log.e(TAG, "[addRequest] ${request.id}")
+        request.title = request.fileName.getFilenameFromPath()
+
         httpURLConnection?.let {
             val file = File(request.fileName)
             if (file.exists()) {
@@ -119,7 +121,8 @@ class Network {
             TYPE_NO_PERMISSION -> {
 
             }
-            TYPE_TIMEOUT -> {
+            TYPE_TIMEOUT,
+            TYPE_NO_NETWORK -> {
                 request.failedCount += 1
                 if (request.failedCount < 5) {
                     performRequest(request)
@@ -167,15 +170,20 @@ class Network {
         val currentBytes = request.currentBytes
         val sampleDelta = now - mSpeedSampleStart
         if (sampleDelta > 500L) {
-            val sampleSpeed = ((currentBytes - mSpeedSampleBytes) * 1000) / sampleDelta
-            if (mSpeed == 0L) {
-                mSpeed = sampleSpeed
+            if (currentBytes == mSpeedSampleBytes) {
+                request.notifySpeed(0L)
             } else {
-                mSpeed = ((mSpeed * 3) + sampleSpeed) / 4
+                val sampleSpeed = ((currentBytes - mSpeedSampleBytes) * 1000) / sampleDelta
+                if (mSpeed == 0L) {
+                    mSpeed = sampleSpeed
+                } else {
+                    mSpeed = ((mSpeed * 3) + sampleSpeed) / 4
+                }
+                if (mSpeedSampleStart != 0L) {
+                    request.notifySpeed(mSpeed)
+                }
             }
-            if (mSpeedSampleStart != 0L) {
-                request.notifySpeed(mSpeed)
-            }
+
             mSpeedSampleStart = now
             mSpeedSampleBytes = currentBytes
         }
@@ -200,6 +208,6 @@ class Network {
         private const val MIN_PROGRESS_STEP = 65536
         private const val MIN_PROGRESS_TIME = 2000L
         val DEFAULT_TIMEOUT = (20 * SECOND_IN_MILLIS).toInt()
-        private const val TAG = "Network"
+        private const val TAG = "Network-TAG"
     }
 }

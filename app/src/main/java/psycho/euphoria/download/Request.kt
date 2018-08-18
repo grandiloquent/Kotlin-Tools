@@ -17,6 +17,8 @@ class Request(
     var requestQueue: RequestQueue? = null
     var tag: Any? = null
     var requestCompleteListener: RequestCompleteListener? = null
+    var title: String? = null
+
     override fun compareTo(other: Request): Int {
         val left = this.getPriority()
         val right = other.getPriority()
@@ -57,8 +59,9 @@ class Request(
         synchronized(mLock) {
             listener = requestCompleteListener
         }
+
         // Log.e(TAG, "notifySpeed $speed")
-        listener?.onNotifySpeed(TaskState(id, speed, currentBytes, totalBytes))
+        listener?.onNotifySpeed(TaskState(id, speed, currentBytes, totalBytes, title))
     }
 
     fun notifyCompleted() {

@@ -32,7 +32,7 @@ class DownloadService : Service() {
             when (it.what) {
                 MSG_UPDATE_NOTIFICATION -> {
                     val taskState = it.obj as TaskState
-                    makeNotification(taskState.id, taskState.speed, taskState.current, taskState.total)
+                    makeNotification(taskState.id, taskState.speed, taskState.current, taskState.total, taskState.title)
                 }
                 MSG_COMPLETE_NOTIFICATION -> {
                     synchronized(mLock) {
@@ -164,7 +164,8 @@ class DownloadService : Service() {
     private fun makeNotification(id: Long,
                                  speed: Long,
                                  current: Long,
-                                 total: Long) {
+                                 total: Long,
+                                 title: String?) {
         val tag = "$id"
         val builder = if (Build.VERSION.SDK_INT >= 26) Notification.Builder(this, CHANNEL_ACTIVE) else Notification.Builder(this)
         builder.setSmallIcon(android.R.drawable.stat_sys_download_done)
@@ -220,10 +221,13 @@ class DownloadService : Service() {
         intent?.let {
             if (it.action?.equals(ACTION_STOP_TASK) == true) {
                 val id = it.long(EXTRA_ID)
-                Log.i(TAG, "[onStartCommand]:id ${id} ")
+                Log.e(TAG, "[onStartCommand]: Stop Task => id ${id} ")
                 mRequestQueue?.cancelAll(id)
                 notificationManager.cancel("$id", 0)
-            } else startDownload()
+            } else {
+                startDownload()
+                Log.e(TAG, "[onStartCommand]: startDownload")
+            }
         }
 
         /**
@@ -255,7 +259,7 @@ class DownloadService : Service() {
         private const val REQUEST_CODE = 100
 
         private const val CHANNEL_ACTIVE = "active"
-        private const val TAG = "DonwloadService"
+        private const val TAG = "DownloadService"
         fun getRemainingMillis(total: Long, current: Long, speed: Long): Long {
             return ((total - current) * 1000) / speed;
         }

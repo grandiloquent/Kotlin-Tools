@@ -36,6 +36,7 @@ class FileAdapter(private val activity: AppCompatActivity,
     }
 
     fun switchData(list: ArrayList<FileItem>) {
+
         val callback = FileItemDifferenceCallback(files, list)
         val result = DiffUtil.calculateDiff(callback)
         files.clear()
@@ -60,11 +61,11 @@ class FileAdapter(private val activity: AppCompatActivity,
         }
     }
 
-    override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
-        return View.OnClickListener {
-            itemClick(getItem(position))
-        }
-    }
+//    override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
+//        return View.OnClickListener {
+//            itemClick(getItem(position))
+//        }
+//    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // Dont forget super this method
@@ -99,6 +100,7 @@ class FileAdapter(private val activity: AppCompatActivity,
         }
 
         fun bindFileItem(fileItem: FileItem) {
+          itemView.setOnClickListener { itemClick(fileItem) }
             mFileItem = fileItem
             with(fileItem) {
                 item_name.text = name

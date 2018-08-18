@@ -19,6 +19,7 @@ import psycho.euphoria.download.DownloadListAdapter.Companion.MENU_STOP
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
 import java.io.File
+import java.util.*
 
 class DownloadActivity : AppCompatActivity() {
     private lateinit var mLayoutManager: RecyclerView.LayoutManager
@@ -36,6 +37,7 @@ class DownloadActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun initialize() {
         mTargetDirectory = File(Environment.getExternalStorageDirectory(), "downloads")
         if (!mTargetDirectory.exists()) mTargetDirectory.mkdir()
@@ -73,9 +75,11 @@ class DownloadActivity : AppCompatActivity() {
                     override fun onMove(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?, target: RecyclerView.ViewHolder?): Boolean {
                         return true
                     }
+
                     override fun getMovementFlags(recyclerView: RecyclerView?, viewHolder: RecyclerView.ViewHolder?): Int {
                         return super.getMovementFlags(recyclerView, viewHolder)
                     }
+
                     override fun onSwiped(viewHolder: RecyclerView.ViewHolder?, direction: Int) {
                         Tracker.e("onSwiped", "direction => $direction")
                         viewHolder?.let {
@@ -89,12 +93,14 @@ class DownloadActivity : AppCompatActivity() {
         Tracker.e("onCreate", "attach ItemTouchHelper to recyclerView")
         mItemTouchHelper.attachToRecyclerView(recycler_view)
     }
+
     private fun insertDownloadTask(url: String) {
         if (!url.isBlank() && url.isValidURL()) {
             DownloadTaskProvider.getInstance().insert(url, generateFileNameFromURL(url, mTargetDirectory))
             refreshRecyclerView()
         }
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         initialize()
@@ -102,17 +108,23 @@ class DownloadActivity : AppCompatActivity() {
         mClipboardManager = clipboardManager
         mClipboardManager.addPrimaryClipChangedListener(mOnPrimaryClipChangedListener)
     }
+
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         with(menu) {
-            add(0, MENU_ADD_DOWNLOAD, 0, resources.getString(R.string.menu_add_download_task))
+            val locale = Locale.getDefault()
+
+            add(0, MENU_ADD_DOWNLOAD, 0, if (locale == Locale.CHINA) "添加下载任务" else "Add download task")
+
             add(0, MENU_START_DOWNLOAD, 0, resources.getString(R.string.menu_strat_download_service))
         }
         return super.onCreateOptionsMenu(menu)
     }
+
     override fun onDestroy() {
         mClipboardManager.removePrimaryClipChangedListener(mOnPrimaryClipChangedListener)
         super.onDestroy()
     }
+
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             MENU_ADD_DOWNLOAD -> addDownloadTask()
@@ -121,16 +133,20 @@ class DownloadActivity : AppCompatActivity() {
         }
         return true
     }
+
     override fun onStart() {
         super.onStart()
     }
+
     private fun refreshRecyclerView() {
         mAdapter.switchData(DownloadTaskProvider.getInstance().listTasks())
     }
+
     private fun startDownload() {
         val intent = Intent(this, DownloadService::class.java)
         startService(intent)
     }
+
     private fun stopRequest(position: Int) {
         val request = mAdapter.getItem(position)
         launchService(DownloadService::class.java) {
