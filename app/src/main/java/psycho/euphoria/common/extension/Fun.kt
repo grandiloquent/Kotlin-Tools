@@ -77,16 +77,16 @@ fun serializeFileName(path: String) {
     if (!dir.exists() || !dir.isDirectory) return
 
     val files = dir.listFiles { file -> file.isFile && file.name.endsWith(".mp4", true) }
-    val regex = Regex("[0-9]{3}\\.mp4")
-    var count = 0
-    for (file in files) {
-        if (regex.matches(file.name)) continue
-
-        var targetFileName = File(dir, (++count).toString().padStart(3, '0') + ".mp4")
-        while (targetFileName.exists()) {
-            targetFileName = File(dir, (++count).toString().padStart(3, '0') + ".mp4")
+    if (files.isEmpty()) return
+    val fileList = files.toMutableList()
+    for (i in 1 until files.size+1) {
+        var targetFile = File(path, "${i.toString().padStart(3, '0')}.mp4")
+        if (!targetFile.exists()) {
+            val sourceFile = fileList.removeAt(fileList.size - 1)
+            sourceFile.renameTo(targetFile)
+        } else {
+            fileList.remove(fileList.first { it.absolutePath.equals(targetFile.absolutePath) })
         }
-        file.renameTo(targetFileName)
     }
 
 }

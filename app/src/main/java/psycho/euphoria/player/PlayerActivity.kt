@@ -127,12 +127,14 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                 }
             }
             deleteFile(File(path), false) {
-                toast(path)
+               // toast(path)
                 setResult(Activity.RESULT_OK)
             }
+            toast(file.name)
             mMediaSource = generateMediaSource(file.toUri())
             it.prepare(mMediaSource)
-            it.seekTo(index, C.TIME_UNSET)
+            seekTo(mStartWindow,C.TIME_UNSET)
+            //it.seekTo(mStartWindow, C.TIME_UNSET)
         }
     }
 
@@ -148,6 +150,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
 
     private fun generateMediaSource(uri: Uri): MediaSource? {
         //mTracker.e("[generateMediaSource]")
+        var sourcePath = uri.path
         val files = uri.path.getParentFilePath().listVideoFiles()
         mFiles = files
         files?.let {
@@ -155,8 +158,9 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
             val fileDataSourceFactory = FileDataSourceFactory()
             for (i in 0 until it.size) {
                 val u = it[i].toUri()
-                if (uri == u) {
+                if (sourcePath.equals(it[i].absolutePath)) {
                     mStartWindow = i
+
                 }
                 val m = ExtractorMediaSource.Factory(fileDataSourceFactory).createMediaSource(u)
                 val sm = buildSubtitleMediaSource(it[i])

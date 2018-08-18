@@ -98,6 +98,7 @@ class FileActivity : CustomActivity() {
     }
 
     private fun onClickFile(path: String) {
+        if (mFileAdapter.selectedItemCount > 0) return
         when {
             path.isVideoFast() -> {
                 val intent = Intent(this, PlayerActivity::class.java)
