@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.PopupMenu
 import kotlinx.android.extensions.LayoutContainer
 import kotlinx.android.synthetic.main.item_download.*
+import kotlinx.android.synthetic.main.notification_template_media.*
 import psycho.euphoria.common.extension.getFilenameFromPath
 import psycho.euphoria.tools.R
 import java.util.*
@@ -55,6 +56,7 @@ class DownloadListAdapter(private val downloads: MutableList<Request>,
 
     companion object {
         const val MENU_STOP = 0
+        const val MENU_START = 1
     }
 
     class ViewHolder(override val containerView: View,
@@ -80,9 +82,10 @@ class DownloadListAdapter(private val downloads: MutableList<Request>,
             val locale = Locale.getDefault()
 
             val stopMenuTitle = if (locale == Locale.CHINA) "停止" else "Stop"
+            val startMenuTitle = if (locale == Locale.CHINA) "开始下载" else "Start Download"
 
             popupMenu.menu.add(0, MENU_STOP, 0, stopMenuTitle)
-
+            popupMenu.menu.add(0, MENU_START, 0, startMenuTitle)
             popupMenu.setOnMenuItemClickListener {
                 adapter.menuItemListener.onMenuItemClick(adapterPosition, it)
                 true

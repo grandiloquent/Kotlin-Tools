@@ -15,6 +15,7 @@ import psycho.euphoria.common.Services.clipboardManager
 import psycho.euphoria.common.extension.isValidURL
 import psycho.euphoria.common.extension.toast
 import psycho.euphoria.common.launchService
+import psycho.euphoria.download.DownloadListAdapter.Companion.MENU_START
 import psycho.euphoria.download.DownloadListAdapter.Companion.MENU_STOP
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.commons.*
@@ -49,6 +50,7 @@ class DownloadActivity : AppCompatActivity() {
             override fun onMenuItemClick(position: Int, item: MenuItem) {
                 when (item.itemId) {
                     MENU_STOP -> stopRequest(position)
+                    MENU_START -> startRequest(position)
                 }
             }
         })
@@ -152,6 +154,14 @@ class DownloadActivity : AppCompatActivity() {
         launchService(DownloadService::class.java) {
             it.putExtra(DownloadService.EXTRA_ID, request.id)
             it.action = DownloadService.ACTION_STOP_TASK
+        }
+    }
+
+    private fun startRequest(position: Int) {
+        val request = mAdapter.getItem(position)
+        launchService(DownloadService::class.java) {
+            it.putExtra(DownloadService.EXTRA_ID, request.id)
+            it.action = DownloadService.ACTION_ADD_NEW_TASK
         }
     }
 

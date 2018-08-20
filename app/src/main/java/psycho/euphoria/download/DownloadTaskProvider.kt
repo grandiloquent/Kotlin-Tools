@@ -1,4 +1,5 @@
 package psycho.euphoria.download
+
 import android.content.ContentValues
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
@@ -6,6 +7,7 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.os.Environment
 import psycho.euphoria.common.Services
 import java.io.File
+
 class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelper(context,
         File(Environment.getExternalStorageDirectory(), DATANAME).absolutePath,
         null,
@@ -26,6 +28,7 @@ class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelp
         sb.append(");\n")
         database.execSQL(sb.toString())
     }
+
     fun insert(uri: String,
                filename: String,
                failed: Int = 0,
@@ -42,6 +45,29 @@ class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelp
         contentValues.put(COLUMN_URI, uri)
         writableDatabase.insertWithOnConflict(TABLE_NAME_TASKS, null, contentValues, SQLiteDatabase.CONFLICT_IGNORE)
     }
+
+    fun fecthTask(id: Long): Request? {
+        val cursor = readableDatabase.rawQuery("SELECT _id,uri,filename,etag,current_bytes,total_bytes,failed from tasks where _id = ?", arrayOf("$id"));
+        try {
+            if (cursor.moveToNext()) {
+                val downloadInfo = Request(
+                        cursor.getLong(0),
+                        cursor.getString(1),
+                        cursor.getString(2),
+                        cursor.getString(3),
+                        0L,//  cursor.getLong(4),
+                        0L,// cursor.getLong(5),
+                        cursor.getInt(6),
+                        0
+                )
+                return downloadInfo
+            }
+        } finally {
+            cursor.close()
+        }
+        return null
+    }
+
     fun listTasks(): MutableList<Request> {
         val list = mutableListOf<Request>()
         //
@@ -65,6 +91,7 @@ class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelp
         }
         return list
     }
+
     fun update(_id: Long,
                uri: String? = null,
                filename: String? = null,
@@ -83,8 +110,9 @@ class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelp
             contentValues.put(COLUMN_URI, uri)
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("$_id"), SQLiteDatabase.CONFLICT_IGNORE)
     }
+
     fun update(downloadInfo: Request) {
-        val  contentValues = ContentValues()
+        val contentValues = ContentValues()
         contentValues.put(COLUMN_CURRENT_BYTES, downloadInfo.currentBytes)
         contentValues.put(COLUMN_FAILED, downloadInfo.failedCount)
         contentValues.put(COLUMN_FILENAME, downloadInfo.fileName)
@@ -93,8 +121,10 @@ class DownloadTaskProvider(context: Context = Services.context) : SQLiteOpenHelp
         contentValues.put(COLUMN_URI, downloadInfo.uri)
         writableDatabase.updateWithOnConflict(TABLE_NAME_TASKS, contentValues, "$COLUMN_ID = ?", arrayOf("${downloadInfo.id}"), SQLiteDatabase.CONFLICT_IGNORE)
     }
+
     override fun onUpgrade(p0: SQLiteDatabase?, p1: Int, p2: Int) {
     }
+
     companion object {
         private const val VERSION = 1
         private const val DATANAME = "donwload_task.db"

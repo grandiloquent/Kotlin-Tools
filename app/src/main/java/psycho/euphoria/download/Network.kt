@@ -125,6 +125,7 @@ class Network {
             TYPE_NO_NETWORK -> {
                 request.failedCount += 1
                 if (request.failedCount < 5) {
+                    request.totalBytes = 0L
                     performRequest(request)
                     return
                 }

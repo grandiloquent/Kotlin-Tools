@@ -60,7 +60,9 @@ class DownloadService : Service() {
     }
 
     private fun startDownload() {
-        mRequestQueue = RequestQueue(3)
+        if (mRequestQueue == null) {
+            mRequestQueue = RequestQueue(DEFAULT_THREAD_POOL_SIZE).also { it.start() }
+        }
         val tasks = DownloadTaskProvider.getInstance().listTasks()
         Log.e(TAG, "startDownload ${tasks.size}")
         for (task in tasks) {
@@ -83,7 +85,7 @@ class DownloadService : Service() {
             }
             mRequestQueue?.add(task)
         }
-        mRequestQueue?.start()
+
     }
 
     override fun onDestroy() {
@@ -161,6 +163,15 @@ class DownloadService : Service() {
         }
     }
 
+    private fun addNewTask(id: Long) {
+        if (mRequestQueue == null) {
+            mRequestQueue = RequestQueue(DEFAULT_THREAD_POOL_SIZE).also { it.start() }
+        }
+        DownloadTaskProvider.getInstance().fecthTask(id)?.let {
+            mRequestQueue?.add(it)
+        }
+    }
+
     private fun makeNotification(id: Long,
                                  speed: Long,
                                  current: Long,
@@ -224,28 +235,15 @@ class DownloadService : Service() {
                 Log.e(TAG, "[onStartCommand]: Stop Task => id ${id} ")
                 mRequestQueue?.cancelAll(id)
                 notificationManager.cancel("$id", 0)
+            } else if (it.action?.equals(ACTION_ADD_NEW_TASK) == true) {
+                val id = it.long(EXTRA_ID)
+                addNewTask(id)
             } else {
                 startDownload()
                 Log.e(TAG, "[onStartCommand]: startDownload")
             }
         }
-
-        /**
-         * Constant to return from {@link #onStartCommand}: if this service's
-         * process is killed while it is started (after returning from
-         * {@link #onStartCommand}), then leave it in the started state but
-         * don't retain this delivered intent.  Later the system will try to
-         * re-create the service.  Because it is in the started state, it will
-         * guarantee to call {@link #onStartCommand} after creating the new
-         * service instance; if there are not any pending start commands to be
-         * delivered to the service, it will be called with a null intent
-         * object, so you must take care to check for this.
-         *
-         * <p>This mode makes sense for things that will be explicitly started
-         * and stopped to run for arbitrary periods of time, such as a service
-         * performing background music playback.
-         */
-        return START_STICKY
+        return START_NOT_STICKY
     }
 
     companion object {
@@ -254,8 +252,9 @@ class DownloadService : Service() {
         private const val MSG_OCCURRED_ERROR = 3
 
         const val ACTION_STOP_TASK = "psycho.euphoria.STOP_TASK"
+        const val ACTION_ADD_NEW_TASK = "psycho.euphoria.ADD_NEW_TASK"
         const val EXTRA_ID = "id"
-
+        private const val DEFAULT_THREAD_POOL_SIZE = 3
         private const val REQUEST_CODE = 100
 
         private const val CHANNEL_ACTIVE = "active"
