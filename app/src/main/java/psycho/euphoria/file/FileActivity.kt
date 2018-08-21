@@ -163,7 +163,6 @@ class FileActivity : CustomActivity() {
             R.id.action_download -> launchActivity(DownloadActivity::class.java)
             R.id.action_sorting -> showSortingDialog()
             R.id.action_translator -> launchActivity(TranslatorActivity::class.java)
-            R.id.action_refresh -> refreshRecyclerView()
             R.id.action_delete -> deleteFiles()
             R.id.action_select_all -> selectAll()
             R.id.action_split_video -> {
@@ -187,6 +186,11 @@ class FileActivity : CustomActivity() {
             R.id.action_copy_filename -> {
                 mFileAdapter?.let {
                     copyToClipboard(it.getItem(it.selectedItemList[0]).name)
+                }
+            }
+            R.id.action_gbk_utf -> {
+                mFileAdapter?.let {
+                    gbk2utf(it.getItem(it.selectedItemList[0]).path)
                 }
             }
         }
@@ -337,7 +341,6 @@ class FileActivity : CustomActivity() {
             mOptionMenu.apply {
                 findItem(R.id.action_delete).isVisible = true
                 findItem(R.id.action_download).isVisible = false
-                findItem(R.id.action_refresh).isVisible = false
                 findItem(R.id.action_rename_file).isVisible = true
                 findItem(R.id.action_scan_file).isVisible = true
                 findItem(R.id.action_sdcard).isVisible = false
@@ -347,12 +350,12 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_storage).isVisible = false
                 findItem(R.id.action_translator).isVisible = true
                 findItem(R.id.action_copy_filename).isVisible = true
+                findItem(R.id.action_gbk_utf).isVisible = true
             }
         } else if (count == 0) {
             mOptionMenu.apply {
                 findItem(R.id.action_delete).isVisible = false
                 findItem(R.id.action_download).isVisible = true
-                findItem(R.id.action_refresh).isVisible = true
                 findItem(R.id.action_rename_file).isVisible = false
                 findItem(R.id.action_scan_file).isVisible = false
                 findItem(R.id.action_sdcard).isVisible = true
@@ -361,6 +364,7 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_split_video).isVisible = false
                 findItem(R.id.action_storage).isVisible = true
                 findItem(R.id.action_translator).isVisible = true
+                findItem(R.id.action_gbk_utf).isVisible = false
             }
         }
         toolbar.postInvalidate()

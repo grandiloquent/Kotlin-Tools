@@ -7,8 +7,18 @@ import android.media.ThumbnailUtils
 import android.provider.MediaStore
 import org.jsoup.Jsoup
 import psycho.euphoria.common.Services
+import psycho.euphoria.common.extension.getFileNameWithoutExtension
+import psycho.euphoria.common.extension.getFilenameExtension
+import psycho.euphoria.common.extension.getFilenameFromPath
+import psycho.euphoria.common.extension.getParentPath
 import java.io.File
+import java.nio.charset.Charset
 
+
+fun gbk2utf(path: String) {
+    val targetFile = File(path.getParentPath(), path.getFileNameWithoutExtension() + "-utf8" + path.getFilenameExtension())
+    targetFile.writeText(File(path).readText(Charset.forName("gbk")), Charset.forName("utf8"))
+}
 
 fun combineSafari(dir: File) {
     val tocFile = File(dir, "目录.html")

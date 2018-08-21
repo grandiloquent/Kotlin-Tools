@@ -168,6 +168,23 @@ class DownloadService : Service() {
             mRequestQueue = RequestQueue(DEFAULT_THREAD_POOL_SIZE).also { it.start() }
         }
         DownloadTaskProvider.getInstance().fecthTask(id)?.let {
+            it.requestCompleteListener = object : Request.RequestCompleteListener {
+            override fun onNotifyError(type: Int) {
+                mUpdateHandler?.send(MSG_OCCURRED_ERROR, null, type)
+            }
+
+            override fun onNoUsableReceived(request: Request) {
+            }
+
+            override fun onNotifySpeed(taskState: TaskState) {
+                mUpdateHandler?.send(MSG_UPDATE_NOTIFICATION, taskState)
+
+            }
+
+            override fun onNotifyCompleted(id: Long) {
+                mUpdateHandler?.send(MSG_COMPLETE_NOTIFICATION, null, id.toInt())
+            }
+        }
             mRequestQueue?.add(it)
         }
     }

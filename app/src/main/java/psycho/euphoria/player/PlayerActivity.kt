@@ -127,13 +127,13 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                 }
             }
             deleteFile(File(path), false) {
-               // toast(path)
+                // toast(path)
                 setResult(Activity.RESULT_OK)
             }
             toast(file.name)
             mMediaSource = generateMediaSource(file.toUri())
             it.prepare(mMediaSource)
-            seekTo(mStartWindow,C.TIME_UNSET)
+            seekTo(mStartWindow, C.TIME_UNSET)
             //it.seekTo(mStartWindow, C.TIME_UNSET)
         }
     }
@@ -475,10 +475,20 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                     seekTo(mSeekPosition)
                 } else {
                     show()
+                    togglePlay()
                 }
             }
         }
         return true
+    }
+
+    private fun togglePlay() {
+        if (isPlaying()) {
+            mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, false)
+        }else{
+            mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, true)
+
+        }
     }
 
     override fun onTracksChanged(p0: TrackGroupArray?, p1: TrackSelectionArray?) {

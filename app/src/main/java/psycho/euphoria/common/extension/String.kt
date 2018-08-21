@@ -1,4 +1,5 @@
 package psycho.euphoria.common.extension
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -6,10 +7,12 @@ import android.util.Patterns
 import psycho.euphoria.common.*
 import java.io.File
 import java.util.HashMap
+
 fun String.isVideoSlow() = isVideoFast() || getMimeType().startsWith("video")
 fun String.isImageSlow() = isImageFast() || getMimeType().startsWith("image")
 fun String.isArchiveFast() = archiveExtensions.any { endsWith(it, true) }
 fun String.getFilenameFromPath() = substring(lastIndexOf("/") + 1)
+fun String.getFileNameWithoutExtension() = substringAfterLast('/').substringBeforeLast('.')
 fun String.isImageFast() = photoExtensions.any { endsWith(it, true) }
 fun String.isVideoFast() = videoExtensions.any { endsWith(it, true) }
 fun String.isGif() = endsWith(".gif", true)
@@ -26,6 +29,7 @@ fun String.triggerScanFile(context: Context = Services.context) {
     mediaScanIntent.data = uri
     context.sendBroadcast(mediaScanIntent)
 }
+
 fun String.getMimeType(): String {
     val typesMap = HashMap<String, String>().apply {
         put("323", "text/h323")
@@ -630,6 +634,7 @@ fun String.getMimeType(): String {
     }
     return typesMap[getFilenameExtension().toLowerCase()] ?: ""
 }
+
 fun String.listVideoFiles(): List<File>? {
     val dir = File(this)
     if (dir.exists()) {
@@ -637,6 +642,7 @@ fun String.listVideoFiles(): List<File>? {
     }
     return null
 }
+
 fun String.getParentPath(): String {
     var parent = removeSuffix("/${getFilenameFromPath()}")
     if (parent == "otg:") {
@@ -644,20 +650,24 @@ fun String.getParentPath(): String {
     }
     return parent
 }
+
 fun String.isValidURL(): Boolean {
     return Patterns.WEB_URL.matcher(this).matches() //URLUtil.isValidUrl(this)
 }
+
 fun String.generateFileNameFromUri(parent: File): File {
     var fileName = this.substringBeforeLast('?')
     fileName = fileName.substringAfterLast('/')
     return parent.buildUniqueFile(fileName)
 }
+
 fun String.getGenericMimeType(): String {
     if (!contains("/"))
         return this
     val type = substring(0, indexOf("/"))
     return "$type/*"
 }
+
 fun String.convertToSeconds(): Int {
     val strings = split("\\.".toRegex()).dropLastWhile { it.isEmpty() }.toTypedArray()
     return if (strings.size > 1) {

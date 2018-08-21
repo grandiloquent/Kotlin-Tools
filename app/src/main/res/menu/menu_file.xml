@@ -6,11 +6,7 @@
         android:icon="@drawable/ic_select_all_white_24px"
         android:title="@string/menu_select_all"
         app:showAsAction="ifRoom" />
-    <item
-        android:id="@+id/action_refresh"
-        android:icon="@drawable/ic_refresh_white_24px"
-        android:title="@string/menu_refresh"
-        app:showAsAction="always"></item>
+
     <item
         android:id="@+id/action_sorting"
         android:icon="@drawable/ic_sort_white_24px"
@@ -59,8 +55,13 @@
         android:id="@+id/action_serialize_file_name"
         android:title="Serialize FileName" />
     <item
+        android:id="@+id/action_gbk_utf"
+        android:title="GBK to UTF8"></item>
+    <item
         android:id="@+id/action_serialize_file_name100"
         android:title="Serialize FileName 100" />
-    <item android:id="@+id/action_combine_htmls"
-        android:title="Combine"/>
+    <item
+        android:id="@+id/action_combine_htmls"
+        android:title="Combine" />
+
 </menu>
