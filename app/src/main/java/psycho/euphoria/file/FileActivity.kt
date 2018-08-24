@@ -135,7 +135,7 @@ class FileActivity : CustomActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         mOptionMenu = menu
         bindDeleteFileMenuItem(this, menu)
-        bindRenameFileMenuItem(this,menu)
+        bindRenameFileMenuItem(this, menu)
 
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
@@ -174,6 +174,7 @@ class FileActivity : CustomActivity() {
                         if (!it.isNullOrBlank()) {
                             renameFile(this, File(cur.path), File(cur.path.getParentPath(), it.toString()))
                             refreshRecyclerView()
+                            mFileAdapter?.deselectAll()
                         }
                     }
 

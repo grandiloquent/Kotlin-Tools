@@ -13,7 +13,7 @@ import java.io.File
 import java.util.*
 
 
-const val MENU_RENAME_FILE = 1
+const val MENU_RENAME_FILE = 2
 private val STRING_RENAME_FILE by lazy {
     if (Locale.getDefault() == Locale.CHINA) "重命名"
     else "Rename"
