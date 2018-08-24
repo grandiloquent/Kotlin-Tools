@@ -22,11 +22,7 @@
         android:id="@+id/action_add_bookmark"
         android:title="添加到书签" />
 
-    <item
-        android:id="@+id/action_rename_file"
-        android:icon="@drawable/ic_white_edit"
-        android:title="@string/menu_rename_file"
-        app:showAsAction="ifRoom" />
+
     <item
         android:id="@+id/action_split_video"
         android:title="@string/menu_split_video"

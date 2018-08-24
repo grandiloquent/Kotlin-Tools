@@ -35,19 +35,6 @@ class FileActivity : CustomActivity() {
     private var mBookmark = Bookmark(this)
     private val mHandler = Handler()
 
-    private fun deleteFiles() {
-        mFileAdapter?.let {
-            if (it.selectedItemCount < 1) return
-            for (i in it.selectedItemList) {
-                deleteFile(File(it.getItem(i).path), true) {
-                    if (it) {
-                        refreshRecyclerView()
-                        mFileAdapter?.deselectAll()
-                    }
-                }
-            }
-        }
-    }
 
     private fun initialize() {
         setContentView(R.layout.activity_file)
@@ -148,6 +135,8 @@ class FileActivity : CustomActivity() {
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         mOptionMenu = menu
         bindDeleteFileMenuItem(this, menu)
+        bindRenameFileMenuItem(this,menu)
+
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
         return super.onCreateOptionsMenu(menu)
@@ -177,17 +166,26 @@ class FileActivity : CustomActivity() {
                     }
                 }
             }
+            MENU_RENAME_FILE -> {
+                mFileAdapter?.let {
+                    val cur = it.getItem(it.selectedItemList[0]);
+
+                    dialog(this, cur.name, getString(R.string.menu_rename_file), true) {
+                        if (!it.isNullOrBlank()) {
+                            renameFile(this, File(cur.path), File(cur.path.getParentPath(), it.toString()))
+                            refreshRecyclerView()
+                        }
+                    }
+
+                }
+            }
             R.id.action_select_all -> selectAll()
             R.id.action_split_video -> {
                 mFileAdapter?.let {
                     splitVideo(it.getItem(it.selectedItemList[0]).path)
                 }
             }
-            R.id.action_rename_file -> {
-                mFileAdapter?.let {
-                    renameFile(it.getItem(it.selectedItemList[0]))
-                }
-            }
+
             R.id.action_scan_file -> scanFile()
             R.id.action_serialize_file_name -> {
                 serializeFileName(mRecentDirectory, this)
@@ -278,21 +276,6 @@ class FileActivity : CustomActivity() {
         }
     }
 
-    private fun renameFile(fileItem: FileItem) {
-        dialog(this, fileItem.name, getString(R.string.menu_rename_file), true) {
-            if (!it.isNullOrBlank()) {
-                renameFile(fileItem.path, fileItem.path.getParentPath() + File.separator + it.toString()) {
-                    if (it) {
-                        refreshRecyclerView()
-                        mFileAdapter?.deselectAll()
-                    } else {
-                        //
-                        toast("Renaming the file failed : ${fileItem.name}")
-                    }
-                }
-            }
-        }
-    }
 
     private fun scanFile() {
         mFileAdapter?.let {
@@ -357,7 +340,7 @@ class FileActivity : CustomActivity() {
                 // When the number of selected items is greater than 1.
                 // Just hide the menu items that only support single item
                 // The status of other menu items is the same as when it is equal to 1.
-                findItem(R.id.action_rename_file).isVisible = false
+                findItem(MENU_RENAME_FILE).isVisible = false
                 findItem(R.id.action_split_video).isVisible = false
                 findItem(R.id.action_copy_filename).isVisible = false
             }
@@ -365,7 +348,7 @@ class FileActivity : CustomActivity() {
             mOptionMenu.apply {
                 findItem(MENU_DELETE_FILE).isVisible = true
                 findItem(R.id.action_download).isVisible = false
-                findItem(R.id.action_rename_file).isVisible = true
+                findItem(MENU_RENAME_FILE).isVisible = true
                 findItem(R.id.action_scan_file).isVisible = true
                 findItem(R.id.action_select_all).isVisible = true
                 findItem(R.id.action_sorting).isVisible = false
@@ -380,7 +363,7 @@ class FileActivity : CustomActivity() {
             mOptionMenu.apply {
                 findItem(R.id.action_add_bookmark).isVisible = false
                 findItem(R.id.action_download).isVisible = true
-                findItem(R.id.action_rename_file).isVisible = false
+                findItem(MENU_RENAME_FILE).isVisible = false
                 findItem(R.id.action_scan_file).isVisible = false
                 findItem(R.id.action_select_all).isVisible = false
                 findItem(R.id.action_sorting).isVisible = true

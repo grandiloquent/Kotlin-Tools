@@ -21,7 +21,7 @@ private val STRING_DELETE_FILE by lazy {
 fun bindDeleteFileMenuItem(context: Context, menu: Menu): MenuItem? {
     return menu.add(0, MENU_DELETE_FILE, 0, STRING_DELETE_FILE).also {
         it.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM)
-        it.icon = context.resources.getDrawable(R.drawable.ic_delete_forever_24px)
+        it.icon = context.resources.getDrawable(R.drawable.ic_delete_forever_white_24px)
     }
 }
 

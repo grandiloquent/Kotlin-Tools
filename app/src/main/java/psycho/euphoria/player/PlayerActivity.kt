@@ -33,6 +33,8 @@ import psycho.euphoria.common.Services.navigationBarWidth
 import psycho.euphoria.common.Services.orientation
 import psycho.euphoria.common.calculateScreenOrientation
 import psycho.euphoria.common.extension.*
+import psycho.euphoria.file.doDeleteFileAction
+import psycho.euphoria.file.renameFile
 import psycho.euphoria.tools.R
 import java.io.File
 import java.util.*
@@ -119,17 +121,12 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                 file = files[index]
             } else {
                 file = File(path)
-                deleteFile(file, false) {
-                    toast(path)
-                    setResult(Activity.RESULT_OK)
-                    finish()
-                    return@deleteFile
-                }
-            }
-            deleteFile(File(path), false) {
-                // toast(path)
+                doDeleteFileAction(this, arrayOf(File(path)), null)
                 setResult(Activity.RESULT_OK)
+                return
             }
+            doDeleteFileAction(this, arrayOf(File(path)), null)
+            setResult(Activity.RESULT_OK)
             toast(file.name)
             mMediaSource = generateMediaSource(file.toUri())
             it.prepare(mMediaSource)
@@ -322,7 +319,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
 
         }
         getCurrentUri()?.let {
-            if (menuAdjustSrtAction(item.itemId, File(it).changeExtension("srt"),this)) {
+            if (menuAdjustSrtAction(item.itemId, File(it).changeExtension("srt"), this)) {
                 return true
             }
 
@@ -563,16 +560,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         mPlayer?.let {
             val path = path ?: return
             dialog(this, path.getFilenameFromPath(), getString(R.string.menu_rename_file), true) {
-                renameFile(path, path.getParentPath() + File.separator + it.toString()) {
-                    if (it) {
-                        mMediaSource = generateMediaSource(File(path).toUri())
-                        mPlayer?.prepare(mMediaSource)
-                        mPlayer?.seekTo(mStartWindow, C.TIME_UNSET)
-                    } else {
-                        //
-                        toast("Renaming the file failed : ${path.getFilenameFromPath()}")
-                    }
-                }
+                renameFile(this, File(path), File(path, path.getParentPath() + File.separator + it.toString()))
             }
         }
     }
