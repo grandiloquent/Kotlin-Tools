@@ -292,9 +292,10 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
         } else initialize()
     }
 
-    override fun onCreateOptionsMenu(menu: Menu?): Boolean {
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
         //mTracker.e("[onCreateOptionsMenu]")
         menuInflater.inflate(R.menu.menu_video, menu)
+        menuAdjustSrt(menu)
         return super.onCreateOptionsMenu(menu)
     }
 
@@ -313,14 +314,19 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
     }
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        //mTracker.e("[onOptionsItemSelected]")
+
         when (item.itemId) {
             R.id.action_landspace -> if (calculateScreenOrientation() == ActivityInfo.SCREEN_ORIENTATION_PORTRAIT) requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE else requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             R.id.action_delete -> deleteVideo(getCurrentUri())
             R.id.action_rename -> renameVideo(getCurrentUri())
 
         }
+        getCurrentUri()?.let {
+            if (menuAdjustSrtAction(item.itemId, File(it).changeExtension("srt"),this)) {
+                return true
+            }
 
+        }
         return super.onOptionsItemSelected(item)
     }
 
@@ -475,7 +481,8 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
                     seekTo(mSeekPosition)
                 } else {
                     show()
-                    togglePlay()
+                    if (mDownY < mScreenHeight / 2)
+                        togglePlay()
                 }
             }
         }
@@ -485,7 +492,7 @@ class PlayerActivity : CustomActivity(), TimeBar.OnScrubListener,
     private fun togglePlay() {
         if (isPlaying()) {
             mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, false)
-        }else{
+        } else {
             mControlDispatcher.dispatchSetPlayWhenReady(mPlayer, true)
 
         }

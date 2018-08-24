@@ -7,6 +7,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import android.os.Environment
+import android.os.Handler
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.ArrayAdapter
@@ -31,6 +32,9 @@ class FileActivity : CustomActivity() {
     private var mRecentDirectory = Environment.getExternalStorageDirectory().absolutePath
     private var mSortOrder = SORT_BY_NAME
     private lateinit var mOptionMenu: Menu
+    private var mBookmark = Bookmark(this)
+    private val mHandler = Handler()
+
     private fun deleteFiles() {
         mFileAdapter?.let {
             if (it.selectedItemCount < 1) return
@@ -38,7 +42,7 @@ class FileActivity : CustomActivity() {
                 deleteFile(File(it.getItem(i).path), true) {
                     if (it) {
                         refreshRecyclerView()
-                        mFileAdapter?.deselect(i)
+                        mFileAdapter?.deselectAll()
                     }
                 }
             }
@@ -98,7 +102,7 @@ class FileActivity : CustomActivity() {
     }
 
     private fun onClickFile(path: String) {
-        if ((mFileAdapter?.selectedItemCount ?: 0) > 0) return
+        //if ((mFileAdapter?.selectedItemCount ?: 0) > 0) return
         when {
             path.isVideoFast() -> {
                 val intent = Intent(this, PlayerActivity::class.java)
@@ -143,6 +147,7 @@ class FileActivity : CustomActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         mOptionMenu = menu
+        bindDeleteFileMenuItem(this, menu)
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
         return super.onCreateOptionsMenu(menu)
@@ -151,19 +156,27 @@ class FileActivity : CustomActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.action_storage -> {
-                with(Environment.getExternalStorageDirectory().absolutePath) {
-                    refreshRecyclerView(this)
-                    mRecentDirectory = this
+                mBookmark.show { it ->
+                    refreshRecyclerView(it)
+                    mRecentDirectory = it
                 }
-            }
-            R.id.action_sdcard -> {
-                refreshRecyclerView(sdCardPath)
-                mRecentDirectory = sdCardPath
             }
             R.id.action_download -> launchActivity(DownloadActivity::class.java)
             R.id.action_sorting -> showSortingDialog()
             R.id.action_translator -> launchActivity(TranslatorActivity::class.java)
-            R.id.action_delete -> deleteFiles()
+            MENU_DELETE_FILE -> {
+                mFileAdapter?.let { it ->
+                    val files = arrayOfNulls<File>(it.selectedItemCount)
+                    for (i in 0 until files.size) {
+                        files[i] = File(it.getItem(it.selectedItemList[i]).path)
+                    }
+                    doDeleteFileAction(this, files) {
+                        refreshRecyclerView()
+                        it.deselectAll()
+                        mHandler.post { triggerScanFile(this, files.map { it?.absolutePath }.toTypedArray(), null) }
+                    }
+                }
+            }
             R.id.action_select_all -> selectAll()
             R.id.action_split_video -> {
                 mFileAdapter?.let {
@@ -193,7 +206,14 @@ class FileActivity : CustomActivity() {
                     gbk2utf(it.getItem(it.selectedItemList[0]).path)
                 }
             }
+            R.id.action_add_bookmark -> {
+                mFileAdapter?.let {
+                    var f = it.getItem(it.selectedItemList[0])
+                    mBookmark.put(if (f.isDirectory) File(f.path) else File(f.path).parentFile)
+                }
+            }
         }
+
         return super.onOptionsItemSelected(item)
     }
 
@@ -209,10 +229,10 @@ class FileActivity : CustomActivity() {
     }
 
     private fun refreshRecyclerView() {
-        refreshRecyclerView(mRecentDirectory)
+        refreshRecyclerView(mRecentDirectory, true)
     }
 
-    private fun refreshRecyclerView(path: String) {
+    private fun refreshRecyclerView(path: String, isRefresh: Boolean = false) {
         File(path).listFileItems(mSortOrder)?.let {
             if (mFileAdapter == null) {
                 // Initialize FileAdapter
@@ -250,6 +270,10 @@ class FileActivity : CustomActivity() {
                 }
             } else {
                 mFileAdapter?.switchData(it)
+//                if (isRefresh) {
+//                    mFileAdapter?.refreshData(it)
+//                } else
+//                    mFileAdapter?.switchData(it)
             }
         }
     }
@@ -339,11 +363,10 @@ class FileActivity : CustomActivity() {
             }
         } else if (count == 1) {
             mOptionMenu.apply {
-                findItem(R.id.action_delete).isVisible = true
+                findItem(MENU_DELETE_FILE).isVisible = true
                 findItem(R.id.action_download).isVisible = false
                 findItem(R.id.action_rename_file).isVisible = true
                 findItem(R.id.action_scan_file).isVisible = true
-                findItem(R.id.action_sdcard).isVisible = false
                 findItem(R.id.action_select_all).isVisible = true
                 findItem(R.id.action_sorting).isVisible = false
                 findItem(R.id.action_split_video).isVisible = true
@@ -351,20 +374,21 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_translator).isVisible = true
                 findItem(R.id.action_copy_filename).isVisible = true
                 findItem(R.id.action_gbk_utf).isVisible = true
+                findItem(R.id.action_add_bookmark).isVisible = true
             }
         } else if (count == 0) {
             mOptionMenu.apply {
-                findItem(R.id.action_delete).isVisible = false
+                findItem(R.id.action_add_bookmark).isVisible = false
                 findItem(R.id.action_download).isVisible = true
                 findItem(R.id.action_rename_file).isVisible = false
                 findItem(R.id.action_scan_file).isVisible = false
-                findItem(R.id.action_sdcard).isVisible = true
                 findItem(R.id.action_select_all).isVisible = false
                 findItem(R.id.action_sorting).isVisible = true
                 findItem(R.id.action_split_video).isVisible = false
                 findItem(R.id.action_storage).isVisible = true
                 findItem(R.id.action_translator).isVisible = true
                 findItem(R.id.action_gbk_utf).isVisible = false
+                findItem(R.id.action_add_bookmark).isVisible = false
             }
         }
         toolbar.postInvalidate()

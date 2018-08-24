@@ -37,14 +37,18 @@ class FileAdapter(private val activity: AppCompatActivity,
 
     fun switchData(list: ArrayList<FileItem>) {
 
+
+        files.clear()
+        files.addAll(list)
+        notifyDataSetChanged()
+    }
+
+    fun refreshData(list: ArrayList<FileItem>) {
         val callback = FileItemDifferenceCallback(files, list)
         val result = DiffUtil.calculateDiff(callback)
         files.clear()
         files.addAll(list)
         result.dispatchUpdatesTo(this)
-//        files.clear()
-//        files.addAll(list)
-//        notifyDataSetChanged()
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -61,11 +65,11 @@ class FileAdapter(private val activity: AppCompatActivity,
         }
     }
 
-//    override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
-//        return View.OnClickListener {
-//            itemClick(getItem(position))
-//        }
-//    }
+    override fun defaultItemViewClickListener(holder: ViewHolder?, position: Int): View.OnClickListener {
+        return View.OnClickListener {
+            itemClick(getItem(position))
+        }
+    }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
         // Dont forget super this method
@@ -89,7 +93,7 @@ class FileAdapter(private val activity: AppCompatActivity,
         private const val TEXT_COLOR = 0XFF333333
     }
 
-      inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
+    inner class ViewHolder(override val containerView: View) : RecyclerView.ViewHolder(containerView),
             LayoutContainer {
         private var mFileItem: FileItem? = null
 
@@ -100,7 +104,7 @@ class FileAdapter(private val activity: AppCompatActivity,
         }
 
         fun bindFileItem(fileItem: FileItem) {
-          itemView.setOnClickListener { itemClick(fileItem) }
+            //itemView.setOnClickListener { itemClick(fileItem) }
             mFileItem = fileItem
             with(fileItem) {
                 item_name.text = name

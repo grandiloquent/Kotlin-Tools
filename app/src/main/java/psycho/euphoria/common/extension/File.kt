@@ -11,12 +11,9 @@ import java.io.FileNotFoundException
 import java.io.FilenameFilter
 import java.util.*
 
-fun File.isVideo(): Boolean {
-    return arrayOf(".mp4", ".flv").any { name.endsWith(it, true) }
-}
 
 fun File.listVideoFiles(): List<File>? {
-    return listFiles()?.filter { it.isFile && it.isVideo() }?.sortedBy { it.name }
+    return listFiles()?.filter { it.isFile && it.name.isVideoFast() }?.sortedBy { it.name }
 }
 
 fun File.changeExtension(ext: String): File {
