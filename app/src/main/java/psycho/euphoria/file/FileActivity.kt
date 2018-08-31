@@ -365,6 +365,7 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_add_bookmark).isVisible = false
                 findItem(R.id.action_download).isVisible = true
                 findItem(MENU_RENAME_FILE).isVisible = false
+                findItem(MENU_DELETE_FILE).isVisible = false
                 findItem(R.id.action_scan_file).isVisible = false
                 findItem(R.id.action_select_all).isVisible = false
                 findItem(R.id.action_sorting).isVisible = true
