@@ -40,8 +40,7 @@ private fun deleteFile(context: Context, file: File?) {
             DocumentsContract.deleteDocument(context.contentResolver, generateDocumentUriFast(file, Services.treeUri))
         }
     } else {
-        if (file.isDirectory) file.walkBottomUp().map { it.delete() }
-        else file.delete()
+        Native.getInstacne().deleteFile(file.absolutePath)
     }
 }
 

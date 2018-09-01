@@ -1,9 +1,8 @@
 #include "file.h"
 
 
-
 void insert_node(struct DirNode **head, const char *path, long total) {
-    struct DirNode *new_node = (struct DirNode *)malloc(sizeof(struct DirNode));
+    struct DirNode *new_node = (struct DirNode *) malloc(sizeof(struct DirNode));
     struct DirNode *p, *q;
     if (!new_node) {
         return;
@@ -11,19 +10,19 @@ void insert_node(struct DirNode **head, const char *path, long total) {
     new_node->path = path;
     new_node->total = total;
 
-    if(*head==NULL){
-        new_node->next=NULL;
+    if (*head == NULL) {
+        new_node->next = NULL;
         new_node->prev = NULL;
         *head = new_node;
-    }else{
+    } else {
         p = *head;
-        while(total<p->total){
-            q=p;
+        while (total < p->total) {
+            q = p;
             p = p->next;
         }
-        new_node->next=p;
+        new_node->next = p;
         new_node->prev = q;
-        if(p){
+        if (p) {
             p->prev = new_node;
         }
     }
@@ -33,7 +32,7 @@ LIST *list_directories(const char *path) {
     int list_len = 2;
     LIST *head = NULL, *current = NULL;
     DIR *dir = opendir(path);
-    if(dir){
+    if (dir) {
         size_t path_len = strlen(path);
         struct dirent *ent;
         int c = 0, cur = 0;
@@ -46,7 +45,7 @@ LIST *list_directories(const char *path) {
             size_t len;
             len = path_len + strlen(ent->d_name) + 2;
             buf = malloc(len);
-            if(buf){
+            if (buf) {
                 struct stat st;
                 if (path[path_len - 1] == PATH_SEPARATOR)
                     snprintf(buf, len, "%s%s", path, ent->d_name);
@@ -54,13 +53,13 @@ LIST *list_directories(const char *path) {
                     snprintf(buf, len, "%s%c%s", path, PATH_SEPARATOR, ent->d_name);
 
                 if (!stat(buf, &st) && S_ISDIR(st.st_mode)) {
-                    LIST *node = (LIST *)malloc(sizeof(LIST));
+                    LIST *node = (LIST *) malloc(sizeof(LIST));
                     node->n = cur;
-                    node->line=buf;
+                    node->line = buf;
                     node->next = NULL;
-                    if(head==NULL){
+                    if (head == NULL) {
                         current = head = node;
-                    }else{
+                    } else {
                         current = current->next = node;
                     }
                     cur++;
@@ -71,6 +70,7 @@ LIST *list_directories(const char *path) {
     }
     return head;
 }
+
 char *readable_size(double size, char *buf) {
     /*
      char total_buf[10];
@@ -78,7 +78,7 @@ char *readable_size(double size, char *buf) {
   */
     int i = 0;
     const char *units[] = {"B", "kB", "MB", "GB", "TB", "PB", "EB", "ZB", "YB"};
-    while(size>1024){
+    while (size > 1024) {
         size /= 1024;
         i++;
     }
@@ -111,28 +111,33 @@ void calculate_files_recursively(const char *path, size_t *total) {
         }
     }
 }
+
 int remove_directory(const char *path) {
+    if (file_exists(path)) {
+        unlink(path);
+        return -1;
+    }
     DIR *dir;
     dir = opendir(path);
     size_t path_len = strlen(path);
     int r = -1;
     if (dir) {
         struct dirent *p;
-        r=0;
+        r = 0;
         while (!r && (p = readdir(dir))) {
-            int r2=-1;
+            int r2 = -1;
             char *buf;
             size_t len;
             if (!strcmp(p->d_name, ".") || !strcmp(p->d_name, "..")) continue;
             len = path_len + strlen(p->d_name) + 2;
             buf = malloc(len);
-            if(buf){
+            if (buf) {
                 struct stat st;
                 snprintf(buf, len, "%s/%s", path, p->d_name);
-                if(!stat(buf,&st)){
-                    if(S_ISDIR(st.st_mode)){
+                if (!stat(buf, &st)) {
+                    if (S_ISDIR(st.st_mode)) {
                         r2 = remove_directory(buf);
-                    }else{
+                    } else {
                         r2 = unlink(buf);
                     }
                 }
@@ -143,16 +148,22 @@ int remove_directory(const char *path) {
         }
         closedir(dir);
     }
-    if(!r){
+    if (!r) {
         r = rmdir(path);
     }
     return r;
 }
-void LIST_free(LIST *head){
+
+void LIST_free(LIST *head) {
     while (head) {
         LIST *tmp = head;
         head = head->next;
         free(tmp->line);
         free(tmp);
     }
+}
+
+bool file_exists(const char *path) {
+    struct stat st;
+    return (!stat(path, &st) && S_ISREG(st.st_mode));
 }

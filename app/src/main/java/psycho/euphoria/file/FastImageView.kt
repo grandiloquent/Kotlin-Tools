@@ -1,32 +1,46 @@
 package psycho.euphoria.file
+
 import android.content.Context
 import android.graphics.Canvas
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
+import android.os.Handler
+import android.os.Looper
 import android.util.AttributeSet
 import android.util.Log
 import android.view.View
 import kotlin.math.abs
 import kotlin.math.max
 import kotlin.math.min
+
 class FastImageView : View {
+    private val mHandler: Handler
+
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
     constructor(context: Context, attrs: AttributeSet, defStyle: Int) : super(context, attrs, defStyle)
+
+    init {
+        mHandler = Handler(Looper.getMainLooper())
+    }
+
     var drawble: Drawable? = null
         set(value) {
             field = value.also {
-                invalidate()
+                mHandler.post { invalidate() }
             }
         }
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec)
         //Log.e(TAG, "widthMeasureSpec => ${widthMeasureSpec} \nheightMeasureSpec => ${heightMeasureSpec} \n")
     }
+
     override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
         super.onLayout(changed, left, top, right, bottom)
         //Log.e(TAG, "changed => ${changed} \nleft => ${left} \ntop => ${top} \nright => ${right} \nbottom => ${bottom} \n")
     }
+
     override fun onDraw(canvas: Canvas) {
         drawble?.apply {
             /**
@@ -76,6 +90,7 @@ class FastImageView : View {
             draw(canvas)
         }
     }
+
     companion object {
         private const val TAG = "FastImageView"
     }

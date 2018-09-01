@@ -9,6 +9,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <sys/stat.h>
+#include <stdbool.h>
 
 #if defined(WIN32) || defined(_WIN32)
 #define PATH_SEPARATOR '\\'
@@ -42,3 +43,5 @@ void LIST_free(LIST *head);
 int remove_directory(const char *path);
 
 char *readable_size(double size, char *buf);
+
+bool file_exists(const char *);
