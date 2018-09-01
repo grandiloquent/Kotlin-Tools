@@ -136,7 +136,7 @@ class FileActivity : CustomActivity() {
         mOptionMenu = menu
         bindDeleteFileMenuItem(this, menu)
         bindRenameFileMenuItem(this, menu)
-
+        bindCalculateDirectoryMenuItem(this, menu)
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
         return super.onCreateOptionsMenu(menu)
@@ -165,6 +165,10 @@ class FileActivity : CustomActivity() {
                         mHandler.post { triggerScanFile(this, files.map { it?.absolutePath }.toTypedArray(), null) }
                     }
                 }
+            }
+            MENU_CALCULATE_DIRECTORY -> {
+                if (mRecentDirectory != null)
+                    calculateDirectory(this, mRecentDirectory);
             }
             MENU_RENAME_FILE -> {
                 mFileAdapter?.let {

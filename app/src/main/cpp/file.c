@@ -93,23 +93,27 @@ void calculate_files_recursively(const char *path, size_t *total) {
     dir = opendir(path);
     int c = 0;
     size_t path_len = strlen(path);
-
-    while ((ent = readdir(dir)) != NULL) {
-        if (c < 2 && (!strcmp(".", ent->d_name) || !strcmp("..", ent->d_name))) {
-            c++;
-            continue;
-        }
-        size_t len = path_len + 2 + strlen(ent->d_name);
-        char fp[len];
-        snprintf(fp, len, "%s%c%s", path, PATH_SEPARATOR, ent->d_name);
-        if (stat(fp, &st) == 0) {
-            if (S_ISREG(st.st_mode)) {
-                *total += st.st_size;
-            } else {
-                calculate_files_recursively(fp, total);
+    if (dir) {
+        while ((ent = readdir(dir)) != NULL) {
+            if (c < 2 && (!strcmp(".", ent->d_name) || !strcmp("..", ent->d_name))) {
+                c++;
+                continue;
+            }
+            size_t len = path_len + 2 + strlen(ent->d_name);
+            char fp[len];
+            snprintf(fp, len, "%s%c%s", path, PATH_SEPARATOR, ent->d_name);
+            if (stat(fp, &st) == 0) {
+                if (S_ISREG(st.st_mode)) {
+                    *total += st.st_size;
+                } else {
+                    calculate_files_recursively(fp, total);
+                }
             }
         }
+        closedir(dir);
     }
+
+
 }
 
 int remove_directory(const char *path) {
