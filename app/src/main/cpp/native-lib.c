@@ -8,6 +8,13 @@ struct DIR_NODE {
 };
 
 JNIEXPORT void JNICALL
+Java_psycho_euphoria_file_Native_renameMp3File(JNIEnv *env, jobject thiz, jstring path) {
+    const char *f = (*env)->GetStringUTFChars(env, path, NULL);
+    RenameMp3File(f);
+    (*env)->ReleaseStringChars(env, path, (jchar *) f);
+}
+
+JNIEXPORT void JNICALL
 Java_psycho_euphoria_file_Native_deleteFile(JNIEnv *env, jobject thiz, jstring path) {
     const char *dir = (*env)->GetStringUTFChars(env, path, NULL);
     remove_directory(dir);

@@ -45,3 +45,7 @@ int remove_directory(const char *path);
 char *readable_size(double size, char *buf);
 
 bool file_exists(const char *);
+
+char *GetValidFileName(const char *path);
+
+void RenameMp3File(const char *path);

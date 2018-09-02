@@ -137,6 +137,7 @@ class FileActivity : CustomActivity() {
         bindDeleteFileMenuItem(this, menu)
         bindRenameFileMenuItem(this, menu)
         bindCalculateDirectoryMenuItem(this, menu)
+        bindRenameMp3FileMenuItem(this, menu)
         menuInflater.inflate(R.menu.menu_file, menu)
         updateOptionMenuVisible()
         return super.onCreateOptionsMenu(menu)
@@ -181,6 +182,14 @@ class FileActivity : CustomActivity() {
                             mFileAdapter?.deselectAll()
                         }
                     }
+
+                }
+            }
+            MENU_RENAME_MP3_FILE -> {
+                mFileAdapter?.let {
+                    val cur = it.getItem(it.selectedItemList[0]);
+
+                    renameMp3File(this, cur.path)
 
                 }
             }
@@ -363,6 +372,7 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_copy_filename).isVisible = true
                 findItem(R.id.action_gbk_utf).isVisible = true
                 findItem(R.id.action_add_bookmark).isVisible = true
+                findItem(MENU_RENAME_MP3_FILE).isVisible = true
             }
         } else if (count == 0) {
             mOptionMenu.apply {
@@ -378,6 +388,8 @@ class FileActivity : CustomActivity() {
                 findItem(R.id.action_translator).isVisible = true
                 findItem(R.id.action_gbk_utf).isVisible = false
                 findItem(R.id.action_add_bookmark).isVisible = false
+                findItem(MENU_RENAME_MP3_FILE).isVisible = false
+
             }
         }
         toolbar.postInvalidate()

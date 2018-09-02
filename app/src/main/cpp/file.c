@@ -1,5 +1,84 @@
 #include "file.h"
 
+const char INVALID_FILE_CHARS[] = {
+        '"', '<', '>', '|', '\0', '\x0001', '\x0002',
+        '\x0003', '\x0004', '\x0005', '\x0006', '\a', '\b', '\t',
+        '\n', '\v', '\f', '\r', '\x000e', '\x000f', '\x0010',
+        '\x0011', '\x0012', '\x0013', '\x0014', '\x0015', '\x0016', '\x0017',
+        '\x0018', '\x0019', '\x001a', '\x001b', '\x001c', '\x001d', '\x001e',
+        '\x001f', ':', '*', '?', '\\', '/'};
+
+char *GetValidFileName(const char *path) {
+
+    size_t len = sizeof(INVALID_FILE_CHARS) / sizeof(char);
+    char *tmp = (char *) path;
+    char *r = malloc(sizeof(char) * (strlen(tmp) + 1));
+    char *fr = r;
+    while (*tmp) {
+        *r = *tmp;
+        for (size_t i = 0; i < len; i++) {
+            if (*tmp == INVALID_FILE_CHARS[i]) {
+                *r = ' ';
+            }
+
+        }
+        ++tmp;
+        ++r;
+    }
+    *r = '\0';
+    return fr;
+}
+
+char *SubStringBeforeLast(const char *str, char c) {
+    size_t len = strlen(str);
+    char *s = malloc(sizeof(char) * (len + 1));
+    (void) memcpy(s, str, len);
+    char n;
+    int i = 0, j = 0;
+
+    while ((n = *str++) != 0) {
+        if (n == c) j = i;
+        i++;
+    }
+    *(s + j) = '\0';
+    return s;
+}
+
+char *SubStringAfterLast(const char *str, char c) {
+    char *s = (char *) str;
+    char n;
+    int i = 0, j = 0;
+
+    while ((n = *str++) != 0) {
+        if (n == c) j = i;
+        i++;
+    }
+    return s + j + 1;
+}
+
+void RenameMp3File(const char *path) {
+    char buf_title[31];
+    char buf_artist[31];
+    FILE *file = fopen(path, "rb");
+    fseek(file, -125, SEEK_END);
+    fread(buf_title, sizeof(char), 30, file);
+    if (strlen(buf_title) == 0)
+        return;
+    fread(buf_artist, sizeof(char), 30, file);
+
+    char *dir = SubStringBeforeLast(path, PATH_SEPARATOR);
+    char *ext = SubStringAfterLast(path, '.');
+    const char *sep = " - ";
+    size_t len =
+            strlen(dir) + strlen(ext) + strlen(buf_title) + strlen(buf_artist) + strlen(sep) + 2;
+    char *targetFileName = malloc(sizeof(char) * len);
+    snprintf(targetFileName, len, "%s%c%s%s%s%s", dir, PATH_SEPARATOR, buf_title, sep, buf_artist,
+             ext);
+    rename(path, targetFileName);
+    free(dir);
+    free(targetFileName);
+    fclose(file);
+}
 
 void insert_node(struct DirNode **head, const char *path, long total) {
     struct DirNode *new_node = (struct DirNode *) malloc(sizeof(struct DirNode));
