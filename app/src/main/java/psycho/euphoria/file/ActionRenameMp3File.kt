@@ -26,5 +26,5 @@ fun bindRenameMp3FileMenuItem(context: Context, menu: Menu): MenuItem? {
 }
 
 fun renameMp3File(context: Context, oldFile: String) {
-    Native.getInstacne().RenameMp3File(oldFile);
+    Native.getInstacne().renameMp3File(oldFile);
 }

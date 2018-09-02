@@ -61,10 +61,10 @@ void RenameMp3File(const char *path) {
     char buf_artist[31];
     FILE *file = fopen(path, "rb");
     fseek(file, -125, SEEK_END);
-    fread(buf_title, sizeof(char), 30, file);
+    fread(buf_title, 1, 30, file);
     if (strlen(buf_title) == 0)
         return;
-    fread(buf_artist, sizeof(char), 30, file);
+    fread(buf_artist, 1, 30, file);
 
     char *dir = SubStringBeforeLast(path, PATH_SEPARATOR);
     char *ext = SubStringAfterLast(path, '.');
