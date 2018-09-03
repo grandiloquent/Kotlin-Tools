@@ -11,6 +11,7 @@
 #include <sys/stat.h>
 #include <stdbool.h>
 
+
 #if defined(WIN32) || defined(_WIN32)
 #define PATH_SEPARATOR '\\'
 #else

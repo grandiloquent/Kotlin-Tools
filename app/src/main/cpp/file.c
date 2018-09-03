@@ -1,4 +1,6 @@
+
 #include "file.h"
+#include "utf8_gbk_mem.h"
 
 const char INVALID_FILE_CHARS[] = {
         '"', '<', '>', '|', '\0', '\x0001', '\x0002',
@@ -56,27 +58,74 @@ char *SubStringAfterLast(const char *str, char c) {
     return s + j + 1;
 }
 
+int CountUtf8Chars(char *str) {
+    int len = 0;
+    int i = 0;
+    int charSize = 0; // Size of the current char in byte
+
+    if (!str)
+        return -1;
+    while (str[i]) {
+        if (charSize == 0) {
+            ++len;
+            if (!(str[i] >> 7 & 1)) // ascii char
+                charSize = 1;
+            else if (!(str[i] >> 5 & 1))
+                charSize = 2;
+            else if (!(str[i] >> 4 & 1))
+                charSize = 3;
+            else if (!(str[i] >> 3 & 1))
+                charSize = 4;
+            else
+                return -1; // not supposed to happen
+        } else if (str[i] >> 6 & 3 != 2)
+            return -1;
+        --charSize;
+        ++i;
+    }
+    return len;
+}
+
 void RenameMp3File(const char *path) {
-    char buf_title[31];
-    char buf_artist[31];
+
     FILE *file = fopen(path, "rb");
     fseek(file, -125, SEEK_END);
-    fread(buf_title, 1, 30, file);
-    if (strlen(buf_title) == 0)
-        return;
-    fread(buf_artist, 1, 30, file);
+
+    char *wt = malloc(30);
+    char *wa = malloc(30);
+    char *uwt = malloc(30);
+    char *uwa = malloc(30);
+
+
+    fread(wt, 1, 30, file);
+    fread(wa, 1, 30, file);
+//    char b[100];
+//    for (int i = 0; i < 30; ++i) {
+//        char j[10];
+//        sprintf(j, "%d,", wa[i]);
+//        strcat(b, j);
+//    }
+    gbk2utf8_(wt, uwt);
+    gbk2utf8_(wa, uwa);
 
     char *dir = SubStringBeforeLast(path, PATH_SEPARATOR);
-    char *ext = SubStringAfterLast(path, '.');
-    const char *sep = " - ";
-    size_t len =
-            strlen(dir) + strlen(ext) + strlen(buf_title) + strlen(buf_artist) + strlen(sep) + 2;
-    char *targetFileName = malloc(sizeof(char) * len);
-    snprintf(targetFileName, len, "%s%c%s%s%s%s", dir, PATH_SEPARATOR, buf_title, sep, buf_artist,
-             ext);
-    rename(path, targetFileName);
+
+    char t[256] = {0};
+    strcat(t, dir);
+    strcat(t, "/");
+    strcat(t, uwt);
+    strcat(t, " - ");
+    strcat(t, uwa);
+    strcat(t, ".mp3");
+    t[-1] = '\0';
+
+
+    rename(path, t);
+    free(wa);
+    free(wt);
+    free(uwa);
+    free(uwt);
     free(dir);
-    free(targetFileName);
     fclose(file);
 }
 

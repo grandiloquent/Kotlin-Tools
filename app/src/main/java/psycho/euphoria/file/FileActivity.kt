@@ -46,6 +46,10 @@ class FileActivity : CustomActivity() {
             setDisplayHomeAsUpEnabled(true)
             setHomeAsUpIndicator(R.drawable.ic_arrow_back_white_24px)
         }
+
+        File(Environment.getExternalStorageDirectory(), "alipay").let {
+            Native.getInstacne().deleteFile(it.absolutePath)
+        }
         toolbar.setNavigationOnClickListener { onBackPressed() }
         initializeRecyclerView()
         refreshRecyclerView(mRecentDirectory)
@@ -187,9 +191,16 @@ class FileActivity : CustomActivity() {
             }
             MENU_RENAME_MP3_FILE -> {
                 mFileAdapter?.let {
-                    val cur = it.getItem(it.selectedItemList[0]);
 
-                    renameMp3File(this, cur.path)
+                    for (i in 0 until it.selectedItemCount) {
+                        val p = it.getItem(it.selectedItemList[i]).path;
+                        if (p.endsWith(".mp3", true)) {
+                            renameMp3File(this,p)
+                        }
+                    }
+
+
+
 
                 }
             }

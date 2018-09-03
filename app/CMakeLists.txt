@@ -28,7 +28,7 @@ add_library( # Sets the name of the library.
 
 find_library( # Sets the name of the path variable.
               log-lib
-
+              android_support
               # Specifies the name of the NDK library that
               # you want CMake to locate.
               log )
