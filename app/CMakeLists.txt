@@ -5,10 +5,21 @@
 
 cmake_minimum_required(VERSION 3.4.1)
 
-# Creates and names a library, sets it as either STATIC
-# or SHARED, and provides the relative paths to its source code.
-# You can define multiple libraries, and CMake builds them for you.
-# Gradle automatically packages shared libraries with your APK.
+
+add_library( libiconv
+             SHARED
+             IMPORTED )
+
+set_target_properties( libiconv
+                       # Specifies the parameter you want to define.
+                       PROPERTIES IMPORTED_LOCATION
+                       # Provides the path to the library you want to import.
+                       C:/Users/Administrator/Desktop/.exercises/android/Tools/app/libs/${ANDROID_ABI}/libiconv.so )
+
+include_directories(src/main/cpp/thirdparty/include
+                    src/main/cpp/thirdparty/libcharset
+                    src/main/cpp/thirdparty/libcharset/include
+ )
 
 add_library( # Sets the name of the library.
              native-lib
@@ -18,28 +29,15 @@ add_library( # Sets the name of the library.
 
              # Provides a relative path to your source file(s).
              src/main/cpp/native-lib.c
-              src/main/cpp/file.c)
+             src/main/cpp/file.c)
 
-# Searches for a specified prebuilt library and stores the path as a
-# variable. Because CMake includes system libraries in the search path by
-# default, you only need to specify the name of the public NDK library
-# you want to add. CMake verifies that the library exists before
-# completing its build.
 
 find_library( # Sets the name of the path variable.
               log-lib
-              android_support
               # Specifies the name of the NDK library that
               # you want CMake to locate.
               log )
 
-# Specifies libraries CMake should link to your target library. You
-# can link multiple libraries, such as libraries you define in this
-# build script, prebuilt third-party libraries, or system libraries.
-
-target_link_libraries( # Specifies the target library.
+target_link_libraries( libiconv
                        native-lib
-
-                       # Links the target library to the log library
-                       # included in the NDK.
                        ${log-lib} )

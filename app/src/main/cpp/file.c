@@ -1,7 +1,30 @@
 
+#include <thirdparty/include/iconv.h>
 #include "file.h"
-#include "utf8_gbk_mem.h"
+#include "iconv.h"
 
+int code_convert(char *from_charset,char *to_charset,char *inbuf,size_t inlen,char *outbuf,size_t outlen)
+{
+    iconv_t cd;
+    int rc;
+    char **pin = &inbuf;
+    char **pout = &outbuf;
+
+    cd = iconv_open(to_charset,from_charset);
+    if (cd==0) return -1;
+    memset(outbuf,0,outlen);
+    if (iconv(cd,pin,&inlen,pout,&outlen)==-1) return -1;
+    iconv_close(cd);
+    return 0;
+}
+int u2g(char *inbuf,size_t inlen,char *outbuf,size_t outlen)
+{
+    return code_convert("utf-8","gb2312",inbuf,inlen,outbuf,outlen);
+}
+int g2u(char *inbuf,size_t inlen,char *outbuf,size_t outlen)
+{
+    return code_convert("gb2312","utf-8",inbuf,inlen,outbuf,outlen);
+}
 const char INVALID_FILE_CHARS[] = {
         '"', '<', '>', '|', '\0', '\x0001', '\x0002',
         '\x0003', '\x0004', '\x0005', '\x0006', '\a', '\b', '\t',
@@ -58,33 +81,7 @@ char *SubStringAfterLast(const char *str, char c) {
     return s + j + 1;
 }
 
-int CountUtf8Chars(char *str) {
-    int len = 0;
-    int i = 0;
-    int charSize = 0; // Size of the current char in byte
 
-    if (!str)
-        return -1;
-    while (str[i]) {
-        if (charSize == 0) {
-            ++len;
-            if (!(str[i] >> 7 & 1)) // ascii char
-                charSize = 1;
-            else if (!(str[i] >> 5 & 1))
-                charSize = 2;
-            else if (!(str[i] >> 4 & 1))
-                charSize = 3;
-            else if (!(str[i] >> 3 & 1))
-                charSize = 4;
-            else
-                return -1; // not supposed to happen
-        } else if (str[i] >> 6 & 3 != 2)
-            return -1;
-        --charSize;
-        ++i;
-    }
-    return len;
-}
 
 void RenameMp3File(const char *path) {
 
@@ -93,20 +90,23 @@ void RenameMp3File(const char *path) {
 
     char *wt = malloc(30);
     char *wa = malloc(30);
-    char *uwt = malloc(30);
-    char *uwa = malloc(30);
+    char *uwt = malloc(255);
+    char *uwa = malloc(255);
 
 
     fread(wt, 1, 30, file);
     fread(wa, 1, 30, file);
+
+    g2u(wt,strlen(wt),uwt,255);
+    g2u(wa,strlen(wa),uwa,255);
+
 //    char b[100];
 //    for (int i = 0; i < 30; ++i) {
 //        char j[10];
 //        sprintf(j, "%d,", wa[i]);
 //        strcat(b, j);
 //    }
-    gbk2utf8_(wt, uwt);
-    gbk2utf8_(wa, uwa);
+
 
     char *dir = SubStringBeforeLast(path, PATH_SEPARATOR);
 

@@ -82,23 +82,23 @@ fun listAudioFiles(directoryFile: File, containsDirectory: Boolean): List<String
             return false
         }
     })
-    if (rawFiles != null) {
-        val collator = Collator.getInstance(Locale.CHINA)
-        Arrays.sort(rawFiles, object : Comparator<File> {
-            override fun compare(file: File, t1: File): Int {
-                if (containsDirectory) {
-                    if (file.isDirectory && t1.isDirectory || file.isFile && t1.isFile) {
-                        return collator.compare(file.name, t1.name)
-                    }
-                    if (file.isDirectory && t1.isFile) return -1
-                    if (file.isFile && t1.isDirectory) return 1
-                } else {
-                    return collator.compare(file.name, t1.name)
-                }
-                return 0
-            }
-        })
-    }
+//    if (rawFiles != null) {
+//        val collator = Collator.getInstance(Locale.CHINA)
+//        Arrays.sort(rawFiles, object : Comparator<File> {
+//            override fun compare(file: File, t1: File): Int {
+//                if (containsDirectory) {
+//                    if (file.isDirectory && t1.isDirectory || file.isFile && t1.isFile) {
+//                        return collator.compare(file.name, t1.name)
+//                    }
+//                    if (file.isDirectory && t1.isFile) return -1
+//                    if (file.isFile && t1.isDirectory) return 1
+//                } else {
+//                    return collator.compare(file.name, t1.name)
+//                }
+//                return 0
+//            }
+//        })
+//    }
     for (file in rawFiles!!) {
         files.add(file.getName())
     }

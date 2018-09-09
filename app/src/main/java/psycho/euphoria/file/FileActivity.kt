@@ -19,6 +19,7 @@ import psycho.euphoria.common.*
 import psycho.euphoria.common.extension.*
 import psycho.euphoria.common.ui.SwipeRefreshLayout
 import psycho.euphoria.download.DownloadActivity
+import psycho.euphoria.listAudioFiles
 import psycho.euphoria.player.PlayerActivity
 import psycho.euphoria.tools.R
 import psycho.euphoria.tools.TranslatorActivity
@@ -26,6 +27,7 @@ import psycho.euphoria.tools.music.MediaPlaybackService
 import psycho.euphoria.tools.pictures.PictureActivity
 import psycho.euphoria.player.SplitVideo
 import java.io.File
+import java.io.FileFilter
 
 class FileActivity : CustomActivity() {
     private var mFileAdapter: FileAdapter? = null
@@ -108,7 +110,8 @@ class FileActivity : CustomActivity() {
             path.isAudioFast() -> {
                 val intent = Intent(this, MediaPlaybackService::class.java)
                 intent.putExtra(MediaPlaybackService.KEY_PLAY_DIRECTORY, File(path).parentFile.absolutePath)
-                intent.putExtra(MediaPlaybackService.KEY_PLAY_POSITION, 0)
+                val files = File(path).parentFile.listAudioFiles()?.map { it.absolutePath }
+                intent.putExtra(MediaPlaybackService.KEY_PLAY_POSITION, files?.indexOf(path)?:0)
                 startService(intent)
             }
             else -> {
@@ -195,11 +198,9 @@ class FileActivity : CustomActivity() {
                     for (i in 0 until it.selectedItemCount) {
                         val p = it.getItem(it.selectedItemList[i]).path;
                         if (p.endsWith(".mp3", true)) {
-                            renameMp3File(this,p)
+                            renameMp3File(this, p)
                         }
                     }
-
-
 
 
                 }

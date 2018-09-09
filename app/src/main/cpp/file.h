@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <stdbool.h>
+#include <iconv.h>
 
 
 #if defined(WIN32) || defined(_WIN32)
